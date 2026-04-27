@@ -2,6 +2,8 @@
 이 프로젝트는 **React Native (Expo)**와 **NativeWind v4**를 기반으로 구축되었습니다. 
 아래 절차에 따라 개발 환경을 세팅해 주세요.
 
+<br>
+
 ## 📌 사전 준비물
 1. **Node.js** 설치 (LTS 버전 권장)
 2. 스마트폰에 **Expo Go** 앱 설치 (iOS/Android)
