@@ -1,5 +1,5 @@
 # 🛒 고객 맞춤형 장보기 경험을 제공하는 Findy 마트
-이 프로젝트는 **React Native (Expo)**와 **NativeWind v4**를 기반으로 구축되었습니다. 
+이 프로젝트는 **React Native (Expo)** 와 **NativeWind v4**를 기반으로 구축되었습니다. 
 아래 절차에 따라 개발 환경을 세팅해 주세요.
 
 <br>
