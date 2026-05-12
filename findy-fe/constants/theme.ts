@@ -1,6 +1,7 @@
 export const COLORS = {
   main: "#FF507C",
   sub: "#FFDCE5",
+  white: "#FFFFFF",
   text: "#000000",
   subText: "#9E9E9E",
   subText2: "#B4B4B4",

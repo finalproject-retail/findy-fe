@@ -1,6 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 
-const { COLORS, TYPOGRAPHY, SPACING, RADIUS, BORDER } = require('./src/constants/theme');
+const {
+  COLORS,
+  TYPOGRAPHY,
+  SPACING,
+  RADIUS,
+  BORDER,
+} = require("./src/constants/theme");
 
 module.exports = {
   content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
@@ -10,24 +16,25 @@ module.exports = {
       colors: {
         main: COLORS.main,
         sub: COLORS.sub,
-        'text-main': COLORS.text,
-        'text-sub': COLORS.subText,
-        'text-sub2': COLORS.subText2,
-        'text-red': COLORS.redText,
-        'text-blue': COLORS.blueText,
+        white: COLORS.white,
+        "text-main": COLORS.text,
+        "text-sub": COLORS.subText,
+        "text-sub2": COLORS.subText2,
+        "text-red": COLORS.redText,
+        "text-blue": COLORS.blueText,
         charcoal: COLORS.charcoal,
         gray: COLORS.gray,
-        'light-gray': COLORS.lightGray,
+        "light-gray": COLORS.lightGray,
       },
       fontFamily: {
         pretendard: [TYPOGRAPHY.family],
       },
       fontSize: {
-        xl: [`${TYPOGRAPHY.size.xl}px`, '26px'],
-        lg: [`${TYPOGRAPHY.size.lg}px`, '24px'],
-        md: [`${TYPOGRAPHY.size.md}px`, '22px'],
-        sm: [`${TYPOGRAPHY.size.sm}px`, '20px'],
-        xs: [`${TYPOGRAPHY.size.xs}px`, '18px'],
+        xl: [`${TYPOGRAPHY.size.xl}px`, "26px"],
+        lg: [`${TYPOGRAPHY.size.lg}px`, "24px"],
+        md: [`${TYPOGRAPHY.size.md}px`, "22px"],
+        sm: [`${TYPOGRAPHY.size.sm}px`, "20px"],
+        xs: [`${TYPOGRAPHY.size.xs}px`, "18px"],
       },
       fontWeight: {
         regular: TYPOGRAPHY.weight.regular,
