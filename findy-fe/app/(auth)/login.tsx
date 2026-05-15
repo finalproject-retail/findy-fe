@@ -1,23 +1,24 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-
-/** 카카오 브랜드 가이드 옐로 (theme 외부 고정색) */
-const KAKAO_YELLOW = "#FEE500";
+import { useState } from "react";
+import {
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type LoginTab = "general" | "admin";
+
+const SOCIAL_BUTTON_SIZE = 56;
+/** 시안 탭 테두리 두께 (px) */
+const TAB_BORDER_WIDTH = 2;
 
 const styles = StyleSheet.create({
   safe: {
@@ -41,7 +42,11 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    columnGap: 10,
+    columnGap: 8,
+  },
+  brandLogo: {
+    width: 40,
+    height: 40,
   },
   logoText: {
     fontFamily: TYPOGRAPHY.family,
@@ -53,38 +58,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     width: "100%",
     marginBottom: 34,
-    paddingHorizontal: 2,
+    alignItems: "flex-end",
   },
   tabPress: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-start",
   },
-  /** 활성 탭: 시안처럼 핑크 테두리 박스만 */
+  /** 활성: 상·좌·우 핑크 테두리, 하단 없음, 상단 모서리만 둥글게 */
   tabActiveShell: {
-    borderWidth: BORDER.base,
+    width: "100%",
+    borderTopWidth: TAB_BORDER_WIDTH,
+    borderLeftWidth: TAB_BORDER_WIDTH,
+    borderRightWidth: TAB_BORDER_WIDTH,
+    borderBottomWidth: 0,
     borderColor: COLORS.main,
-    borderRadius: RADIUS.md,
-    paddingVertical: 11,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: RADIUS.md,
+    borderTopRightRadius: RADIUS.md,
     backgroundColor: COLORS.white,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    minHeight: 46,
+    justifyContent: "center",
+    zIndex: 1,
   },
-  /** 비활성 탭: 하단 핑크 라인만 (좌우 상단 테두리 없음) */
+  /** 비활성: 하단 핑크 라인만 */
   tabInactiveShell: {
+    width: "100%",
     borderTopWidth: 0,
     borderLeftWidth: 0,
     borderRightWidth: 0,
-    borderBottomWidth: 2,
+    borderBottomWidth: TAB_BORDER_WIDTH,
     borderBottomColor: COLORS.main,
-    paddingBottom: 11,
-    paddingTop: 12,
-    paddingHorizontal: 6,
     backgroundColor: COLORS.white,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    minHeight: 46,
+    justifyContent: "center",
   },
   tabLabel: {
     fontFamily: TYPOGRAPHY.family,
     fontSize: TYPOGRAPHY.size.md,
-    fontWeight: TYPOGRAPHY.weight.medium,
+    fontWeight: TYPOGRAPHY.weight.bold,
     color: COLORS.text,
     textAlign: "center",
   },
@@ -98,8 +111,8 @@ const styles = StyleSheet.create({
   orRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 26,
-    marginBottom: 26,
+    marginTop: 22,
+    marginBottom: 22,
   },
   orLine: {
     flex: 1,
@@ -117,7 +130,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 22,
+    marginTop: 28,
     columnGap: 14,
   },
   linkText: {
@@ -135,27 +148,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 58,
     paddingBottom: 28,
     columnGap: 28,
   },
-  socialGoogle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.white,
-    borderWidth: BORDER.thin,
-    borderColor: COLORS.gray,
-    alignItems: "center",
-    justifyContent: "center",
+  socialButton: {
+    width: SOCIAL_BUTTON_SIZE,
+    height: SOCIAL_BUTTON_SIZE,
   },
-  socialKakao: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: KAKAO_YELLOW,
-    alignItems: "center",
-    justifyContent: "center",
+  socialButtonImage: {
+    width: SOCIAL_BUTTON_SIZE,
+    height: SOCIAL_BUTTON_SIZE,
   },
 });
 
@@ -200,8 +202,11 @@ export default function LoginScreen() {
         >
           <View style={styles.logoSection}>
             <View style={styles.logoRow}>
-              <Ionicons name="pin" size={32} color={COLORS.main} />
-              <Text style={styles.logoText}>Findy</Text>
+              <Image
+                source={require("@/assets/images/splash-logo.png")}
+                style={styles.brandLogo}
+                resizeMode="contain"
+              />
             </View>
           </View>
 
@@ -259,37 +264,55 @@ export default function LoginScreen() {
             />
           </View>
 
+          <Button onPress={handleLogin} isLoading={isLoading}>
+            로그인
+          </Button>
+
           <View style={styles.orRow}>
             <View style={styles.orLine} />
             <Text style={styles.orText}>or</Text>
             <View style={styles.orLine} />
           </View>
 
-          <Button onPress={handleLogin} isLoading={isLoading}>
-            로그인
-          </Button>
-
-          <View style={styles.linksRow}>
-            <Pressable accessibilityRole="button">
-              <Text style={styles.linkText}>회원가입</Text>
+          <View style={styles.socialRow}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.socialButton,
+                pressed && { opacity: 0.85 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Google로 계속하기"
+            >
+              <Image
+                source={require("@/assets/icons/google_logo.png")}
+                style={styles.socialButtonImage}
+                resizeMode="contain"
+              />
             </Pressable>
-            <Text style={styles.linkSep}>|</Text>
-            <Pressable accessibilityRole="button">
-              <Text style={styles.linkText}>비밀번호 찾기</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.socialButton,
+                pressed && { opacity: 0.85 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="카카오로 계속하기"
+            >
+              <Image
+                source={require("@/assets/icons/kakao_logo.png")}
+                style={styles.socialButtonImage}
+                resizeMode="contain"
+              />
             </Pressable>
           </View>
 
-          <View style={styles.socialRow}>
-            <Pressable
-              style={styles.socialGoogle}
-              accessibilityRole="button"
-              accessibilityLabel="Google로 계속하기"
-            />
-            <Pressable
-              style={styles.socialKakao}
-              accessibilityRole="button"
-              accessibilityLabel="카카오로 계속하기"
-            />
+          <View style={styles.linksRow}>
+            <Pressable accessibilityRole="button">
+              <Text style={styles.linkText}>비밀번호 찾기</Text>
+            </Pressable>
+            <Text style={styles.linkSep}>|</Text>
+            <Pressable accessibilityRole="button">
+              <Text style={styles.linkText}>회원가입</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
