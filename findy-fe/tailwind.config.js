@@ -6,7 +6,7 @@ const {
   SPACING,
   RADIUS,
   BORDER,
-} = require("./src/constants/theme");
+} = require("./constants/theme");
 
 module.exports = {
   content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
