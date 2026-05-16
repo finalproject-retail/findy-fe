@@ -40,17 +40,11 @@ export default function RootLayout() {
 
   if (!appIsReady) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#FFFFFF",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View className="flex-1 items-center justify-center bg-white">
         <Image
           source={require("../assets/images/splash-logo.png")}
-          style={{ width: 180, height: 180, resizeMode: "contain" }}
+          style={{ width: 87 }}
+          resizeMode="contain"
         />
       </View>
     );

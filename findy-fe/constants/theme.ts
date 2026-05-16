@@ -51,3 +51,7 @@ export const BORDER = {
   base: 1,
   thick: 7,
 } as const;
+
+export const LAYOUT = {
+  headerHeight: 54,
+} as const;

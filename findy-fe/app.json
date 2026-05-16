@@ -27,6 +27,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
@@ -38,7 +39,7 @@
           "image": "./assets/images/splash-logo.png",
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF",
-          "imageWidth": 80
+          "imageWidth": 87
         }
       ]
     ],

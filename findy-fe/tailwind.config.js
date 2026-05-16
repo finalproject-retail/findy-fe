@@ -6,10 +6,14 @@ const {
   SPACING,
   RADIUS,
   BORDER,
+  LAYOUT,
 } = require("./constants/theme");
 
 module.exports = {
-  content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
+  ],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
@@ -49,6 +53,9 @@ module.exports = {
         lg: `${SPACING.lg}px`,
         xl: `${SPACING.xl}px`,
         screen: `${SPACING.screen}px`,
+      },
+      height: {
+        header: `${LAYOUT.headerHeight}px`,
       },
       borderRadius: {
         xs: `${RADIUS.xs}px`,
