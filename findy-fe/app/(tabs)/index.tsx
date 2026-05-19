@@ -1,13 +1,12 @@
+import { Header } from "@/components/common";
+import { SafeView } from "@/components/layout";
 import { ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+    <SafeView>
+      <Header showLogo rightIcons={["search", "bell", "cart"]} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20 }}>
-        <View style={{ paddingVertical: 15 }}>
-          <Text style={{ fontSize: 24, fontWeight: "bold" }}>Findy</Text>
-        </View>
         <View style={{ marginTop: 20 }}>
           <Text style={{ fontSize: 18, fontWeight: "600" }}>
             안녕하세요, 소현님! 👋
@@ -17,6 +16,6 @@ export default function HomeScreen() {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeView>
   );
 }

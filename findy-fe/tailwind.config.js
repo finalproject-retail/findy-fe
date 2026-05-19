@@ -6,6 +6,7 @@ const {
   SPACING,
   RADIUS,
   BORDER,
+  LAYOUT,
 } = require("./constants/theme");
 
 module.exports = {
@@ -54,6 +55,11 @@ module.exports = {
         lg: `${SPACING.lg}px`,
         xl: `${SPACING.xl}px`,
         screen: `${SPACING.screen}px`,
+      },
+      height: {
+        header: `${LAYOUT.headerHeight}px`,
+        "tab-bar": `${LAYOUT.tabBarHeight}px`,
+        "tab-bar-total": `${LAYOUT.tabBarTotalHeight}px`,
       },
       borderRadius: {
         xs: `${RADIUS.xs}px`,

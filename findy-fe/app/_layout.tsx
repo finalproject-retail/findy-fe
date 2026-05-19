@@ -1,3 +1,4 @@
+import { AuthProvider } from "@/contexts/AuthContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -6,6 +7,17 @@ import { Image, View } from "react-native";
 import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
+
+function RootLayoutNav() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
+      {/* TODO: auth 팀원 — (auth) 그룹 추가 */}
+      {/* <Stack.Screen name="(auth)" /> */}
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -40,21 +52,19 @@ export default function RootLayout() {
 
   if (!appIsReady) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#FFFFFF",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View className="flex-1 items-center justify-center bg-white">
         <Image
           source={require("../assets/images/splash-logo.png")}
-          style={{ width: 180, height: 180, resizeMode: "contain" }}
+          style={{ width: 87 }}
+          resizeMode="contain"
         />
       </View>
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
 }
