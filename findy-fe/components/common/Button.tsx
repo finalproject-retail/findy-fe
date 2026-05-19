@@ -1,3 +1,4 @@
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -6,7 +7,6 @@ import {
   type PressableProps,
   type ViewStyle,
 } from "react-native";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 
 export type ButtonProps = Omit<PressableProps, "children"> & {
   children: ReactNode;

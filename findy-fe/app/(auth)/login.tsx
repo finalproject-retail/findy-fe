@@ -3,14 +3,14 @@ import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useState } from "react";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -31,28 +31,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.screen,
-    paddingTop: 44,
+    paddingTop: 160,
     paddingBottom: 36,
   },
   logoSection: {
     alignItems: "center",
-    paddingTop: 18,
-    marginBottom: 42,
-  },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    columnGap: 8,
+    marginBottom: 52,
   },
   brandLogo: {
-    width: 40,
-    height: 40,
+    width: 80,
+    height: 80,
+    marginBottom: -10,
   },
   logoText: {
     fontFamily: TYPOGRAPHY.family,
-    fontSize: TYPOGRAPHY.size.xl,
+    fontSize: 22,
     fontWeight: TYPOGRAPHY.weight.bold,
     color: COLORS.text,
+    letterSpacing: -0.3,
   },
   tabRow: {
     flexDirection: "row",
@@ -103,7 +99,10 @@ const styles = StyleSheet.create({
   },
   fieldsBlock: {
     width: "100%",
-    marginBottom: 4,
+    marginBottom: 32,
+  },
+  loginActions: {
+    width: "100%",
   },
   fieldGap: {
     height: 20,
@@ -111,8 +110,8 @@ const styles = StyleSheet.create({
   orRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 22,
-    marginBottom: 22,
+    marginTop: 32,
+    marginBottom: 26,
   },
   orLine: {
     flex: 1,
@@ -130,7 +129,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 28,
+    marginTop: 32,
     columnGap: 14,
   },
   linkText: {
@@ -201,13 +200,12 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.logoSection}>
-            <View style={styles.logoRow}>
-              <Image
-                source={require("@/assets/images/splash-logo.png")}
-                style={styles.brandLogo}
-                resizeMode="contain"
-              />
-            </View>
+            <Image
+              source={require("@/assets/images/splash-logo.png")}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
+        
           </View>
 
           <View style={styles.tabRow}>
@@ -264,55 +262,61 @@ export default function LoginScreen() {
             />
           </View>
 
-          <Button onPress={handleLogin} isLoading={isLoading}>
-            로그인
-          </Button>
+          <View style={styles.loginActions}>
+            <Button onPress={handleLogin} isLoading={isLoading}>
+              로그인
+            </Button>
 
-          <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>or</Text>
-            <View style={styles.orLine} />
-          </View>
+          {tab === "general" && (
+            <>
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>or</Text>
+                <View style={styles.orLine} />
+              </View>
 
-          <View style={styles.socialRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.socialButton,
-                pressed && { opacity: 0.85 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Google로 계속하기"
-            >
-              <Image
-                source={require("@/assets/icons/google_logo.png")}
-                style={styles.socialButtonImage}
-                resizeMode="contain"
-              />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.socialButton,
-                pressed && { opacity: 0.85 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="카카오로 계속하기"
-            >
-              <Image
-                source={require("@/assets/icons/kakao_logo.png")}
-                style={styles.socialButtonImage}
-                resizeMode="contain"
-              />
-            </Pressable>
-          </View>
+              <View style={styles.socialRow}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.socialButton,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Google로 계속하기"
+                >
+                  <Image
+                    source={require("@/assets/icons/google_logo.svg")}
+                    style={styles.socialButtonImage}
+                    resizeMode="contain"
+                  />
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.socialButton,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="카카오로 계속하기"
+                >
+                  <Image
+                    source={require("@/assets/icons/kakao_logo.svg")}
+                    style={styles.socialButtonImage}
+                    resizeMode="contain"
+                  />
+                </Pressable>
+              </View>
 
-          <View style={styles.linksRow}>
-            <Pressable accessibilityRole="button">
-              <Text style={styles.linkText}>비밀번호 찾기</Text>
-            </Pressable>
-            <Text style={styles.linkSep}>|</Text>
-            <Pressable accessibilityRole="button">
-              <Text style={styles.linkText}>회원가입</Text>
-            </Pressable>
+              <View style={styles.linksRow}>
+                <Pressable accessibilityRole="button">
+                  <Text style={styles.linkText}>비밀번호 찾기</Text>
+                </Pressable>
+                <Text style={styles.linkSep}>|</Text>
+                <Pressable accessibilityRole="button">
+                  <Text style={styles.linkText}>회원가입</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
