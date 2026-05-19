@@ -54,4 +54,6 @@ export const BORDER = {
 
 export const LAYOUT = {
   headerHeight: 54,
+  tabBarHeight: 76,
+  tabBarTotalHeight: 90,
 } as const;

@@ -56,6 +56,8 @@ module.exports = {
       },
       height: {
         header: `${LAYOUT.headerHeight}px`,
+        "tab-bar": `${LAYOUT.tabBarHeight}px`,
+        "tab-bar-total": `${LAYOUT.tabBarTotalHeight}px`,
       },
       borderRadius: {
         xs: `${RADIUS.xs}px`,
