@@ -2,8 +2,11 @@ import { TabBar } from "@/components/layout";
 import { LAYOUT } from "@/constants/theme";
 import { Tabs } from "expo-router";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
@@ -24,7 +27,7 @@ export default function TabLayout() {
           backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
-          height: LAYOUT.tabBarTotalHeight,
+          height: LAYOUT.tabBarTotalHeight + insets.bottom,
         },
       }}
     >

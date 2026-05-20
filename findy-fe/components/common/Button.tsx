@@ -1,4 +1,5 @@
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { pretendard } from "@/utils/pretendard";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -58,9 +59,8 @@ export function Button({
       ) : typeof children === "string" || typeof children === "number" ? (
         <Text
           style={{
-            fontFamily: TYPOGRAPHY.family,
+            ...pretendard(600),
             fontSize: TYPOGRAPHY.size.lg,
-            fontWeight: TYPOGRAPHY.weight.semibold,
             color: COLORS.white,
             textAlign: "center",
           }}
