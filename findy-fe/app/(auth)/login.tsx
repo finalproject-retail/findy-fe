@@ -1,6 +1,7 @@
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
@@ -161,6 +162,7 @@ const styles = StyleSheet.create({
 });
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -311,7 +313,10 @@ export default function LoginScreen() {
                   <Text style={styles.linkText}>비밀번호 찾기</Text>
                 </Pressable>
                 <Text style={styles.linkSep}>|</Text>
-                <Pressable accessibilityRole="button">
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/signup")}
+                >
                   <Text style={styles.linkText}>회원가입</Text>
                 </Pressable>
               </View>
