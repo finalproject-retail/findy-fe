@@ -27,7 +27,11 @@ export default function HomeScreen() {
 
         <View
           className="px-screen"
-          style={{ marginTop: SPACING.lg, gap: SECTION_GAP }}
+          style={{
+            marginTop: SPACING.lg,
+            marginBottom: SPACING.xl,
+            gap: SECTION_GAP,
+          }}
         >
           <NewProductsSection />
           <PopularProductsSection />
