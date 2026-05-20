@@ -8,7 +8,7 @@ const CARD_GAP = 12;
 
 export function OnboardingRecommendSection() {
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = (screenWidth - SPACING.screen * 2 - CARD_GAP) / 2.5;
+  const cardWidth = (screenWidth - SPACING.screen * 2 - CARD_GAP) / 2.7;
 
   return (
     <HomeSection title="🔎 1인 가구 김핀디님을 위해 골라왔어요">

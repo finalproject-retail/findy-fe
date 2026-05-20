@@ -31,10 +31,17 @@ export const MOCK_PRODUCTS: Product[] = [
   },
   {
     id: "snack",
-    name: "오리온 포카칩 양파맛 66g",
+    name: "오레오 씬즈 티라미수 84g x 6개",
     image: require("@/assets/images/product/snack.png"),
     discountPercent: 35,
     price: 1980,
+  },
+  {
+    id: "coffee",
+    name: "카누 미니 디카페인 30T",
+    image: require("@/assets/images/product/coffee.png"),
+    discountPercent: 10,
+    price: 10000,
   },
 ];
 

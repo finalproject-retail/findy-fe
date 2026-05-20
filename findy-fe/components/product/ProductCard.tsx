@@ -29,7 +29,7 @@ export function ProductCard({ product, width, onAddToCart }: ProductCardProps) {
 
       <View className="mt-2 gap-2">
         <Text
-          className="text-sm text-text-main"
+          className="text-lg text-text-main"
           numberOfLines={2}
           style={{
             ...pretendard(500),
@@ -41,10 +41,10 @@ export function ProductCard({ product, width, onAddToCart }: ProductCardProps) {
         </Text>
 
         <View className="flex-row items-center gap-1">
-          <Text className="text-sm text-text-red" style={pretendard(700)}>
+          <Text className="text-lg text-text-red" style={pretendard(700)}>
             {product.discountPercent}%
           </Text>
-          <Text className="text-sm text-text-main" style={pretendard(700)}>
+          <Text className="text-lg text-text-main" style={pretendard(700)}>
             {formatPrice(product.price)}
           </Text>
         </View>

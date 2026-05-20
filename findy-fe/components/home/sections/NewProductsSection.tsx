@@ -8,7 +8,7 @@ const CARD_GAP = 12;
 
 export function NewProductsSection() {
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = (screenWidth - SPACING.screen * 2 - CARD_GAP) / 2.5;
+  const cardWidth = (screenWidth - SPACING.screen * 2 - CARD_GAP) / 2.7;
 
   return (
     <HomeSection title="✨ 신상품">
