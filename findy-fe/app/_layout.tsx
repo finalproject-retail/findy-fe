@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -71,7 +72,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <ToastProvider>
+        <RootLayoutNav />
+      </ToastProvider>
     </AuthProvider>
   );
 }
