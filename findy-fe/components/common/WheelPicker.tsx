@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import {
   FlatList,
   View,
@@ -21,14 +21,19 @@ export const WHEEL_ITEM_HEIGHT = 44;
 export const WHEEL_VISIBLE_ROWS = 5;
 export const WHEEL_PICKER_HEIGHT = WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_ROWS;
 
+const CHANGING_THROTTLE_MS = 100;
+
 type WheelPickerProps<T extends number> = {
   data: T[];
   value: T;
+  /** 스크롤이 멈추고 스냅된 뒤 호출 */
   onChange: (value: T) => void;
+  /** 스크롤 중 헤더 등 실시간 표시용 (스로틀). onChange와 분리해 렉 방지 */
+  onChanging?: (value: T) => void;
   formatLabel?: (item: T) => string;
 };
 
-function WheelPickerItem({
+const WheelPickerItem = memo(function WheelPickerItem({
   index,
   label,
   scrollY,
@@ -101,26 +106,37 @@ function WheelPickerItem({
       </Animated.Text>
     </Animated.View>
   );
-}
+});
 
 export function WheelPicker<T extends number>({
   data,
   value,
   onChange,
+  onChanging,
   formatLabel = (item) => String(item),
 }: WheelPickerProps<T>) {
   const pickerHeight = WHEEL_PICKER_HEIGHT;
   const paddingVertical = (pickerHeight - WHEEL_ITEM_HEIGHT) / 2;
   const listRef = useRef<FlatList<T>>(null);
   const scrollY = useSharedValue(0);
+  const scrollIndex = useSharedValue(-1);
   const lastIndexRef = useRef(-1);
   const onChangeRef = useRef(onChange);
+  const onChangingRef = useRef(onChanging);
   const dataRef = useRef(data);
+  const changingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingChangingIndexRef = useRef<number | null>(null);
 
   onChangeRef.current = onChange;
+  onChangingRef.current = onChanging;
   dataRef.current = data;
 
   const getScrollOffset = useCallback((index: number) => index * WHEEL_ITEM_HEIGHT, []);
+
+  const valueAtIndex = useCallback((index: number) => {
+    const clampedIndex = Math.max(0, Math.min(index, dataRef.current.length - 1));
+    return dataRef.current[clampedIndex];
+  }, []);
 
   const emitIndex = useCallback((index: number) => {
     const clampedIndex = Math.max(0, Math.min(index, dataRef.current.length - 1));
@@ -133,30 +149,78 @@ export function WheelPicker<T extends number>({
     onChangeRef.current(next);
   }, []);
 
+  const flushChanging = useCallback(() => {
+    const index = pendingChangingIndexRef.current;
+    if (index === null || !onChangingRef.current) return;
+
+    pendingChangingIndexRef.current = null;
+    const next = valueAtIndex(index);
+    if (next !== undefined) {
+      onChangingRef.current(next);
+    }
+  }, [valueAtIndex]);
+
+  const scheduleChanging = useCallback(
+    (index: number) => {
+      if (!onChangingRef.current) return;
+
+      pendingChangingIndexRef.current = index;
+      if (changingTimerRef.current) return;
+
+      flushChanging();
+      changingTimerRef.current = setTimeout(() => {
+        changingTimerRef.current = null;
+        flushChanging();
+      }, CHANGING_THROTTLE_MS);
+    },
+    [flushChanging],
+  );
+
+  const handleScrollIndexChange = useCallback(
+    (index: number) => {
+      if (!onChangingRef.current) return;
+      scheduleChanging(index);
+    },
+    [scheduleChanging],
+  );
+
+  useEffect(
+    () => () => {
+      if (changingTimerRef.current) {
+        clearTimeout(changingTimerRef.current);
+      }
+    },
+    [],
+  );
+
   const scrollToIndex = useCallback(
     (index: number, animated: boolean) => {
       const clampedIndex = Math.max(0, Math.min(index, dataRef.current.length - 1));
       const offset = getScrollOffset(clampedIndex);
       scrollY.value = offset;
+      scrollIndex.value = clampedIndex;
       lastIndexRef.current = clampedIndex;
       listRef.current?.scrollToOffset({ offset, animated });
     },
-    [getScrollOffset, scrollY],
+    [getScrollOffset, scrollIndex, scrollY],
   );
 
   useEffect(() => {
     const index = data.indexOf(value);
-    if (index < 0) return;
+    if (index < 0 || index === lastIndexRef.current) return;
 
-    lastIndexRef.current = index;
     requestAnimationFrame(() => scrollToIndex(index, false));
-  }, [data, scrollToIndex]);
+  }, [data, scrollToIndex, value]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
+
       const index = Math.round(event.contentOffset.y / WHEEL_ITEM_HEIGHT);
-      runOnJS(emitIndex)(index);
+      if (index === scrollIndex.value) return;
+
+      scrollIndex.value = index;
+      runOnJS(handleScrollIndexChange)(index);
     },
   });
 
@@ -168,13 +232,21 @@ export function WheelPicker<T extends number>({
       const snappedOffset = getScrollOffset(clampedIndex);
 
       scrollY.value = snappedOffset;
+      scrollIndex.value = clampedIndex;
+
+      if (changingTimerRef.current) {
+        clearTimeout(changingTimerRef.current);
+        changingTimerRef.current = null;
+      }
+      pendingChangingIndexRef.current = null;
+
       if (Math.abs(offsetY - snappedOffset) > 1) {
         listRef.current?.scrollToOffset({ offset: snappedOffset, animated: true });
       }
 
       emitIndex(clampedIndex);
     },
-    [emitIndex, getScrollOffset, scrollY],
+    [emitIndex, getScrollOffset, scrollIndex, scrollY],
   );
 
   const renderItem = useCallback(
@@ -213,15 +285,16 @@ export function WheelPicker<T extends number>({
         scrollEventThrottle={16}
         onMomentumScrollEnd={snapToNearest}
         onScrollEndDrag={snapToNearest}
+        removeClippedSubviews
         getItemLayout={(_, index) => ({
           length: WHEEL_ITEM_HEIGHT,
           offset: paddingVertical + WHEEL_ITEM_HEIGHT * index,
           index,
         })}
         contentContainerStyle={{ paddingVertical }}
-        initialNumToRender={16}
-        maxToRenderPerBatch={24}
-        windowSize={9}
+        initialNumToRender={12}
+        maxToRenderPerBatch={16}
+        windowSize={7}
       />
 
       <LinearGradient

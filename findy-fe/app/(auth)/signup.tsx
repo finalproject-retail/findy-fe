@@ -161,8 +161,8 @@ export default function SignupScreen() {
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 16,
+            paddingHorizontal: 20,
+            paddingTop: 20,
             paddingBottom: 40,
           }}
         >

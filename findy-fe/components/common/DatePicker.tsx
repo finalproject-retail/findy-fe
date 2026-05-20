@@ -1,8 +1,8 @@
 import { WHEEL_PICKER_HEIGHT, WheelPicker } from "@/components/common/WheelPicker";
-import { SafeView } from "@/components/layout";
-import type { Edge } from "react-native-safe-area-context";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -25,16 +25,69 @@ const DAY_ROW_HEIGHT = 48;
 const DAY_GRID_MAX_ROWS = 6;
 const SHEET_BODY_HEIGHT = DAY_ROW_HEIGHT * DAY_GRID_MAX_ROWS;
 
-const SHEET_SAFE_AREA_EDGES = ["bottom"] as const satisfies readonly Edge[];
+const sheetStyles = StyleSheet.create({
+  sheet: {
+    width: "100%",
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: RADIUS.md,
+    borderTopRightRadius: RADIUS.md,
+  },
+  sheetInner: {
+    paddingHorizontal: SPACING.screen,
+    paddingTop: 12,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(199, 199, 199, 0.3)",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
+  sheetAnimated: {
+    width: "100%",
+    backgroundColor: COLORS.white,
+  },
+  monthCell: {
+    width: "30%",
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: BORDER.base,
+    borderRadius: RADIUS.md,
+  },
+  dayDot: {
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 16,
+  },
+});
 
 function DatePickerSheet({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeView edges={SHEET_SAFE_AREA_EDGES} className="flex-none bg-white rounded-t-xl">
-      <View className="px-screen pt-3 pb-6">
-        <View className="w-10 h-1 bg-gray/30 rounded-full self-center mb-4" />
+    <View style={sheetStyles.sheet}>
+      <View
+        style={[
+          sheetStyles.sheetInner,
+          { paddingBottom: Math.max(insets.bottom, SPACING.lg) },
+        ]}
+      >
+        <View style={sheetStyles.handle} />
         {children}
       </View>
-    </SafeView>
+    </View>
   );
 }
 
@@ -100,6 +153,7 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
 
   const sheetAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
+    backgroundColor: COLORS.white,
   }));
 
   const getDaysInMonth = (year: number, month: number) => {
@@ -131,10 +185,17 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
     setShowYearPicker(true);
   };
 
-  const handlePickerYearChange = (year: number) => {
+  const formatYearLabel = useCallback((year: number) => `${year}년`, []);
+
+  const handlePickerYearChanging = useCallback((year: number) => {
     pickerYearRef.current = year;
     setPickerYear(year);
-  };
+  }, []);
+
+  const handlePickerYearChange = useCallback((year: number) => {
+    pickerYearRef.current = year;
+    setPickerYear(year);
+  }, []);
 
   const confirmYearPicker = () => {
     const year = pickerYearRef.current;
@@ -185,14 +246,14 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
       statusBarTranslucent
       onRequestClose={handleRequestClose}
     >
-      <View className="flex-1 justify-end">
+      <View style={sheetStyles.modalRoot}>
         <Pressable
-          className="absolute inset-0 bg-black/40"
+          style={sheetStyles.backdrop}
           onPress={handleBackdropPress}
           accessibilityRole="button"
         />
 
-        <Animated.View style={sheetAnimatedStyle} className="w-full">
+        <Animated.View style={[sheetStyles.sheetAnimated, sheetAnimatedStyle]}>
           <DatePickerSheet>
             <SheetHeader>
               <Pressable onPress={handleHeaderBack} className="p-2">
@@ -219,14 +280,20 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
                       <Pressable
                         key={month}
                         onPress={() => handleMonthSelect(month)}
-                        className={`w-[30%] h-[48px] justify-center items-center border rounded-md ${
-                          isSelected ? "bg-charcoal border-charcoal" : "bg-white border-gray"
-                        }`}
+                        style={[
+                          sheetStyles.monthCell,
+                          {
+                            backgroundColor: isSelected ? COLORS.charcoal : COLORS.white,
+                            borderColor: isSelected ? COLORS.charcoal : COLORS.gray,
+                          },
+                        ]}
                       >
                         <Text
-                          className={`font-pretendard text-sm ${
-                            isSelected ? "text-white font-bold" : "text-text-main font-medium"
-                          }`}
+                          className="font-pretendard text-sm"
+                          style={{
+                            color: isSelected ? COLORS.white : COLORS.text,
+                            fontWeight: isSelected ? "700" : "500",
+                          }}
                         >
                           {month}월
                         </Text>
@@ -251,14 +318,19 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
                         className="w-[14.28%] h-[40px] justify-center items-center mb-2"
                       >
                         <View
-                          className={`w-8 h-8 justify-center items-center rounded-full ${
-                            isSelected ? "bg-main" : "bg-transparent"
-                          }`}
+                          style={[
+                            sheetStyles.dayDot,
+                            {
+                              backgroundColor: isSelected ? COLORS.main : "transparent",
+                            },
+                          ]}
                         >
                           <Text
-                            className={`font-pretendard text-sm ${
-                              isSelected ? "text-white font-bold" : "text-text-main font-regular"
-                            }`}
+                            className="font-pretendard text-sm"
+                            style={{
+                              color: isSelected ? COLORS.white : COLORS.text,
+                              fontWeight: isSelected ? "700" : "400",
+                            }}
                           >
                             {day}
                           </Text>
@@ -273,7 +345,16 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
         </Animated.View>
 
         {showYearPicker && (
-          <View className="absolute bottom-0 left-0 right-0 w-full z-10">
+          <View
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              width: "100%",
+              zIndex: 10,
+            }}
+          >
             <DatePickerSheet>
               <SheetHeader>
                 <Pressable onPress={() => setShowYearPicker(false)} className="py-1 px-2">
@@ -292,7 +373,8 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
                     data={years}
                     value={pickerYear}
                     onChange={handlePickerYearChange}
-                    formatLabel={(year) => `${year}년`}
+                    onChanging={handlePickerYearChanging}
+                    formatLabel={formatYearLabel}
                   />
                 </View>
               </SheetBody>

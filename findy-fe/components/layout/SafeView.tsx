@@ -9,7 +9,7 @@ export const TAB_SCREEN_EDGES: Edge[] = ["top", "left", "right"];
 
 export interface SafeViewProps extends PropsWithChildren {
   className?: string;
-  edges?: Edge[];
+  edges?: readonly Edge[];
 }
 
 export function SafeView({
@@ -20,7 +20,7 @@ export function SafeView({
   return (
     <SafeAreaView
       edges={edges}
-      className={`flex-1 bg-white ${className ?? ""}`}
+      className={className ?? "flex-1 bg-white"}
     >
       {children}
     </SafeAreaView>
