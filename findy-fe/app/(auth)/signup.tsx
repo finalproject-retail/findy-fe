@@ -4,8 +4,10 @@ import EyeOnIcon from "@/assets/icons/eye_on.svg";
 import RadioButtonFillIcon from "@/assets/icons/radio-button-fill.svg";
 import RadioButtonIcon from "@/assets/icons/radio-button.svg";
 import { Button } from "@/components/common/Button";
+import { DatePickerModal } from "@/components/common/DatePicker";
 import { Header } from "@/components/common/Header";
 import { Input } from "@/components/common/Input";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -66,6 +68,7 @@ function PasswordField({
 }
 
 export default function SignupScreen() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -87,8 +90,11 @@ export default function SignupScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false); // 👈 추가!!
+
   const handleBirthdatePress = () => {
-    // TODO: 다음 단계에서 바텀 시트 달력 모달 연동
+    setIsDatePickerVisible(true);
+
   };
 
   const handleSignup = () => {
@@ -141,7 +147,11 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <Header title="회원가입" showBack />
+      <Header
+        title="회원가입"
+        showBack
+        onBackPress={() => router.replace("/login")}
+      />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -294,6 +304,14 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <DatePickerModal
+        isVisible={isDatePickerVisible}
+        onClose={() => setIsDatePickerVisible(false)}
+        onSelectDate={(date) => {
+          setBirthdate(date);       // 선택한 날짜(yyyy.mm.dd)를 생년월일 상태에 저장
+          setBirthdateError("");    // 날짜가 들어왔으니 기존 에러 메시지 초기화
+        }}
+      />
     </SafeAreaView>
   );
 }
