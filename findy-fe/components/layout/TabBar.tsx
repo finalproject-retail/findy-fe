@@ -3,13 +3,13 @@ import CouponIcon from "@/assets/icons/coupon-icon.svg";
 import HomeIcon from "@/assets/icons/home-icon.svg";
 import MypageIcon from "@/assets/icons/mypage-icon.svg";
 import { COLORS, LAYOUT } from "@/constants/theme";
+import { pretendard } from "@/utils/pretendard";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Image, Pressable, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TAB_ICON_SIZE = 24;
-const MAP_ICON_WIDTH = 43;
-const MAP_ICON_HEIGHT = 54;
+const MAP_ICON_WIDTH = 40;
+const MAP_ICON_HEIGHT = 51;
 
 const TAB_ICON_COLOR = {
   active: COLORS.charcoal,
@@ -54,10 +54,10 @@ function TabBarItem({
         accessibilityLabel={accessibilityLabel}
         onPress={onPress}
         onLongPress={onLongPress}
-        className="h-tab-bar flex-1 items-center justify-center gap-1 pb-2 pt-1.5"
+        className="h-tab-bar flex-1 items-center justify-center gap-1 pb-1 pt-1.5"
       >
         <View style={{ width: TAB_ICON_SIZE, height: TAB_ICON_SIZE }} />
-        <Text className="font-pretendard text-xs font-medium text-main">
+        <Text className="text-xs text-main" style={pretendard(500)}>
           {label}
         </Text>
       </Pressable>
@@ -71,7 +71,7 @@ function TabBarItem({
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       onLongPress={onLongPress}
-      className="h-tab-bar flex-1 items-center justify-center gap-1 pb-2 pt-1.5"
+      className="h-tab-bar flex-1 items-center justify-center gap-1 pb-1 pt-1.5"
     >
       {Icon ? (
         <Icon
@@ -81,11 +81,8 @@ function TabBarItem({
         />
       ) : null}
       <Text
-        className={`font-pretendard text-xs ${
-          isFocused
-            ? "font-medium text-charcoal"
-            : "font-regular text-text-sub2"
-        }`}
+        className={`text-xs ${isFocused ? "text-charcoal" : "text-text-sub2"}`}
+        style={pretendard(isFocused ? 500 : 400)}
       >
         {label}
       </Text>
@@ -93,26 +90,42 @@ function TabBarItem({
   );
 }
 
-export function TabBar({ state, navigation, descriptors }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets();
+export function TabBar({
+  state,
+  navigation,
+  descriptors,
+  insets,
+}: BottomTabBarProps) {
+  const bottomInset = insets.bottom;
   const mapRouteIndex = state.routes.findIndex((route) => route.name === "map");
   const mapRoute = mapRouteIndex >= 0 ? state.routes[mapRouteIndex] : null;
   const isMapFocused = state.index === mapRouteIndex;
 
   return (
-    <View style={{ paddingBottom: insets.bottom, overflow: "visible" }}>
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: bottomInset,
+        overflow: "visible",
+        backgroundColor: COLORS.white,
+      }}
+    >
+      {/* 탭 UI는 홈 인디케이터 위 — 아래 inset 영역은 투명 */}
       <View
-        className="relative w-full"
         style={{
+          position: "absolute",
+          bottom: bottomInset,
+          left: 0,
+          right: 0,
           height: LAYOUT.tabBarTotalHeight,
           overflow: "visible",
-          backgroundColor: COLORS.white,
         }}
       >
-        <View
-          className="absolute bottom-0 left-0 right-0 h-tab-bar flex-row border-t border-light-gray bg-white"
-          style={{ overflow: "visible" }}
-        >
+        <View className="absolute bottom-0 left-0 right-0 h-tab-bar flex-row border-t border-light-gray bg-white">
           {state.routes.map((route, index) => {
             const config = TAB_CONFIG[route.name as TabRouteName];
             if (!config) {

@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 웹: Variable 폰트 + font-weight 조합 */
+@layer utilities {
+  .font-pretendard {
+    font-family: "Pretendard-Variable", sans-serif;
+  }
+}

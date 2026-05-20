@@ -33,7 +33,8 @@ module.exports = {
         "light-gray": COLORS.lightGray,
       },
       fontFamily: {
-        pretendard: [TYPOGRAPHY.family],
+        // 네이티브: static Regular (Variable은 iOS/Android 미지원)
+        pretendard: ["Pretendard-Regular"],
       },
       fontSize: {
         xl: [`${TYPOGRAPHY.size.xl}px`, "26px"],
