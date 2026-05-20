@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { pretendard } from "@/utils/pretendard";
 
 export type InputProps = TextInputProps & {
   /** 검증 실패 시 입력 하단에 표시되는 메시지 */
@@ -39,18 +40,16 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.screen,
     paddingVertical: SPACING.md,
-    fontFamily: TYPOGRAPHY.family,
+    ...pretendard(400),
     fontSize: TYPOGRAPHY.size.md,
-    fontWeight: TYPOGRAPHY.weight.regular,
     color: COLORS.text,
     opacity: editable ? 1 : 0.55,
   };
 
   const errorTextStyle: TextStyle = {
     marginTop: SPACING.xs,
-    fontFamily: TYPOGRAPHY.family,
+    ...pretendard(400),
     fontSize: TYPOGRAPHY.size.xs,
-    fontWeight: TYPOGRAPHY.weight.regular,
     color: COLORS.redText,
   };
 

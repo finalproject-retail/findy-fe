@@ -3,6 +3,7 @@ import BellIcon from "@/assets/icons/bell-icon.svg";
 import CartIcon from "@/assets/icons/cart-icon.svg";
 import SearchIcon from "@/assets/icons/search-icon.svg";
 import PinkLogo from "@/assets/images/pink-logo.svg";
+import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
@@ -113,7 +114,8 @@ export function Header({
           pointerEvents="none"
         >
           <Text
-            className="font-pretendard text-lg font-bold text-text-main text-center"
+            className="text-lg text-text-main text-center"
+            style={pretendard(700)}
             numberOfLines={1}
           >
             {title}
