@@ -65,24 +65,27 @@ type IslandBlockDef = {
   right: ShelfHalf;
 };
 
+/** 매대 번호 1부터 중복 없이 (하단→중단→상단→우측→외곽→견과) */
+const SN = (n: number) => String(n);
+
 const TOP_ISLAND_BLOCKS: IslandBlockDef[] = [
-  { col: 2, left: { shelfNumber: "34", category: "과자" }, right: { shelfNumber: "35", category: "과자" } },
-  { col: 5, left: { shelfNumber: "36", category: "과자" }, right: { shelfNumber: "37", category: "초콜릿" } },
-  { col: 8, left: { shelfNumber: "38", category: "젤리" }, right: { shelfNumber: "39", category: "시리얼" } },
-  { col: 11, left: { shelfNumber: "40", category: "시리얼" }, right: { shelfNumber: "41", category: "즉석밥" } },
-  { col: 14, left: { shelfNumber: "42", category: "통조림" }, right: { shelfNumber: "43", category: "델리" } },
-  { col: 17, left: { shelfNumber: "44", category: "델리" }, right: { shelfNumber: "45", category: "유제품" } },
-  { col: 20, left: { shelfNumber: "46", category: "유제품" }, right: { shelfNumber: "47", category: "냉동식품" } },
+  { col: 2, left: { shelfNumber: SN(29), category: "과자" }, right: { shelfNumber: SN(30), category: "과자" } },
+  { col: 5, left: { shelfNumber: SN(31), category: "과자" }, right: { shelfNumber: SN(32), category: "초콜릿" } },
+  { col: 8, left: { shelfNumber: SN(33), category: "젤리" }, right: { shelfNumber: SN(34), category: "시리얼" } },
+  { col: 11, left: { shelfNumber: SN(35), category: "시리얼" }, right: { shelfNumber: SN(36), category: "즉석밥" } },
+  { col: 14, left: { shelfNumber: SN(37), category: "통조림" }, right: { shelfNumber: SN(38), category: "델리" } },
+  { col: 17, left: { shelfNumber: SN(39), category: "델리" }, right: { shelfNumber: SN(40), category: "유제품" } },
+  { col: 20, left: { shelfNumber: SN(41), category: "유제품" }, right: { shelfNumber: SN(42), category: "냉동식품" } },
 ];
 
 const MIDDLE_ISLAND_BLOCKS: IslandBlockDef[] = [
-  { col: 2, left: { shelfNumber: "13", category: "잡화" }, right: { shelfNumber: "14", category: "잡화" } },
-  { col: 5, left: { shelfNumber: "22", category: "홈케어" }, right: { shelfNumber: "23", category: "홈케어" } },
-  { col: 8, left: { shelfNumber: "24", category: "홈케어" }, right: { shelfNumber: "25", category: "홈케어" } },
-  { col: 11, left: { shelfNumber: "26", category: "캠핑" }, right: { shelfNumber: "27", category: "캠핑" } },
-  { col: 14, left: { shelfNumber: "28", category: "캠핑" }, right: { shelfNumber: "29", category: "차량용품" } },
-  { col: 17, left: { shelfNumber: "30", category: "차량용품" }, right: { shelfNumber: "31", category: "음료" } },
-  { col: 20, left: { shelfNumber: "32", category: "냉장식품" }, right: { shelfNumber: "33", category: "냉장식품" } },
+  { col: 2, left: { shelfNumber: SN(15), category: "잡화" }, right: { shelfNumber: SN(16), category: "잡화" } },
+  { col: 5, left: { shelfNumber: SN(17), category: "홈케어" }, right: { shelfNumber: SN(18), category: "홈케어" } },
+  { col: 8, left: { shelfNumber: SN(19), category: "홈케어" }, right: { shelfNumber: SN(20), category: "홈케어" } },
+  { col: 11, left: { shelfNumber: SN(21), category: "캠핑" }, right: { shelfNumber: SN(22), category: "캠핑" } },
+  { col: 14, left: { shelfNumber: SN(23), category: "캠핑" }, right: { shelfNumber: SN(24), category: "차량용품" } },
+  { col: 17, left: { shelfNumber: SN(25), category: "차량용품" }, right: { shelfNumber: SN(26), category: "음료" } },
+  { col: 20, left: { shelfNumber: SN(27), category: "냉장식품" }, right: { shelfNumber: SN(28), category: "냉장식품" } },
 ];
 
 const BOTTOM_ISLAND_BLOCKS: IslandBlockDef[] = [
@@ -123,9 +126,9 @@ function addIslandBand(
 
 function addRightColumn(units: ShelfUnit[], faces: FaceRect[]) {
   const pairs: Array<{ id: string; y: number; top: ShelfHalf; bottom: ShelfHalf }> = [
-    { id: "right-22-21", y: 3, top: { shelfNumber: "22", category: "냉동식품" }, bottom: { shelfNumber: "21", category: "냉동식품" } },
-    { id: "right-19-18", y: 8, top: { shelfNumber: "19", category: "냉동식품" }, bottom: { shelfNumber: "18", category: "냉동식품" } },
-    { id: "right-16-15", y: 13, top: { shelfNumber: "16", category: "냉동식품" }, bottom: { shelfNumber: "15", category: "냉동식품" } },
+    { id: "right-43-44", y: 3, top: { shelfNumber: SN(43), category: "냉동식품" }, bottom: { shelfNumber: SN(44), category: "냉동식품" } },
+    { id: "right-45-46", y: 8, top: { shelfNumber: SN(45), category: "냉동식품" }, bottom: { shelfNumber: SN(46), category: "냉동식품" } },
+    { id: "right-47-48", y: 13, top: { shelfNumber: SN(47), category: "냉동식품" }, bottom: { shelfNumber: SN(48), category: "냉동식품" } },
   ];
 
   pairs.forEach(({ id, y, top, bottom }) => {
@@ -161,8 +164,8 @@ function addRightColumn(units: ShelfUnit[], faces: FaceRect[]) {
   });
 
   const singles = [
-    { id: "right-20", y: 6, half: { shelfNumber: "20", category: "행사" } },
-    { id: "right-17", y: 11, half: { shelfNumber: "17", category: "행사" } },
+    { id: "right-49", y: 6, half: { shelfNumber: SN(49), category: "행사" } },
+    { id: "right-50", y: 11, half: { shelfNumber: SN(50), category: "행사" } },
   ];
 
   singles.forEach(({ id, y, half }) => {
@@ -245,7 +248,7 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     TOP_WALL_Y,
     TOP_WALL_RAMEN_COLS,
     1,
-    { shelfNumber: "56", category: "라면" },
+    { shelfNumber: SN(51), category: "라면" },
     "w-top-56"
   );
   addPerimeterStrip(
@@ -256,7 +259,7 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     TOP_WALL_Y,
     TOP_WALL_BAKERY_COLS,
     1,
-    { shelfNumber: "55", category: "베이커리" },
+    { shelfNumber: SN(52), category: "베이커리" },
     "w-top-55"
   );
   addPerimeterStrip(
@@ -267,10 +270,9 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     TOP_WALL_Y,
     TOP_WALL_DELI_COLS,
     1,
-    { shelfNumber: "54", category: "델리" },
+    { shelfNumber: SN(53), category: "델리" },
     "w-top-54"
   );
-  /** 우상단 ㄴ자: 상단 가로 4칸(25~28) + 우측 세로 4칸(28, y1~4) — 모서리 겹침 없음 */
   addPerimeterStrip(
     units,
     faces,
@@ -279,7 +281,7 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     TOP_WALL_Y,
     TOP_WALL_COLD_COLS,
     1,
-    { shelfNumber: "53", category: "냉장/축산" },
+    { shelfNumber: SN(54), category: "냉장/축산" },
     "w-top-cold"
   );
   addPerimeterStrip(
@@ -290,7 +292,7 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     RIGHT_WALL_COLD_START_Y,
     1,
     RIGHT_WALL_COLD_ROWS,
-    { shelfNumber: "53", category: "냉장/축산" },
+    { shelfNumber: SN(55), category: "냉장/축산" },
     "w-r-53"
   );
   addPerimeterStrip(
@@ -301,10 +303,9 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     RIGHT_WALL_SEAFOOD_START_Y,
     1,
     RIGHT_WALL_SEAFOOD_ROWS,
-    { shelfNumber: "52", category: "수산" },
+    { shelfNumber: SN(56), category: "수산" },
     "w-r-52"
   );
-  /** 우하단 ㄴ자: 하단 가로 + 우측 농산 세로(수산 아래) */
   addPerimeterStrip(
     units,
     faces,
@@ -313,20 +314,20 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     RIGHT_WALL_PRODUCE_START_Y,
     1,
     RIGHT_WALL_PRODUCE_ROWS,
-    { shelfNumber: "51", category: "농산" },
+    { shelfNumber: SN(57), category: "농산" },
     "w-r-51"
   );
 
-  /** 하단 벽: 행사 7 · 가전 8 · 주류 8 · 농산 4 */
+  /** 하단(왼→오): 행사 61 · 가전 60 · 주류 59 */
   const bottomWallStrips: Array<{
     id: string;
     x: number;
     w: number;
     half: ShelfHalf;
   }> = [
-    { id: "w-bot-48", x: BOTTOM_WALL_START_X, w: BOTTOM_WALL_EVENT_COLS, half: { shelfNumber: "48", category: "행사" } },
-    { id: "w-bot-49", x: BOTTOM_WALL_APPLIANCE_X, w: BOTTOM_WALL_APPLIANCE_COLS, half: { shelfNumber: "49", category: "가전" } },
-    { id: "w-bot-50", x: BOTTOM_WALL_LIQUOR_X, w: BOTTOM_WALL_LIQUOR_COLS, half: { shelfNumber: "50", category: "주류" } },
+    { id: "w-bot-event", x: BOTTOM_WALL_START_X, w: BOTTOM_WALL_EVENT_COLS, half: { shelfNumber: SN(61), category: "행사" } },
+    { id: "w-bot-appliance", x: BOTTOM_WALL_APPLIANCE_X, w: BOTTOM_WALL_APPLIANCE_COLS, half: { shelfNumber: SN(60), category: "가전" } },
+    { id: "w-bot-liquor", x: BOTTOM_WALL_LIQUOR_X, w: BOTTOM_WALL_LIQUOR_COLS, half: { shelfNumber: SN(59), category: "주류" } },
   ];
 
   for (const strip of bottomWallStrips) {
@@ -340,7 +341,7 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     BOTTOM_WALL_Y,
     BOTTOM_WALL_PRODUCE_COLS,
     1,
-    { shelfNumber: "51", category: "농산" },
+    { shelfNumber: SN(58), category: "농산" },
     "w-bot-51"
   );
 
@@ -351,10 +352,10 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
     width: 1,
     height: NUTS_SHELF_ROWS,
     split: "none",
-    primary: { shelfNumber: "57", category: "견과" },
+    primary: { shelfNumber: SN(62), category: "견과" },
     kind: "service",
   });
-  addWallStrip(faces, 0, NUTS_SHELF_Y, 1, NUTS_SHELF_ROWS, { shelfNumber: "57", category: "견과" }, "svc-nuts");
+  addWallStrip(faces, 0, NUTS_SHELF_Y, 1, NUTS_SHELF_ROWS, { shelfNumber: SN(62), category: "견과" }, "svc-nuts");
 
   units.push({
     id: "service-checkout",
@@ -425,7 +426,7 @@ function appendMixedUnitZones(
   }
 }
 
-const MAP_LAYOUT_VERSION = 20;
+const MAP_LAYOUT_VERSION = 24;
 
 let cachedLayoutVersion = 0;
 let cachedConfig: StoreMapConfig | null = null;

@@ -1,6 +1,8 @@
 import { Text, View } from "react-native";
 import {
   BASE_CELL_PX,
+  ENTRANCE_CATEGORY,
+  ENTRANCE_LABEL_SCALE,
   getCategoryColor,
   STORE_MAP_COLORS,
   ZONE_BLOCK_RADIUS,
@@ -18,17 +20,21 @@ function VerticalZoneLabel({
   zoneW,
   zoneH,
   cellPx,
+  fontScale = 1,
 }: {
   category: string;
   zoneW: number;
   zoneH: number;
   cellPx: number;
+  fontScale?: number;
 }) {
   const chars = Array.from(category.replace(/\n/g, ""));
-  const fontSize = Math.max(
-    4,
-    Math.min(zoneW * 0.88, (zoneH / Math.max(chars.length, 1)) * 0.9, cellPx * 0.48)
+  const base = Math.max(
+    6,
+    cellPx * 0.4,
+    Math.min(zoneW * 0.88, (zoneH / Math.max(chars.length, 1)) * 0.95, cellPx * 0.54)
   );
+  const fontSize = base * fontScale;
   const lineHeight = fontSize * 1.05;
 
   return (
@@ -55,9 +61,12 @@ function VerticalZoneLabel({
 
 function zoneFontSize(zoneW: number, zoneH: number, lineCount: number, cellPx: number): number {
   const lines = Math.max(1, lineCount);
-  const byWidth = zoneW * 0.14;
-  const byHeight = (zoneH / lines) * 0.38;
-  return Math.max(cellPx * 0.32, Math.min(cellPx * 0.55, byWidth, byHeight));
+  const byWidth = zoneW * 0.17;
+  const byHeight = (zoneH / lines) * 0.42;
+  const fit = Math.max(cellPx * 0.38, Math.min(cellPx * 0.58, byWidth, byHeight));
+  /** 2×1·4×2 등 작은 존은 비율 상한 때문에 더 작아지기 쉬움 → 살짝 보정 */
+  const areaBoost = zoneW * zoneH < cellPx * cellPx * 10 ? 1.12 : 1;
+  return Math.max(7, fit * areaBoost);
 }
 
 export function StoreMapZoneLayer({ zones, cellPx = BASE_CELL_PX }: Props) {
@@ -72,7 +81,9 @@ export function StoreMapZoneLayer({ zones, cellPx = BASE_CELL_PX }: Props) {
         const zoneW = zone.width * cellPx;
         const zoneH = zone.height * cellPx;
         const lineCount = zone.category.split("\n").length;
-        const fontSize = zoneFontSize(zoneW, zoneH, lineCount, cellPx);
+        const isEntrance = zone.category === ENTRANCE_CATEGORY;
+        const fontScale = isEntrance ? ENTRANCE_LABEL_SCALE : 1;
+        const fontSize = zoneFontSize(zoneW, zoneH, lineCount, cellPx) * fontScale;
         const isVerticalEdgeZone =
           zone.width === 1 &&
           zone.height > 1 &&
@@ -103,6 +114,7 @@ export function StoreMapZoneLayer({ zones, cellPx = BASE_CELL_PX }: Props) {
                 zoneW={zoneW}
                 zoneH={zoneH}
                 cellPx={cellPx}
+                fontScale={fontScale}
               />
             ) : (
               <Text

@@ -341,26 +341,26 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
       >
         <GestureDetector gesture={composed}>
           <View style={styles.gestureSurface}>
-          <Animated.View style={animatedMapStyle}>
-            <View style={{ width: config.cols * cellPx, height: config.rows * cellPx }}>
-              <Animated.View
-                style={[StyleSheet.absoluteFill, animatedShelfStyle]}
-                pointerEvents="none"
-              >
-                <StoreMapShelfLayer
-                  config={config}
-                  cellPx={cellPx}
-                  gapPx={shelfGapPx * (renderScale / Math.max(fitScale, 0.001))}
-                />
-              </Animated.View>
-              <Animated.View
-                style={[StyleSheet.absoluteFill, animatedZoneStyle]}
-                pointerEvents="none"
-              >
-                <StoreMapZoneLayer zones={config.zones} cellPx={cellPx} />
-              </Animated.View>
-            </View>
-          </Animated.View>
+            <Animated.View style={animatedMapStyle}>
+              <View style={{ width: config.cols * cellPx, height: config.rows * cellPx }}>
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, animatedShelfStyle]}
+                  pointerEvents="none"
+                >
+                  <StoreMapShelfLayer
+                    config={config}
+                    cellPx={cellPx}
+                    gapPx={shelfGapPx * (renderScale / Math.max(fitScale, 0.001))}
+                  />
+                </Animated.View>
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, animatedZoneStyle]}
+                  pointerEvents="none"
+                >
+                  <StoreMapZoneLayer zones={config.zones} cellPx={cellPx} />
+                </Animated.View>
+              </View>
+            </Animated.View>
           </View>
         </GestureDetector>
       </View>
