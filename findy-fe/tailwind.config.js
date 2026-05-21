@@ -6,10 +6,16 @@ const {
   SPACING,
   RADIUS,
   BORDER,
-} = require("./src/constants/theme");
+  LAYOUT,
+} = require("./constants/theme");
 
 module.exports = {
-  content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
+  content: [  
+    "./App.{js,jsx,ts,tsx}",
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
@@ -27,7 +33,8 @@ module.exports = {
         "light-gray": COLORS.lightGray,
       },
       fontFamily: {
-        pretendard: [TYPOGRAPHY.family],
+        // 네이티브: static Regular (Variable은 iOS/Android 미지원)
+        pretendard: ["Pretendard-Regular"],
       },
       fontSize: {
         xl: [`${TYPOGRAPHY.size.xl}px`, "26px"],
@@ -49,6 +56,11 @@ module.exports = {
         lg: `${SPACING.lg}px`,
         xl: `${SPACING.xl}px`,
         screen: `${SPACING.screen}px`,
+      },
+      height: {
+        header: `${LAYOUT.headerHeight}px`,
+        "tab-bar": `${LAYOUT.tabBarHeight}px`,
+        "tab-bar-total": `${LAYOUT.tabBarTotalHeight}px`,
       },
       borderRadius: {
         xs: `${RADIUS.xs}px`,

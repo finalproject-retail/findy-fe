@@ -1,3 +1,5 @@
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -7,10 +9,24 @@ import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
 
+function RootLayoutNav() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [loaded, error] = useFonts({
     "Pretendard-Variable": require("../assets/fonts/PretendardVariable.ttf"),
+    "Pretendard-Regular": require("../assets/fonts/Pretendard-Regular.otf"),
+    "Pretendard-Medium": require("../assets/fonts/Pretendard-Medium.otf"),
+    "Pretendard-SemiBold": require("../assets/fonts/Pretendard-SemiBold.otf"),
+    "Pretendard-Bold": require("../assets/fonts/Pretendard-Bold.otf"),
   });
 
   useEffect(() => {
@@ -25,6 +41,9 @@ export default function RootLayout() {
       } catch (e) {
         console.warn(e);
       } finally {
+        if (error) {
+          console.error("[fonts] Failed to load:", error);
+        }
         setAppIsReady(true);
       }
     }
@@ -40,25 +59,21 @@ export default function RootLayout() {
 
   if (!appIsReady) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#FFFFFF",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View className="flex-1 items-center justify-center bg-white">
         <Image
           source={require("../assets/images/splash-logo.png")}
-          style={{ width: 180, height: 180, resizeMode: "contain" }}
+          style={{ width: 87 }}
+          resizeMode="contain"
         />
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+    <AuthProvider>
+      <ToastProvider>
+        <RootLayoutNav />
+      </ToastProvider>
+    </AuthProvider>
   );
 }

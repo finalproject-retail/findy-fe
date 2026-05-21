@@ -1,63 +1,41 @@
-import { Ionicons } from "@expo/vector-icons";
+import { TabBar } from "@/components/layout";
+import { LAYOUT } from "@/constants/theme";
 import { Tabs } from "expo-router";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
+      tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: "#111111",
-        tabBarInactiveTintColor: "#9E9E9E",
-        tabBarStyle: {
-          backgroundColor: "white",
-          borderTopWidth: 1,
-          borderTopColor: "#F5F5F5",
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
         headerShown: false,
+        sceneStyle: {
+          backgroundColor: "#FFFFFF",
+        },
+        tabBarBackground: () => (
+          <View style={{ flex: 1, backgroundColor: "transparent" }} />
+        ),
+        tabBarStyle: {
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: "visible",
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
+          elevation: 0,
+          height: LAYOUT.tabBarTotalHeight + insets.bottom,
+        },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "홈",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "검색",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "search" : "search-outline"} size={24} color={color} />
-          ),
-        }}
-      />
-
-      {/* ✨ 지도 탭 추가! */}
-      <Tabs.Screen
-        name="map"
-        options={{
-          title: "지도",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "map" : "map-outline"} size={24} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "마이",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: "홈" }} />
+      <Tabs.Screen name="category" options={{ title: "카테고리" }} />
+      <Tabs.Screen name="map" options={{ title: "매장 지도" }} />
+      <Tabs.Screen name="coupon" options={{ title: "쿠폰" }} />
+      <Tabs.Screen name="mypage" options={{ title: "마이페이지" }} />
     </Tabs>
   );
 }

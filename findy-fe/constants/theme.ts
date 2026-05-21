@@ -12,8 +12,16 @@ export const COLORS = {
   lightGray: "#EFEFEF",
 } as const;
 
+export const FONT_FAMILY = {
+  variable: "Pretendard-Variable",
+  regular: "Pretendard-Regular",
+  medium: "Pretendard-Medium",
+  semibold: "Pretendard-SemiBold",
+  bold: "Pretendard-Bold",
+} as const;
+
 export const TYPOGRAPHY = {
-  family: "Pretendard-Variable",
+  family: FONT_FAMILY.variable,
   size: {
     xl: 18,
     lg: 16,
@@ -50,4 +58,10 @@ export const BORDER = {
   thin: 0.5,
   base: 1,
   thick: 7,
+} as const;
+
+export const LAYOUT = {
+  headerHeight: 54,
+  tabBarHeight: 65,
+  tabBarTotalHeight: 80,
 } as const;
