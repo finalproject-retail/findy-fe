@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Pressable,
   Text,
+  View,
   type PressableProps,
   type ViewStyle,
 } from "react-native";
@@ -43,33 +44,40 @@ export function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy }}
       disabled={isDisabled}
+      className="w-full"
       style={(state) => {
         const resolved =
           typeof style === "function" ? style(state) : style;
         return [
-          basePressableStyle,
-          isDisabled ? { opacity: 0.6 } : null,
           resolved,
           state.pressed && !isDisabled ? { opacity: 0.92 } : null,
         ];
       }}
     >
-      {busy ? (
-        <ActivityIndicator color={COLORS.white} />
-      ) : typeof children === "string" || typeof children === "number" ? (
-        <Text
-          style={{
-            ...pretendard(600),
-            fontSize: TYPOGRAPHY.size.lg,
-            color: COLORS.white,
-            textAlign: "center",
-          }}
-        >
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
+      <View
+        className="w-full min-h-[52px] flex-row items-center justify-center rounded-full bg-main px-lg py-lg"
+        style={[
+          basePressableStyle,
+          isDisabled ? { opacity: 0.6 } : null,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator color={COLORS.white} />
+        ) : typeof children === "string" || typeof children === "number" ? (
+          <Text
+            style={{
+              ...pretendard(600),
+              fontSize: TYPOGRAPHY.size.lg,
+              color: COLORS.white,
+              textAlign: "center",
+            }}
+          >
+            {children}
+          </Text>
+        ) : (
+          children
+        )}
+      </View>
     </Pressable>
   );
 }

@@ -15,8 +15,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="product/[id]" />
-      {/* TODO: auth 팀원 — (auth) 그룹 추가 */}
-      {/* <Stack.Screen name="(auth)" /> */}
+      <Stack.Screen name="(auth)" />
     </Stack>
   );
 }

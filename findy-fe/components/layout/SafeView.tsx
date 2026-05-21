@@ -7,10 +7,10 @@ import {
 /** 탭 화면: 하단 safe area는 TabBar에서 처리 */
 export const TAB_SCREEN_EDGES: Edge[] = ["top", "left", "right"];
 
-type SafeViewProps = PropsWithChildren<{
+export interface SafeViewProps extends PropsWithChildren {
   className?: string;
-  edges?: Edge[];
-}>;
+  edges?: readonly Edge[];
+}
 
 export function SafeView({
   children,
@@ -20,7 +20,7 @@ export function SafeView({
   return (
     <SafeAreaView
       edges={edges}
-      className={`flex-1 bg-white ${className ?? ""}`}
+      className={className ?? "flex-1 bg-white"}
     >
       {children}
     </SafeAreaView>
