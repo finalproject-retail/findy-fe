@@ -12,5 +12,7 @@ export default function Index() {
     return <Redirect href="/(tabs)" />;
   }
 
-  return <Redirect href="/(auth)/login" />;
+  // TODO: auth 팀원 — (auth)/login 연동 후 활성화
+  // return <Redirect href="/(auth)/login" />;
+  return <Redirect href="/(tabs)" />;
 }
