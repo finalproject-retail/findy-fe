@@ -22,7 +22,8 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export const TOAST_MESSAGES = {
-  addedToCart: "장바구니에 담겼습니다.",
+  addedToCart: "장바구니에 담겼습니다",
+  couponDownloaded: "쿠폰을 다운로드 받았습니다",
 } as const;
 
 export function ToastProvider({ children }: PropsWithChildren) {
@@ -83,8 +84,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
               position: "absolute",
               left: SPACING.screen,
               right: SPACING.screen,
-              bottom:
-                insets.bottom + LAYOUT.tabBarTotalHeight + SPACING.lg,
+              bottom: insets.bottom + LAYOUT.tabBarTotalHeight + SPACING.lg,
               opacity,
               alignItems: "center",
             }}
