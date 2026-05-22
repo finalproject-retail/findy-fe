@@ -3,7 +3,9 @@ import {
   BASE_CELL_PX,
   ENTRANCE_CATEGORY,
   ENTRANCE_LABEL_SCALE,
+  EVENT_SHELF_CATEGORY,
   SHELF_BLOCK_RADIUS,
+  SHELF_EVENT_FONT_WEIGHT,
   SHELF_FONT_WEIGHT,
   shelfCategoryFontSize,
   shelfLabelInset,
@@ -18,6 +20,12 @@ import {
   TOP_WALL_Y,
 } from "./grid/layout";
 import type { ShelfHalf, ShelfUnit, StoreMapConfig } from "./types";
+
+type ShelfFontWeight = typeof SHELF_FONT_WEIGHT | typeof SHELF_EVENT_FONT_WEIGHT;
+
+function shelfLabelFontWeight(isEvent: boolean): ShelfFontWeight {
+  return isEvent ? SHELF_EVENT_FONT_WEIGHT : SHELF_FONT_WEIGHT;
+}
 
 type Props = {
   config: StoreMapConfig;
@@ -36,6 +44,7 @@ function VerticalShelfLabel({
   uniformSize,
   fixedCategorySize,
   categoryFontScale = 1,
+  fontWeight = SHELF_FONT_WEIGHT,
 }: {
   category: string;
   shelfNumber?: string;
@@ -47,6 +56,7 @@ function VerticalShelfLabel({
   /** 외곽 세로 매대: 칸 높이·글자 수와 무관하게 중간 크기 통일 */
   fixedCategorySize?: boolean;
   categoryFontScale?: number;
+  fontWeight?: ShelfFontWeight;
 }) {
   const chars = Array.from(category);
   const numberSize = shelfNumber ? shelfNumberFontSize(cellPx) : 0;
@@ -84,7 +94,7 @@ function VerticalShelfLabel({
               style={{
                 fontSize,
                 lineHeight,
-                fontWeight: SHELF_FONT_WEIGHT,
+                fontWeight,
                 color: STORE_MAP_COLORS.shelfCategory,
                 textAlign: "center",
                 width: stripWidth,
@@ -100,7 +110,7 @@ function VerticalShelfLabel({
         <Text
           style={{
             fontSize: numberSize,
-            fontWeight: SHELF_FONT_WEIGHT,
+            fontWeight,
             color: STORE_MAP_COLORS.shelfNumber,
             textAlign: "center",
             paddingBottom: 2,
@@ -119,11 +129,13 @@ function EdgeShelfLabel({
   stripWidth,
   stripHeight,
   cellPx,
+  fontWeight,
 }: {
   unit: ShelfUnit;
   stripWidth: number;
   stripHeight: number;
   cellPx: number;
+  fontWeight: ShelfFontWeight;
 }) {
   const isLeftEdge = unit.x === LEFT_WALL_X;
   const isRightEdge = unit.x === RIGHT_WALL_X;
@@ -144,6 +156,7 @@ function EdgeShelfLabel({
         cellPx={cellPx}
         fixedCategorySize
         categoryFontScale={categoryFontScale}
+        fontWeight={fontWeight}
       />
     );
   }
@@ -157,6 +170,7 @@ function EdgeShelfLabel({
           cellPx={cellPx}
           stripWidth={stripWidth}
           stripHeight={stripHeight}
+          fontWeight={fontWeight}
         />
       );
     }
@@ -166,12 +180,19 @@ function EdgeShelfLabel({
         compact
         cellPx={cellPx}
         horizontal
+        fontWeight={fontWeight}
       />
     );
   }
 
   return (
-    <InnerHalfLabel half={unit.primary} compact cellPx={cellPx} horizontal />
+    <InnerHalfLabel
+      half={unit.primary}
+      compact
+      cellPx={cellPx}
+      horizontal
+      fontWeight={fontWeight}
+    />
   );
 }
 
@@ -198,12 +219,14 @@ function LeftNumberRightCategoryLabel({
   compact,
   stripWidth,
   stripHeight,
+  fontWeight = SHELF_FONT_WEIGHT,
 }: {
   half: ShelfHalf;
   cellPx: number;
   compact?: boolean;
   stripWidth?: number;
   stripHeight?: number;
+  fontWeight?: ShelfFontWeight;
 }) {
   const numberSize = shelfNumberFontSize(cellPx);
   const categorySize = shelfCategoryFontSize(cellPx, stripWidth);
@@ -218,7 +241,7 @@ function LeftNumberRightCategoryLabel({
       <Text
         style={{
           fontSize: categorySize,
-          fontWeight: SHELF_FONT_WEIGHT,
+          fontWeight,
           color: STORE_MAP_COLORS.shelfCategory,
           textAlign: "right",
           width: "100%",
@@ -243,7 +266,7 @@ function LeftNumberRightCategoryLabel({
           <Text
             style={{
               fontSize: numberSize,
-              fontWeight: SHELF_FONT_WEIGHT,
+              fontWeight,
               color: STORE_MAP_COLORS.shelfNumber,
             }}
             numberOfLines={1}
@@ -267,12 +290,14 @@ function LeftNumberCenteredCategoryLabel({
   compact,
   stripWidth,
   stripHeight,
+  fontWeight = SHELF_FONT_WEIGHT,
 }: {
   half: ShelfHalf;
   cellPx: number;
   compact?: boolean;
   stripWidth?: number;
   stripHeight?: number;
+  fontWeight?: ShelfFontWeight;
 }) {
   const numberSize = shelfNumberFontSize(cellPx);
   const categorySize = shelfCategoryFontSize(cellPx, stripWidth);
@@ -295,7 +320,7 @@ function LeftNumberCenteredCategoryLabel({
         <Text
           style={{
             fontSize: categorySize,
-            fontWeight: SHELF_FONT_WEIGHT,
+            fontWeight,
             color: STORE_MAP_COLORS.shelfCategory,
             textAlign: "center",
             width: "100%",
@@ -318,7 +343,7 @@ function LeftNumberCenteredCategoryLabel({
           <Text
             style={{
               fontSize: numberSize,
-              fontWeight: SHELF_FONT_WEIGHT,
+              fontWeight,
               color: STORE_MAP_COLORS.shelfNumber,
             }}
             numberOfLines={1}
@@ -347,12 +372,14 @@ function InlineNumberCategoryLabel({
   compact,
   stripWidth,
   stripHeight,
+  fontWeight = SHELF_FONT_WEIGHT,
 }: {
   half: ShelfHalf;
   cellPx: number;
   compact?: boolean;
   stripWidth?: number;
   stripHeight?: number;
+  fontWeight?: ShelfFontWeight;
 }) {
   if (usesLeftNumberRightCategory(half)) {
     return (
@@ -362,6 +389,7 @@ function InlineNumberCategoryLabel({
         compact={compact}
         stripWidth={stripWidth}
         stripHeight={stripHeight}
+        fontWeight={fontWeight}
       />
     );
   }
@@ -372,6 +400,7 @@ function InlineNumberCategoryLabel({
       compact={compact}
       stripWidth={stripWidth}
       stripHeight={stripHeight}
+      fontWeight={fontWeight}
     />
   );
 }
@@ -381,8 +410,20 @@ function isRightColumnShelf(unit: ShelfUnit): boolean {
     unit.kind === "island" &&
     unit.x >= RIGHT_BLOCK_X &&
     (unit.split === "horizontal" ||
-      (unit.split === "none" && unit.primary.category === "행사"))
+      (unit.split === "none" && unit.primary.category === EVENT_SHELF_CATEGORY))
   );
+}
+
+function isEventShelfUnit(unit: ShelfUnit): boolean {
+  if (unit.primary.category === EVENT_SHELF_CATEGORY) return true;
+  if (unit.secondary?.category === EVENT_SHELF_CATEGORY) return true;
+  return false;
+}
+
+function shelfUnitBackground(unit: ShelfUnit): string {
+  if (isEventShelfUnit(unit)) return STORE_MAP_COLORS.eventShelf;
+  if (unit.kind === "service") return STORE_MAP_COLORS.service;
+  return STORE_MAP_COLORS.shelf;
 }
 
 /** 안쪽 매대: 카테고리 위, 번호 아래 */
@@ -393,6 +434,7 @@ function InnerHalfLabel({
   horizontal,
   stripWidth,
   stripHeight,
+  fontWeight = SHELF_FONT_WEIGHT,
 }: {
   half: ShelfHalf;
   compact?: boolean;
@@ -400,6 +442,7 @@ function InnerHalfLabel({
   horizontal?: boolean;
   stripWidth?: number;
   stripHeight?: number;
+  fontWeight?: ShelfFontWeight;
 }) {
   if (
     !horizontal &&
@@ -415,6 +458,7 @@ function InnerHalfLabel({
         stripHeight={stripHeight}
         cellPx={cellPx}
         uniformSize
+        fontWeight={fontWeight}
       />
     );
   }
@@ -439,7 +483,7 @@ function InnerHalfLabel({
         <Text
           style={{
             fontSize: categorySize,
-            fontWeight: SHELF_FONT_WEIGHT,
+            fontWeight,
             color: STORE_MAP_COLORS.shelfCategory,
             textAlign: "center",
             width: "100%",
@@ -454,7 +498,7 @@ function InnerHalfLabel({
         <Text
           style={{
             fontSize: numberSize,
-            fontWeight: SHELF_FONT_WEIGHT,
+            fontWeight,
             color: STORE_MAP_COLORS.shelfNumber,
             textAlign: "center",
             width: "100%",
@@ -485,7 +529,9 @@ function ShelfUnitView({
   const isService = unit.kind === "service";
   const isEdgeShelf = isPerimeter || isService;
   const isRightColumn = isRightColumnShelf(unit);
-  const bg = isService ? STORE_MAP_COLORS.service : STORE_MAP_COLORS.shelf;
+  const bg = shelfUnitBackground(unit);
+  const isEvent = isEventShelfUnit(unit);
+  const fontWeight = shelfLabelFontWeight(isEvent);
   const radius = Math.max(1, SHELF_BLOCK_RADIUS * (cellPx / BASE_CELL_PX));
 
   const divider = (
@@ -526,6 +572,7 @@ function ShelfUnitView({
           stripWidth={renderW}
           stripHeight={renderH}
           cellPx={cellPx}
+          fontWeight={fontWeight}
         />
       ) : null}
 
@@ -537,6 +584,7 @@ function ShelfUnitView({
             compact
             stripWidth={halfStripW}
             stripHeight={halfStripH}
+            fontWeight={fontWeight}
           />
         ) : (
           <InnerHalfLabel
@@ -545,6 +593,7 @@ function ShelfUnitView({
             cellPx={cellPx}
             stripWidth={halfStripW}
             stripHeight={halfStripH}
+            fontWeight={fontWeight}
           />
         )
       ) : null}
@@ -557,6 +606,7 @@ function ShelfUnitView({
             cellPx={cellPx}
             stripWidth={halfStripW}
             stripHeight={halfStripH}
+            fontWeight={fontWeight}
           />
           {divider}
           <InnerHalfLabel
@@ -565,6 +615,7 @@ function ShelfUnitView({
             cellPx={cellPx}
             stripWidth={halfStripW}
             stripHeight={halfStripH}
+            fontWeight={fontWeight}
           />
         </View>
       ) : null}
@@ -579,6 +630,7 @@ function ShelfUnitView({
                 compact
                 stripWidth={halfStripW}
                 stripHeight={halfStripH}
+                fontWeight={fontWeight}
               />
               {divider}
               <InlineNumberCategoryLabel
@@ -587,6 +639,7 @@ function ShelfUnitView({
                 compact
                 stripWidth={halfStripW}
                 stripHeight={halfStripH}
+                fontWeight={fontWeight}
               />
             </>
           ) : (
@@ -597,6 +650,7 @@ function ShelfUnitView({
                 cellPx={cellPx}
                 stripWidth={halfStripW}
                 stripHeight={halfStripH}
+                fontWeight={fontWeight}
               />
               {divider}
               <InnerHalfLabel
@@ -605,6 +659,7 @@ function ShelfUnitView({
                 cellPx={cellPx}
                 stripWidth={halfStripW}
                 stripHeight={halfStripH}
+                fontWeight={fontWeight}
               />
             </>
           )}

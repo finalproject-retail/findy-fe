@@ -28,13 +28,19 @@ export const ENTRANCE_CATEGORY = "출입구";
 /** 출입구 라벨만 살짝 작게 */
 export const ENTRANCE_LABEL_SCALE = 0.88;
 
+export const EVENT_SHELF_CATEGORY = "행사";
+/** 행사 매대(49·50·61) 전용 배경 */
+export const EVENT_SHELF_FILL_COLOR = "#FFECB3";
+
 /** 확대(매대) 지도도 축소(존) 지도와 동일 팔레트 */
 export const SHELF_FILL_COLOR = ZONE_FILL_COLOR;
 export const SHELF_BORDER_COLOR = ZONE_BORDER_COLOR;
 export const MAP_FLOOR_COLOR = "#FFFFFF";
 
-/** 확대(매대) 지도 텍스트 굵기 — 볼드 없음 */
+/** 확대(매대) 지도 텍스트 굵기 — 기본 */
 export const SHELF_FONT_WEIGHT = "400" as const;
+/** 행사 매대(49·50·61) 카테고리·번호 */
+export const SHELF_EVENT_FONT_WEIGHT = "700" as const;
 
 /** 매대 번호 글자 크기 — 모든 레이아웃(섬·벽면·세로) 공통 */
 export function shelfNumberFontSize(cellPx: number): number {
@@ -73,6 +79,7 @@ export const STORE_MAP_COLORS = {
   aisle: MAP_FLOOR_COLOR,
   floor: MAP_FLOOR_COLOR,
   shelf: SHELF_FILL_COLOR,
+  eventShelf: EVENT_SHELF_FILL_COLOR,
   shelfDivider: ZONE_BORDER_COLOR,
   zoneBorder: ZONE_BORDER_COLOR,
   zoneText: ZONE_TEXT_COLOR,
@@ -81,6 +88,9 @@ export const STORE_MAP_COLORS = {
   service: ZONE_FILL_COLOR,
 } as const;
 
-export function getCategoryColor(_category?: string): string {
+export function getCategoryColor(category?: string): string {
+  if (category === EVENT_SHELF_CATEGORY) {
+    return EVENT_SHELF_FILL_COLOR;
+  }
   return ZONE_FILL_COLOR;
 }
