@@ -5,6 +5,7 @@ import {
   ENTRANCE_LABEL_SCALE,
   SHELF_BLOCK_RADIUS,
   SHELF_FONT_WEIGHT,
+  shelfCategoryFontSize,
   shelfLabelInset,
   shelfNumberFontSize,
   STORE_MAP_COLORS,
@@ -33,6 +34,7 @@ function VerticalShelfLabel({
   stripHeight,
   cellPx,
   uniformSize,
+  fixedCategorySize,
   categoryFontScale = 1,
 }: {
   category: string;
@@ -42,6 +44,8 @@ function VerticalShelfLabel({
   cellPx: number;
   /** 섬 1~42: 글자 수와 무관하게 동일 크기 */
   uniformSize?: boolean;
+  /** 외곽 세로 매대: 칸 높이·글자 수와 무관하게 중간 크기 통일 */
+  fixedCategorySize?: boolean;
   categoryFontScale?: number;
 }) {
   const chars = Array.from(category);
@@ -50,14 +54,16 @@ function VerticalShelfLabel({
   const textBand = Math.max(stripHeight - numberBand - 4, cellPx);
   const baseFontSize = uniformSize
     ? Math.max(5, Math.min(cellPx * 0.36, stripWidth * 0.88))
-    : Math.max(
-        4,
-        Math.min(
-          stripWidth * 0.88,
-          (textBand / Math.max(chars.length, 1)) * 0.92,
-          cellPx * 0.48
-        )
-      );
+    : fixedCategorySize
+      ? shelfCategoryFontSize(cellPx, stripWidth)
+      : Math.max(
+          4,
+          Math.min(
+            stripWidth * 0.88,
+            (textBand / Math.max(chars.length, 1)) * 0.92,
+            cellPx * 0.48
+          )
+        );
   const fontSize = baseFontSize * categoryFontScale;
   const lineHeight = fontSize * 1.05;
 
@@ -136,6 +142,7 @@ function EdgeShelfLabel({
         stripWidth={stripWidth}
         stripHeight={stripHeight}
         cellPx={cellPx}
+        fixedCategorySize
         categoryFontScale={categoryFontScale}
       />
     );
@@ -199,7 +206,7 @@ function LeftNumberRightCategoryLabel({
   stripHeight?: number;
 }) {
   const numberSize = shelfNumberFontSize(cellPx);
-  const categorySize = Math.max(compact ? cellPx * 0.36 : cellPx * 0.4, 6);
+  const categorySize = shelfCategoryFontSize(cellPx, stripWidth);
   const { numberLeft, categoryEdge, vertical } = shelfLabelInset(
     cellPx,
     stripWidth,
@@ -268,7 +275,7 @@ function LeftNumberCenteredCategoryLabel({
   stripHeight?: number;
 }) {
   const numberSize = shelfNumberFontSize(cellPx);
-  const categorySize = Math.max(compact ? cellPx * 0.36 : cellPx * 0.4, 6);
+  const categorySize = shelfCategoryFontSize(cellPx, stripWidth);
   const { numberLeft, vertical } = shelfLabelInset(cellPx, stripWidth, stripHeight);
 
   return (
@@ -412,10 +419,9 @@ function InnerHalfLabel({
     );
   }
 
-  const categorySize = Math.max(
-    compact ? cellPx * 0.34 : cellPx * 0.4,
-    horizontal ? 6 : 7
-  );
+  const categorySize = horizontal
+    ? shelfCategoryFontSize(cellPx, stripWidth)
+    : Math.max(compact ? cellPx * 0.34 : cellPx * 0.4, 7);
   const numberSize = shelfNumberFontSize(cellPx);
 
   return (

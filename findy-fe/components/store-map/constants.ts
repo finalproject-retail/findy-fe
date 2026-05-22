@@ -41,6 +41,15 @@ export function shelfNumberFontSize(cellPx: number): number {
   return Math.max(cellPx * 0.48, 7);
 }
 
+/** 확대 지도 카테고리 글자 — 가장자리·가로 매대 공통(중간 크기) */
+export function shelfCategoryFontSize(cellPx: number, maxWidth?: number): number {
+  let size = Math.max(cellPx * 0.38, 7);
+  if (maxWidth != null) {
+    size = Math.min(size, maxWidth * 0.88);
+  }
+  return size;
+}
+
 /** 번호·카테고리 가장자리 여백 (좁은 우측 43~50 매대 포함, cellPx·칸 크기에 비례) */
 export function shelfLabelInset(
   cellPx: number,
