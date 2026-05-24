@@ -1,4 +1,15 @@
 export { StoreMapView } from "./StoreMapView";
+export { StoreMapOverlays } from "./overlays/StoreMapOverlays";
+export { MAP_NAVIGATION_MOCK } from "./overlays/mock/mapNavigationMock";
+export { fetchCongestionSnapshotOnRefresh } from "./overlays/mock/congestionSnapshots";
+export type {
+  BeaconCongestionLevel,
+  BeaconCongestionPoint,
+  CurrentLocationMock,
+  RecommendedMapItem,
+  ShoppingMapItem,
+  StoreMapNavigationMock,
+} from "./overlays/types";
 export { getEmartStoreMapConfig } from "./data/emart-floor-plan";
 export {
   CELL_REAL_SIZE_METERS,

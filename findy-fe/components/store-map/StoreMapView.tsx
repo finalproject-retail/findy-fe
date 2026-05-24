@@ -15,10 +15,13 @@ import Animated, {
 import {
   BASE_CELL_PX,
   MAP_FLOOR_COLOR,
+  MAP_PAN_BOTTOM_EXTRA_PX,
   ZOOM_MAX,
   ZOOM_STEP,
 } from "./constants";
 import { getEmartStoreMapConfig } from "./data/emart-floor-plan";
+import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
+import type { StoreMapNavigationMock } from "./overlays/types";
 import { StoreMapShelfLayer } from "./StoreMapShelfLayer";
 import { StoreMapZoneLayer } from "./StoreMapZoneLayer";
 import { getDetailBlend } from "./utils/zoomLevel";
@@ -34,21 +37,37 @@ const FIT_SCALE_EPSILON = 0.008;
 
 type StoreMapViewProps = {
   fitWidth?: number;
+  fitHeight?: number;
+  /** 탭바 등 하단에 가려지는 영역 — pan·fit 높이에서 제외 */
+  contentBottomInset?: number;
+  navigationData?: StoreMapNavigationMock;
+  /** 새로고침·장바구니 변경 시 경로 재탐색 트리거 */
+  navigationRefreshKey?: number;
 };
 
 function shelfGapFromScale(scale: number, fitScale: number): number {
   return getDetailBlend(scale, fitScale) * MAX_SHELF_GAP_PX;
 }
 
-export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewProps) {
+export function StoreMapView({
+  fitWidth = SCREEN_WIDTH * 0.88,
+  fitHeight = SCREEN_HEIGHT * 0.55,
+  contentBottomInset = 0,
+  navigationData,
+  navigationRefreshKey = 0,
+}: StoreMapViewProps) {
   const config = useMemo(() => getEmartStoreMapConfig(), []);
   const mapWidth = config.cols * BASE_CELL_PX;
   const mapHeight = config.rows * BASE_CELL_PX;
 
   const [viewportSize, setViewportSize] = useState({
     width: fitWidth,
-    height: SCREEN_HEIGHT * 0.55,
+    height: fitHeight,
   });
+
+  useEffect(() => {
+    setViewportSize({ width: fitWidth, height: fitHeight });
+  }, [fitWidth, fitHeight]);
 
   const fitScale = useMemo(() => {
     const scaleX = (viewportSize.width / mapWidth) * FIT_PADDING;
@@ -70,6 +89,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
 
   const viewportW = useSharedValue(viewportSize.width);
   const viewportH = useSharedValue(viewportSize.height);
+  const contentBottomInsetSv = useSharedValue(contentBottomInset);
   const mapW = useSharedValue(mapWidth);
   const mapH = useSharedValue(mapHeight);
   const fitScaleSv = useSharedValue(fitScale);
@@ -104,6 +124,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
   useEffect(() => {
     viewportW.value = viewportSize.width;
     viewportH.value = viewportSize.height;
+    contentBottomInsetSv.value = contentBottomInset;
     mapW.value = mapWidth;
     mapH.value = mapHeight;
     fitScaleSv.value = fitScale;
@@ -111,6 +132,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
     maxZoomSv.value = maxZoom;
   }, [
     viewportSize,
+    contentBottomInset,
     mapWidth,
     mapHeight,
     fitScale,
@@ -118,6 +140,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
     maxZoom,
     viewportW,
     viewportH,
+    contentBottomInsetSv,
     mapW,
     mapH,
     fitScaleSv,
@@ -128,15 +151,30 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
   const clampPanWorklet = (x: number, y: number, s: number) => {
     "worklet";
     const vw = viewportW.value;
-    const vh = viewportH.value;
-    const mw = mapW.value;
-    const mh = mapH.value;
-    const scaledW = mw * s;
-    const scaledH = mh * s;
-    const minX = Math.min(0, vw - scaledW);
-    const maxX = Math.max(0, vw - scaledW);
-    const minY = Math.min(0, vh - scaledH);
-    const maxY = Math.max(0, vh - scaledH);
+    const vh = viewportH.value - contentBottomInsetSv.value;
+    const scaledW = mapW.value * s;
+    const scaledH = mapH.value * s;
+    const overflowX = scaledW - vw;
+    const overflowY = scaledH - vh;
+
+    let minX: number;
+    let maxX: number;
+    let minY: number;
+    let maxY: number;
+
+    if (overflowX <= 0 && overflowY <= 0) {
+      minX = (vw - scaledW) / 2;
+      maxX = minX;
+      minY = (vh - scaledH) / 2;
+      maxY = minY;
+    } else {
+      const bottomPad = MAP_PAN_BOTTOM_EXTRA_PX;
+      minX = overflowX > 0 ? -overflowX : (vw - scaledW) / 2;
+      maxX = overflowX > 0 ? 0 : (vw - scaledW) / 2;
+      minY = overflowY > 0 ? -overflowY - bottomPad : (vh - scaledH) / 2;
+      maxY = overflowY > 0 ? 0 : (vh - scaledH) / 2;
+    }
+
     return {
       x: Math.min(maxX, Math.max(minX, x)),
       y: Math.min(maxY, Math.max(minY, y)),
@@ -145,14 +183,16 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
 
   const applyPanClamp = useCallback(
     (s: number) => {
+      const scaledW = mapWidth * s;
+      const scaledH = mapHeight * s;
+      const effectiveVh = viewportSize.height - contentBottomInset;
       const next = clampPanPosition(
         panX.value,
         panY.value,
         viewportSize.width,
-        viewportSize.height,
-        mapWidth,
-        mapHeight,
-        s
+        effectiveVh,
+        scaledW,
+        scaledH
       );
       panX.value = next.x;
       panY.value = next.y;
@@ -160,6 +200,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
       savedPanY.value = next.y;
     },
     [
+      contentBottomInset,
       mapWidth,
       mapHeight,
       panX,
@@ -173,12 +214,14 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
 
   const centerMap = useCallback(
     (s: number) => {
+      const scaledW = mapWidth * s;
+      const scaledH = mapHeight * s;
+      const effectiveVh = viewportSize.height - contentBottomInset;
       const c = getCenteredPan(
         viewportSize.width,
-        viewportSize.height,
-        mapWidth,
-        mapHeight,
-        s
+        effectiveVh,
+        scaledW,
+        scaledH
       );
       panX.value = c.x;
       panY.value = c.y;
@@ -186,6 +229,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
       savedPanY.value = c.y;
     },
     [
+      contentBottomInset,
       mapHeight,
       mapWidth,
       panX,
@@ -256,7 +300,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
       runOnJS(syncRenderFromScale)(next);
       if (next <= minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
         const vw = viewportW.value;
-        const vh = viewportH.value;
+        const vh = viewportH.value - contentBottomInsetSv.value;
         const sw = mapW.value * next;
         const sh = mapH.value * next;
         panX.value = (vw - sw) / 2;
@@ -271,9 +315,13 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
       savedScale.value = scale.value;
       savedPanX.value = panX.value;
       savedPanY.value = panY.value;
+      if (scale.value > minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
+        runOnJS(applyPanClamp)(scale.value);
+      }
     });
 
   const pan = Gesture.Pan()
+    .minDistance(4)
     .onStart(() => {
       savedPanX.value = panX.value;
       savedPanY.value = panY.value;
@@ -330,7 +378,7 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
   return (
     <GestureHandlerRootView style={styles.root}>
       <View
-        style={styles.viewport}
+        style={[styles.viewport, { paddingBottom: contentBottomInset }]}
         onLayout={(e) => {
           const { width, height } = e.nativeEvent.layout;
           if (width > 0 && height > 0) {
@@ -359,6 +407,14 @@ export function StoreMapView({ fitWidth = SCREEN_WIDTH * 0.88 }: StoreMapViewPro
                 >
                   <StoreMapZoneLayer zones={config.zones} cellPx={cellPx} />
                 </Animated.View>
+                <StoreMapOverlays
+                  config={config}
+                  cellPx={cellPx}
+                  mapWidth={config.cols * cellPx}
+                  mapHeight={config.rows * cellPx}
+                  data={navigationData}
+                  navigationRefreshKey={navigationRefreshKey}
+                />
               </View>
             </Animated.View>
           </View>

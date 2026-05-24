@@ -1,10 +1,10 @@
-import { StoreMapView } from "@/components/store-map";
-import { SafeView } from "@/components/layout";
+import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
+import { MapScreen } from "@/components/map";
 
-export default function MapScreen() {
+export default function MapTabScreen() {
   return (
-    <SafeView edges={["top", "left", "right"]} className="flex-1 bg-white">
-      <StoreMapView />
+    <SafeView edges={TAB_SCREEN_EDGES} className="flex-1">
+      <MapScreen />
     </SafeView>
   );
 }
