@@ -21,7 +21,7 @@ export function ProductDetailInfo({
 }: ProductDetailInfoProps) {
   const { width: screenWidth } = useWindowDimensions();
   const recommendCardWidth =
-    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 2.7;
+    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3;
 
   const category = product.category ?? "카테고리";
   const couponPrice = product.couponPrice ?? product.price;
@@ -77,10 +77,7 @@ export function ProductDetailInfo({
             </Text>
           </View>
 
-          <RemainingStockText
-            stockCount={stockCount}
-            className="shrink-0"
-          />
+          <RemainingStockText stockCount={stockCount} className="shrink-0" />
         </View>
       </View>
 

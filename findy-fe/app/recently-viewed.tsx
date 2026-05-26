@@ -1,8 +1,8 @@
 import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
-import { ProductListRow } from "@/components/product";
 import {
   ExcludeOutOfStockFilter,
+  RecentlyViewedProductItem,
   RecentlyViewedSearchBar,
   filterRecentlyViewedProducts,
   getRecentlyViewedPageProducts,
@@ -51,7 +51,7 @@ export default function RecentlyViewedScreen() {
             검색 결과가 없습니다.
           </Text>
         }
-        renderItem={({ item }) => <ProductListRow product={item} />}
+        renderItem={({ item }) => <RecentlyViewedProductItem product={item} />}
       />
     </SafeView>
   );

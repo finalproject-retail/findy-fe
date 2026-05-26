@@ -13,9 +13,14 @@ const IMAGE_SIZE = 100;
 
 type ProductListRowProps = {
   product: Product;
+  /** false면 하단 구분선 생략 (목록 래퍼에서 처리) */
+  showBorder?: boolean;
 };
 
-export function ProductListRow({ product }: ProductListRowProps) {
+export function ProductListRow({
+  product,
+  showBorder = true,
+}: ProductListRowProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const soldOut = isOutOfStock(product);
@@ -40,8 +45,12 @@ export function ProductListRow({ product }: ProductListRowProps) {
         flexDirection: "row",
         gap: SPACING.md,
         paddingVertical: SPACING.lg,
-        borderBottomWidth: BORDER.thin,
-        borderBottomColor: COLORS.lightGray,
+        ...(showBorder
+          ? {
+              borderBottomWidth: BORDER.thin,
+              borderBottomColor: COLORS.lightGray,
+            }
+          : null),
       }}
     >
       <Pressable
