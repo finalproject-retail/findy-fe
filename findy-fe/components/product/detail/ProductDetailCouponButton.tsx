@@ -86,7 +86,7 @@ export function ProductDetailCouponButton({
         <Text
           style={{
             ...pretendard(500),
-            fontSize: TYPOGRAPHY.size.xl,
+            fontSize: TYPOGRAPHY.size.lg,
             color: COLORS.redText,
           }}
         >
@@ -110,7 +110,7 @@ export function ProductDetailCouponButton({
       <Text
         style={{
           ...pretendard(500),
-          fontSize: TYPOGRAPHY.size.xl,
+          fontSize: TYPOGRAPHY.size.lg,
           color: COLORS.text,
         }}
       >

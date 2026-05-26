@@ -1,4 +1,5 @@
 import type { Product } from "@/components/product";
+import { isOutOfStock } from "@/components/product/isOutOfStock";
 
 export const MOCK_PRODUCTS: Product[] = [
   {
@@ -102,13 +103,82 @@ export const MOCK_PRODUCTS: Product[] = [
       { id: "coffee-5", discountPercent: 5, downloaded: true },
     ],
   },
+  {
+    id: "ramen-cup",
+    name: "[농심] 사리곰탕 소컵 6입",
+    image: require("@/assets/images/product/noodle.png"),
+    discountPercent: 22,
+    price: 4980,
+    category: "면/통조림 · 라면",
+    originalPrice: 6390,
+    couponPrice: 4980,
+    stockCount: 3,
+    availableCoupons: [
+      { id: "ramen-cup-10", discountPercent: 10, downloaded: false },
+    ],
+  },
+  {
+    id: "yogurt",
+    name: "[빙그레] 바나나맛 우유 200mL x 6개",
+    image: require("@/assets/images/product/green-tea.png"),
+    discountPercent: 15,
+    price: 5400,
+    category: "유제품 · 우유",
+    originalPrice: 6350,
+    couponPrice: 5400,
+    stockCount: 40,
+    availableCoupons: [
+      { id: "yogurt-10", discountPercent: 10, downloaded: true },
+    ],
+  },
+  {
+    id: "tofu",
+    name: "[풀무원] 순두부 300g",
+    image: require("@/assets/images/product/beef.png"),
+    discountPercent: 8,
+    price: 1650,
+    category: "가공식품 · 두부",
+    originalPrice: 1790,
+    couponPrice: 1650,
+    stockCount: 22,
+    availableCoupons: [],
+  },
+  /** 품절 — 홈 노출 제외, 검색·최근 본·구매 내역 등에서만 사용 */
+  {
+    id: "oat-milk",
+    name: "[매일] 상상우유 1L",
+    image: require("@/assets/images/product/coffee.png"),
+    discountPercent: 12,
+    price: 2640,
+    category: "유제품 · 우유",
+    originalPrice: 3000,
+    couponPrice: 2640,
+    stockCount: 0,
+    availableCoupons: [
+      { id: "oat-milk-5", discountPercent: 5, downloaded: false },
+    ],
+  },
 ];
 
-/** 실시간 인기 상품 노출 순서 */
-export const MOCK_POPULAR_PRODUCTS: Product[] = [
+/** 홈·인기 상품 등 재고 있는 상품만 */
+export function getInStockProducts(
+  products: Product[] = MOCK_PRODUCTS,
+): Product[] {
+  return products.filter((product) => !isOutOfStock(product));
+}
+
+export function getProductById(id: string): Product | undefined {
+  return MOCK_PRODUCTS.find((product) => product.id === id);
+}
+
+/** 실시간 인기 상품 노출 순서 (품절 제외) */
+export const MOCK_POPULAR_PRODUCTS: Product[] = getInStockProducts([
   MOCK_PRODUCTS[3]!, // apple
   MOCK_PRODUCTS[0]!, // green-tea
   MOCK_PRODUCTS[1]!, // beef
   MOCK_PRODUCTS[2]!, // noodle
   MOCK_PRODUCTS[4]!, // snack
-];
+  MOCK_PRODUCTS[5]!, // coffee
+  MOCK_PRODUCTS[6]!, // ramen-cup (저재고)
+  MOCK_PRODUCTS[7]!, // yogurt
+]);

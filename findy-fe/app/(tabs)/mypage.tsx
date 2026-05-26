@@ -43,7 +43,10 @@ export default function MypageScreen() {
             user={MOCK_MYPAGE_USER}
             onPointsPress={() => router.push("/points")}
           />
-          <MypageRecentlyViewedSection products={recentlyViewed} />
+          <MypageRecentlyViewedSection
+            products={recentlyViewed}
+            onSeeAllPress={() => router.push("/recently-viewed")}
+          />
           <MypageMenuList />
         </View>
       </ScrollView>

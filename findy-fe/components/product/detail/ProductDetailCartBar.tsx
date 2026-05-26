@@ -53,7 +53,10 @@ export function ProductDetailCartBar({
           pointerEvents="box-none"
         >
           <Pressable
-            style={[styles.overlay, { marginBottom: PRODUCT_DETAIL_CART_BAR_HEIGHT }]}
+            style={[
+              styles.overlay,
+              { marginBottom: PRODUCT_DETAIL_CART_BAR_HEIGHT },
+            ]}
             onPress={closeSheet}
             accessibilityRole="button"
             accessibilityLabel="닫기"
@@ -100,7 +103,7 @@ export function ProductDetailCartBar({
           <Text
             style={{
               ...pretendard(700),
-              fontSize: TYPOGRAPHY.size.xl,
+              fontSize: TYPOGRAPHY.size.lg,
               color: COLORS.white,
             }}
           >

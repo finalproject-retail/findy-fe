@@ -1,4 +1,4 @@
-import { MOCK_PRODUCTS } from "@/components/home/mockProducts";
+import { getInStockProducts } from "@/components/home/mockProducts";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { FlatList, Text, View } from "react-native";
@@ -14,7 +14,7 @@ type ProductDetailRecommendProps = {
 };
 
 function getRecommendedProducts(productId: string): Product[] {
-  return MOCK_PRODUCTS.filter((item) => item.id !== productId).slice(
+  return getInStockProducts().filter((item) => item.id !== productId).slice(
     0,
     MAX_RECOMMENDED,
   );
