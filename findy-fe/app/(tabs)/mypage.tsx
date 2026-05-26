@@ -49,6 +49,7 @@ export default function MypageScreen() {
           />
           <MypageMenuList
             onPurchaseHistoryPress={() => router.push("/purchase-history")}
+            onFaqPress={() => router.push("/faq")}
           />
         </View>
       </ScrollView>

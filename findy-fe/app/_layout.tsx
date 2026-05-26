@@ -20,6 +20,7 @@ function RootLayoutNav() {
       <Stack.Screen name="points" />
       <Stack.Screen name="recently-viewed" />
       <Stack.Screen name="purchase-history" />
+      <Stack.Screen name="faq" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
       <Stack.Screen name="(auth)" />
