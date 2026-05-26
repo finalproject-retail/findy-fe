@@ -78,7 +78,7 @@ export function RecommendedProductCard({
           numberOfLines={2}
           style={{
             ...pretendard(500),
-            fontSize: TYPOGRAPHY.size.md,
+            fontSize: TYPOGRAPHY.size.sm,
             lineHeight: PRODUCT_NAME_LINE_HEIGHT,
             minHeight: PRODUCT_NAME_MIN_HEIGHT,
           }}

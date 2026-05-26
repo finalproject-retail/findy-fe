@@ -40,7 +40,10 @@ export default function PointsScreen() {
 
         <View
           className="bg-white px-screen"
-          style={{ paddingTop: SPACING.lg, paddingBottom: SPACING.xl, gap: SPACING.md }}
+          style={{
+            paddingVertical: SPACING.md,
+            gap: SPACING.sm,
+          }}
         >
           <PeriodInquiry value={period} onChange={setPeriod} />
           <PointHistoryFilter value={filter} onChange={setFilter} />

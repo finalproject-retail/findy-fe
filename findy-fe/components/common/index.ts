@@ -1,3 +1,4 @@
+export { SquareButton, type SquareButtonProps } from "./SquareButton";
 export { DatePickerModal, type DatePickerSelectionMode } from "./DatePicker";
 export { Header, type HeaderProps, type HeaderRightIcon } from "./Header";
 export {

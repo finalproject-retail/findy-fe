@@ -402,7 +402,7 @@ export function DatePickerModal({
                         ]}
                       >
                         <Text
-                          className="text-lg"
+                          className="text-md"
                           style={{
                             ...pretendard(isSelected ? 700 : 500),
                             color: isSelected ? COLORS.white : COLORS.text,
@@ -487,7 +487,7 @@ export function DatePickerModal({
                   </Text>
                 </Pressable>
                 <Text
-                  className="text-xl text-text-main"
+                  className="text-lg text-text-main"
                   style={pretendard(700)}
                 >
                   {pickerYear}년

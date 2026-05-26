@@ -92,7 +92,7 @@ export function ProductListRow({ product }: ProductListRowProps) {
           style={{ gap: SPACING.xs }}
         >
           <Text
-            className="text-lg text-text-main"
+            className="text-md text-text-main"
             style={pretendard(500)}
             numberOfLines={2}
           >
@@ -100,10 +100,10 @@ export function ProductListRow({ product }: ProductListRowProps) {
           </Text>
 
           <View className="flex-row flex-wrap items-center gap-1">
-            <Text className="text-lg text-text-red" style={pretendard(700)}>
+            <Text className="text-md text-text-red" style={pretendard(700)}>
               {product.discountPercent}%
             </Text>
-            <Text className="text-lg text-text-main" style={pretendard(700)}>
+            <Text className="text-md text-text-main" style={pretendard(700)}>
               {formatPrice(product.price)}
             </Text>
             <Text
@@ -131,7 +131,7 @@ export function ProductListRow({ product }: ProductListRowProps) {
                 backgroundColor: COLORS.white,
               }}
             >
-              <Text className="text-sm text-charcoal" style={pretendard(500)}>
+              <Text className="text-xs text-charcoal" style={pretendard(500)}>
                 장바구니 담기
               </Text>
             </Pressable>

@@ -38,7 +38,7 @@ export function PointHistoryFilter({
         className="flex-row items-center"
         style={{ gap: SPACING.xs, backgroundColor: COLORS.white }}
       >
-        <Text className="text-lg text-text-main" style={pretendard(500)}>
+        <Text className="text-md text-text-main" style={pretendard(500)}>
           {selectedLabel}
         </Text>
         <View
@@ -97,7 +97,7 @@ export function PointHistoryFilter({
                 }}
               >
                 <Text
-                  className="text-lg text-left"
+                  className="text-md text-left"
                   style={{
                     ...pretendard(500),
                     color: selected ? COLORS.main : COLORS.text,

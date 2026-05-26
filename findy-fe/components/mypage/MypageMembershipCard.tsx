@@ -1,5 +1,4 @@
 import PointIcon from "@/assets/icons/point-icon.svg";
-import { MypageNavigateArrow } from "./MypageNavigateArrow";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
@@ -11,6 +10,7 @@ import {
   getGradeConfig,
   type MypageUser,
 } from "./mockUser";
+import { MypageNavigateArrow } from "./MypageNavigateArrow";
 
 const GRADE_ICON_SIZE = 40;
 
@@ -53,10 +53,10 @@ export function MypageMembershipCard({
             contentFit="contain"
           />
           <View className="flex-1 gap-1">
-            <Text className="text-xl text-text-main" style={pretendard(700)}>
+            <Text className="text-lg text-text-main" style={pretendard(700)}>
               {gradeConfig.label}
             </Text>
-            <Text className="text-md" style={pretendard(400)}>
+            <Text className="text-sm" style={pretendard(400)}>
               <Text style={{ color: COLORS.subText }}>
                 {gradeConfig.benefitPrefix}
               </Text>
@@ -81,7 +81,7 @@ export function MypageMembershipCard({
             backgroundColor: COLORS.text,
           }}
         >
-          <Text className="text-lg text-white" style={pretendard(600)}>
+          <Text className="text-sm text-white" style={pretendard(600)}>
             쿠폰 받기
           </Text>
         </Pressable>
@@ -100,12 +100,12 @@ export function MypageMembershipCard({
       >
         <View className="flex-row items-center gap-2">
           <PointIcon width={17} height={17} />
-          <Text className="text-lg text-text-main" style={pretendard(700)}>
+          <Text className="text-md text-text-main" style={pretendard(700)}>
             포인트
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
-          <Text className="text-lg text-text-main" style={pretendard(700)}>
+          <Text className="text-md text-text-main" style={pretendard(700)}>
             {formatPoints(user.points)}
           </Text>
           <MypageNavigateArrow />

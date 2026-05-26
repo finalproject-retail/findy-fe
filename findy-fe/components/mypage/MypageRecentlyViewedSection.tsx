@@ -1,6 +1,5 @@
 import type { Product } from "@/components/product";
 import { RecommendedProductCard } from "@/components/product/detail/RecommendedProductCard";
-import { MypageNavigateArrow } from "./MypageNavigateArrow";
 import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import {
@@ -10,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { MypageNavigateArrow } from "./MypageNavigateArrow";
 
 const CARD_GAP = 12;
 
@@ -37,7 +37,7 @@ export function MypageRecentlyViewedSection({
         accessibilityLabel="최근 본 상품 전체 보기"
         className="flex-row items-center justify-between"
       >
-        <Text className="text-2xl text-text-main" style={pretendard(700)}>
+        <Text className="text-xl text-text-main" style={pretendard(700)}>
           최근 본 상품
         </Text>
         <MypageNavigateArrow />

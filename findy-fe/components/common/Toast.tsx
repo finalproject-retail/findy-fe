@@ -1,4 +1,4 @@
-import { COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Text, View } from "react-native";
 
@@ -19,7 +19,7 @@ export function Toast({ message }: ToastProps) {
       <Text
         style={{
           ...pretendard(500),
-          fontSize: 16,
+          fontSize: TYPOGRAPHY.size.sm,
           color: COLORS.white,
           textAlign: "center",
         }}

@@ -10,7 +10,7 @@ type RemainingStockTextProps = {
 
 export function RemainingStockText({
   stockCount,
-  size = "md",
+  size = "sm",
   className,
   numberOfLines,
 }: RemainingStockTextProps) {
@@ -20,7 +20,11 @@ export function RemainingStockText({
 
   return (
     <Text
-      className={[sizeClass, lowStock ? "text-text-red" : "text-text-blue", className]
+      className={[
+        sizeClass,
+        lowStock ? "text-text-red" : "text-text-blue",
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
       numberOfLines={numberOfLines}
