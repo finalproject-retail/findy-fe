@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
@@ -80,9 +81,11 @@ export default function RootLayout() {
     <AuthProvider>
       <CartProvider>
         <MapNavigationProvider>
-          <ToastProvider>
-            <RootLayoutNav />
-          </ToastProvider>
+          <BeaconLocationProvider>
+            <ToastProvider>
+              <RootLayoutNav />
+            </ToastProvider>
+          </BeaconLocationProvider>
         </MapNavigationProvider>
       </CartProvider>
     </AuthProvider>
