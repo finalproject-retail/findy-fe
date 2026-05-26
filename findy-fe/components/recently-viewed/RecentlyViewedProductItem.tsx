@@ -19,7 +19,7 @@ export function RecentlyViewedProductItem({
   const { width: screenWidth } = useWindowDimensions();
   const soldOut = isOutOfStock(product);
   const recommendCardWidth =
-    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3;
+    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3.1;
 
   return (
     <View

@@ -47,7 +47,9 @@ export default function MypageScreen() {
             products={recentlyViewed}
             onSeeAllPress={() => router.push("/recently-viewed")}
           />
-          <MypageMenuList />
+          <MypageMenuList
+            onPurchaseHistoryPress={() => router.push("/purchase-history")}
+          />
         </View>
       </ScrollView>
     </SafeView>
