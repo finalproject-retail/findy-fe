@@ -36,6 +36,14 @@ export function Header({
   const router = useRouter();
   const icons = rightIcons.slice(0, MAX_RIGHT_ICONS);
 
+  const handleCartPress = () => {
+    if (onCartPress) {
+      onCartPress();
+      return;
+    }
+    router.push("/cart");
+  };
+
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();
@@ -78,7 +86,7 @@ export function Header({
         return (
           <Pressable
             key="cart"
-            onPress={onCartPress}
+            onPress={handleCartPress}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="장바구니"

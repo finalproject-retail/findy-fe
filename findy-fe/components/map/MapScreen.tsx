@@ -4,7 +4,7 @@ import { LAYOUT } from "@/constants/theme";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapOverlayControls } from "./MapOverlayControls";
-import { useMapNavigationData } from "./useMapNavigationData";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
 
 export function MapScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -13,7 +13,7 @@ export function MapScreen() {
     navigationData,
     navigationRefreshKey,
     refreshNavigationOverlay,
-  } = useMapNavigationData();
+  } = useMapNavigation();
 
   const tabBarInset = LAYOUT.tabBarTotalHeight + insets.bottom;
   const mapFitWidth = windowWidth;

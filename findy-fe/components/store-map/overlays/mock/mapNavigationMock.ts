@@ -8,14 +8,14 @@ export const MAP_NAVIGATION_MOCK: StoreMapNavigationMock = {
   currentLocation: { gridX: 3, gridY: 6 },
 
   shoppingItems: [
-    { id: "s1", name: "신라면", gridX: 8, gridY: 8, visitOrder: 1 },
-    { id: "s2", name: "카스 맥주", gridX: 14, gridY: 9, visitOrder: 2 },
-    { id: "s3", name: "우유", gridX: 24, gridY: 8, visitOrder: 3 },
+    { id: "s1", name: "신라면", gridX: 2, gridY: 0, visitOrder: 1 },
+    { id: "s2", name: "카스 맥주", gridX: 17, gridY: 17, visitOrder: 2 },
+    { id: "s3", name: "우유", gridX: 20, gridY: 12, visitOrder: 3 },
   ],
 
   recommendedItems: [
-    { id: "r1", name: "1+1 초코에몽 광고", gridX: 11, gridY: 8 },
-    { id: "r2", name: "행사 할인 과자", gridX: 20, gridY: 13 },
+    { id: "r1", name: "1+1 초코에몽 광고", gridX: 17, gridY: 12 },
+    { id: "r2", name: "행사 할인 과자", gridX: 2, gridY: 2 },
   ],
 
   beaconCongestion: [

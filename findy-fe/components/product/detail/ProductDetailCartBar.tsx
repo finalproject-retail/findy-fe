@@ -1,4 +1,5 @@
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { useState } from "react";
@@ -18,6 +19,7 @@ export function ProductDetailCartBar({
   onPress,
 }: ProductDetailCartBarProps) {
   const { showToast } = useToast();
+  const { addToCart } = useCart();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -31,7 +33,7 @@ export function ProductDetailCartBar({
   };
 
   const handleConfirm = () => {
-    // TODO: 장바구니 API — 상품 quantity개 담기
+    addToCart(product, quantity);
     closeSheet();
     showToast(TOAST_MESSAGES.addedToCart);
     onPress?.();

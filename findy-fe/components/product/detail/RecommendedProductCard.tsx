@@ -1,4 +1,5 @@
 import CartIcon from "@/assets/icons/cart-icon.svg";
+import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { COLORS, RADIUS } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
@@ -23,13 +24,14 @@ export function RecommendedProductCard({
 }: RecommendedProductCardProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { addToCart } = useCart();
 
   const openProductDetail = () => {
     router.push(`/product/${product.id}`);
   };
 
   const handleAddToCart = () => {
-    // TODO: 장바구니 API — 상품 1개 담기
+    addToCart(product, 1);
     showToast(TOAST_MESSAGES.addedToCart);
   };
 

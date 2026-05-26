@@ -64,7 +64,10 @@ export function ProductCard({ product, width, onAddToCart }: ProductCardProps) {
       </Pressable>
 
       <View className="mt-2">
-        <AddToCartButton onPress={() => onAddToCart?.(product.id)} />
+        <AddToCartButton
+          product={product}
+          onPress={() => onAddToCart?.(product.id)}
+        />
       </View>
     </View>
   );
