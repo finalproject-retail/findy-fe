@@ -1,6 +1,7 @@
 import type { Product } from "@/components/product";
 import { RecommendedProductCard } from "@/components/product/detail/RecommendedProductCard";
-import { COLORS, SPACING } from "@/constants/theme";
+import { MypageNavigateArrow } from "./MypageNavigateArrow";
+import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import {
   FlatList,
@@ -39,15 +40,7 @@ export function MypageRecentlyViewedSection({
         <Text className="text-2xl text-text-main" style={pretendard(700)}>
           최근 본 상품
         </Text>
-        <Text
-          style={{
-            ...pretendard(400),
-            fontSize: 18,
-            color: COLORS.subText2,
-          }}
-        >
-          &gt;
-        </Text>
+        <MypageNavigateArrow />
       </Pressable>
 
       <FlatList

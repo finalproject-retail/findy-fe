@@ -1,11 +1,11 @@
-import { COLORS, SPACING } from "@/constants/theme";
+import { MypageNavigateArrow } from "./MypageNavigateArrow";
+import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import type { ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
 import type { SvgProps } from "react-native-svg";
 
 const ICON_SIZE = 28;
-const CHEVRON_COLOR = COLORS.subText2;
 
 type MypageMenuRowProps = {
   icon: ComponentType<SvgProps>;
@@ -37,15 +37,7 @@ export function MypageMenuRow({
           {subtitle}
         </Text>
       </View>
-      <Text
-        style={{
-          ...pretendard(400),
-          fontSize: 18,
-          color: CHEVRON_COLOR,
-        }}
-      >
-        &gt;
-      </Text>
+      <MypageNavigateArrow />
     </Pressable>
   );
 }

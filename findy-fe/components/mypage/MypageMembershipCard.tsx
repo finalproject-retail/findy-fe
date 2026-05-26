@@ -1,48 +1,38 @@
 import PointIcon from "@/assets/icons/point-icon.svg";
+import { MypageNavigateArrow } from "./MypageNavigateArrow";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { Pressable, Text, View } from "react-native";
-import { GRADE_IMAGES, formatPoints, type MypageUser } from "./mockUser";
+import {
+  GRADE_IMAGES,
+  formatPoints,
+  getGradeConfig,
+  type MypageUser,
+} from "./mockUser";
 
-const GRADE_BENEFIT_GOLD = "#C9A227";
 const GRADE_ICON_SIZE = 40;
-const CHEVRON_COLOR = COLORS.subText2;
 
 type MypageMembershipCardProps = {
-  user: Pick<
-    MypageUser,
-    | "grade"
-    | "gradeLabel"
-    | "gradeBenefitPrefix"
-    | "gradeBenefitHighlight"
-    | "gradeBenefitSuffix"
-    | "points"
-  >;
+  user: Pick<MypageUser, "grade" | "points">;
   onGetCouponPress?: () => void;
   onPointsPress?: () => void;
 };
-
-function ChevronRight() {
-  return (
-    <Text
-      style={{
-        ...pretendard(400),
-        fontSize: 18,
-        color: CHEVRON_COLOR,
-        lineHeight: 20,
-      }}
-    >
-      &gt;
-    </Text>
-  );
-}
 
 export function MypageMembershipCard({
   user,
   onGetCouponPress,
   onPointsPress,
 }: MypageMembershipCardProps) {
+  const { showToast } = useToast();
+  const gradeConfig = getGradeConfig(user.grade);
+
+  const handleGetCouponPress = () => {
+    showToast(TOAST_MESSAGES.couponDownloaded);
+    onGetCouponPress?.();
+  };
+
   return (
     <View
       style={{
@@ -64,24 +54,24 @@ export function MypageMembershipCard({
           />
           <View className="flex-1 gap-1">
             <Text className="text-xl text-text-main" style={pretendard(700)}>
-              {user.gradeLabel}
+              {gradeConfig.label}
             </Text>
             <Text className="text-md" style={pretendard(400)}>
               <Text style={{ color: COLORS.subText }}>
-                {user.gradeBenefitPrefix}
+                {gradeConfig.benefitPrefix}
               </Text>
-              <Text style={{ color: GRADE_BENEFIT_GOLD }}>
-                {user.gradeBenefitHighlight}
+              <Text style={{ color: gradeConfig.highlightColor }}>
+                {gradeConfig.benefitHighlight}
               </Text>
               <Text style={{ color: COLORS.subText }}>
-                {user.gradeBenefitSuffix}
+                {gradeConfig.benefitSuffix}
               </Text>
             </Text>
           </View>
         </View>
 
         <Pressable
-          onPress={onGetCouponPress}
+          onPress={handleGetCouponPress}
           accessibilityRole="button"
           accessibilityLabel="쿠폰 받기"
           style={{
@@ -118,7 +108,7 @@ export function MypageMembershipCard({
           <Text className="text-lg text-text-main" style={pretendard(700)}>
             {formatPoints(user.points)}
           </Text>
-          <ChevronRight />
+          <MypageNavigateArrow />
         </View>
       </Pressable>
     </View>

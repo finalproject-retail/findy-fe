@@ -1,7 +1,7 @@
 import { API_BASE_URL, API_TIMEOUT_MS } from "@/constants/api";
-import axios, { type AxiosError, isAxiosError } from "axios";
+import { create, type AxiosError, isAxiosError } from "axios";
 
-export const apiClient = axios.create({
+export const apiClient = create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT_MS,
   headers: {

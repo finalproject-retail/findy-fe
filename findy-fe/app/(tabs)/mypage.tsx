@@ -1,5 +1,6 @@
 import { Header } from "@/components/common";
 import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
+import { useRouter } from "expo-router";
 import {
   MOCK_MYPAGE_USER,
   MypageGreeting,
@@ -15,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const CONTENT_GAP = 28;
 
 export default function MypageScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollBottomPadding = LAYOUT.tabBarTotalHeight + insets.bottom;
   const recentlyViewed = getRecentlyViewedProducts(
@@ -37,7 +39,10 @@ export default function MypageScreen() {
             name={MOCK_MYPAGE_USER.name}
             email={MOCK_MYPAGE_USER.email}
           />
-          <MypageMembershipCard user={MOCK_MYPAGE_USER} />
+          <MypageMembershipCard
+            user={MOCK_MYPAGE_USER}
+            onPointsPress={() => router.push("/points")}
+          />
           <MypageRecentlyViewedSection products={recentlyViewed} />
           <MypageMenuList />
         </View>

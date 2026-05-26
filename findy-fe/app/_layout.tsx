@@ -15,6 +15,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="product/[id]" />
+      <Stack.Screen name="points" />
       <Stack.Screen name="(auth)" />
     </Stack>
   );
