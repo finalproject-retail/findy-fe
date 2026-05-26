@@ -1,7 +1,9 @@
+import { FONT_FAMILY } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { memo, useCallback, useEffect, useRef } from "react";
 import {
   FlatList,
+  Platform,
   View,
   type ListRenderItemInfo,
   type NativeScrollEvent,
@@ -88,9 +90,19 @@ const WheelPickerItem = memo(function WheelPickerItem({
       Extrapolation.CLAMP,
     );
 
+    const isCentered = absDistance < WHEEL_ITEM_HEIGHT * 0.35;
+
+    if (Platform.OS === "web") {
+      return {
+        fontSize,
+        fontFamily: FONT_FAMILY.variable,
+        fontWeight: isCentered ? "700" : "400",
+      };
+    }
+
     return {
       fontSize,
-      fontWeight: absDistance < WHEEL_ITEM_HEIGHT * 0.35 ? "700" : "400",
+      fontFamily: isCentered ? FONT_FAMILY.bold : FONT_FAMILY.regular,
     };
   });
 
@@ -101,7 +113,7 @@ const WheelPickerItem = memo(function WheelPickerItem({
         animatedRowStyle,
       ]}
     >
-      <Animated.Text style={[{ color: "#000000", fontFamily: "Pretendard" }, animatedTextStyle]}>
+      <Animated.Text style={[{ color: "#000000" }, animatedTextStyle]}>
         {label}
       </Animated.Text>
     </Animated.View>

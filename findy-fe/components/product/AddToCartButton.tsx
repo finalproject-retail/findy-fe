@@ -28,7 +28,7 @@ export function AddToCartButton({ product, onPress }: AddToCartButtonProps) {
       className="h-9 w-full flex-row items-center justify-center gap-1 rounded-xs border border-light-gray bg-white"
     >
       <CartIcon width={18} height={18} />
-      <Text className="text-sm text-charcoal" style={pretendard(500)}>
+      <Text className="text-xs text-charcoal" style={pretendard(500)}>
         담기
       </Text>
     </Pressable>

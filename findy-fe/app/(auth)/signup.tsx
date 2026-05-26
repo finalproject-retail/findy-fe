@@ -307,6 +307,7 @@ export default function SignupScreen() {
       <DatePickerModal
         isVisible={isDatePickerVisible}
         onClose={() => setIsDatePickerVisible(false)}
+        value={birthdate || undefined}
         onSelectDate={(date) => {
           setBirthdate(date);       // 선택한 날짜(yyyy.mm.dd)를 생년월일 상태에 저장
           setBirthdateError("");    // 날짜가 들어왔으니 기존 에러 메시지 초기화

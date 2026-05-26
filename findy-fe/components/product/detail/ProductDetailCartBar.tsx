@@ -1,9 +1,10 @@
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SquareButton } from "@/components/common/SquareButton";
+import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
-import { pretendard } from "@/utils/pretendard";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { isOutOfStock } from "../isOutOfStock";
 import type { Product } from "../types";
 import { ProductDetailCartSheet } from "./ProductDetailCartSheet";
 
@@ -22,6 +23,7 @@ export function ProductDetailCartBar({
   const { addToCart } = useCart();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const soldOut = isOutOfStock(product);
 
   const openSheet = () => {
     setQuantity(1);
@@ -40,6 +42,7 @@ export function ProductDetailCartBar({
   };
 
   const handleBarPress = () => {
+    if (soldOut) return;
     if (sheetVisible) {
       handleConfirm();
     } else {
@@ -55,7 +58,10 @@ export function ProductDetailCartBar({
           pointerEvents="box-none"
         >
           <Pressable
-            style={[styles.overlay, { marginBottom: PRODUCT_DETAIL_CART_BAR_HEIGHT }]}
+            style={[
+              styles.overlay,
+              { marginBottom: PRODUCT_DETAIL_CART_BAR_HEIGHT },
+            ]}
             onPress={closeSheet}
             accessibilityRole="button"
             accessibilityLabel="닫기"
@@ -79,7 +85,7 @@ export function ProductDetailCartBar({
       <View
         style={{
           height: PRODUCT_DETAIL_CART_BAR_HEIGHT,
-          paddingVertical: SPACING.sm,
+          justifyContent: "center",
           paddingHorizontal: SPACING.screen,
           backgroundColor: COLORS.white,
           borderTopWidth: 1,
@@ -87,28 +93,14 @@ export function ProductDetailCartBar({
           zIndex: 2,
         }}
       >
-        <Pressable
+        <SquareButton
           onPress={handleBarPress}
-          accessibilityRole="button"
-          accessibilityLabel="장바구니 담기"
-          style={{
-            flex: 1,
-            borderRadius: RADIUS.md,
-            backgroundColor: COLORS.main,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          disabled={soldOut}
+          accessibilityLabel={soldOut ? "품절" : "장바구니 담기"}
+          style={{ flex: 1 }}
         >
-          <Text
-            style={{
-              ...pretendard(700),
-              fontSize: TYPOGRAPHY.size.xl,
-              color: COLORS.white,
-            }}
-          >
-            장바구니 담기
-          </Text>
-        </Pressable>
+          {soldOut ? "품절" : "장바구니 담기"}
+        </SquareButton>
       </View>
     </>
   );

@@ -2,6 +2,7 @@ import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Text, View, useWindowDimensions } from "react-native";
 import { formatPrice } from "../formatPrice";
+import { RemainingStockText } from "../RemainingStockText";
 import type { Product } from "../types";
 import { ProductDetailCouponButton } from "./ProductDetailCouponButton";
 import { ProductDetailRecommend } from "./ProductDetailRecommend";
@@ -20,7 +21,7 @@ export function ProductDetailInfo({
 }: ProductDetailInfoProps) {
   const { width: screenWidth } = useWindowDimensions();
   const recommendCardWidth =
-    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 2.7;
+    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3;
 
   const category = product.category ?? "카테고리";
   const couponPrice = product.couponPrice ?? product.price;
@@ -38,17 +39,17 @@ export function ProductDetailInfo({
         gap: SPACING.md,
       }}
     >
-      <Text className="text-md text-text-sub" style={pretendard(400)}>
+      <Text className="text-sm text-text-sub" style={pretendard(400)}>
         {category} &gt;
       </Text>
 
-      <Text className="text-2xl text-text-main" style={pretendard(700)}>
+      <Text className="text-xl text-text-main" style={pretendard(700)}>
         {product.name}
       </Text>
 
       <View style={{ gap: SPACING.xs }}>
         <Text
-          className="text-xl"
+          className="text-lg"
           style={{ ...pretendard(700), color: COLORS.redText }}
         >
           쿠폰 적용시
@@ -57,16 +58,16 @@ export function ProductDetailInfo({
         <View className="flex-row items-center justify-between gap-2">
           <View className="shrink flex-row flex-wrap items-center gap-1">
             <Text
-              className="text-2xl"
+              className="text-xl"
               style={{ ...pretendard(700), color: COLORS.redText }}
             >
               {product.discountPercent}%
             </Text>
-            <Text className="text-2xl text-text-main" style={pretendard(700)}>
+            <Text className="text-xl text-text-main" style={pretendard(700)}>
               {formatPrice(couponPrice)}
             </Text>
             <Text
-              className="text-lg text-text-sub"
+              className="text-md text-text-sub"
               style={{
                 ...pretendard(400),
                 textDecorationLine: "line-through",
@@ -76,15 +77,7 @@ export function ProductDetailInfo({
             </Text>
           </View>
 
-          <Text
-            className="shrink-0 text-lg text-text-blue"
-            style={{
-              ...pretendard(500),
-              textDecorationLine: "underline",
-            }}
-          >
-            남은 재고 {stockCount}개
-          </Text>
+          <RemainingStockText stockCount={stockCount} className="shrink-0" />
         </View>
       </View>
 

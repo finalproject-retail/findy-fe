@@ -1,19 +1,88 @@
-import { WHEEL_PICKER_HEIGHT, WheelPicker } from "@/components/common/WheelPicker";
+import {
+  WHEEL_PICKER_HEIGHT,
+  WheelPicker,
+} from "@/components/common/WheelPicker";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { pretendard } from "@/utils/pretendard";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+export type DatePickerSelectionMode = "date" | "yearMonth";
 
 interface DatePickerModalProps {
   isVisible: boolean;
   onClose: () => void;
   onSelectDate: (dateString: string) => void;
+  /** YYYY.MM.DD 또는 YYYY.MM — 없으면 오늘 날짜 기준 */
+  value?: string;
+  /** yearMonth: 월 선택 시 YYYY.MM 반환 후 닫힘 */
+  selectionMode?: DatePickerSelectionMode;
+}
+
+type PickerDateParts = {
+  year: number;
+  month: number;
+  day: number | null;
+};
+
+function clampYear(year: number) {
+  return Math.min(Math.max(year, MIN_YEAR), MAX_YEAR);
+}
+
+function getTodayParts(): PickerDateParts {
+  const now = new Date();
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+  };
+}
+
+function parsePickerValue(
+  value: string | undefined,
+  selectionMode: DatePickerSelectionMode,
+): PickerDateParts {
+  const fallback = getTodayParts();
+  if (!value?.trim()) return fallback;
+
+  const segments = value.trim().split(".");
+  const [yearRaw, monthRaw, dayRaw] = segments.map((part) => Number(part));
+  if (
+    segments.length < 2 ||
+    Number.isNaN(yearRaw) ||
+    Number.isNaN(monthRaw) ||
+    monthRaw < 1 ||
+    monthRaw > 12
+  ) {
+    return fallback;
+  }
+
+  const day =
+    selectionMode === "date" &&
+    segments.length >= 3 &&
+    !Number.isNaN(dayRaw) &&
+    dayRaw >= 1
+      ? dayRaw
+      : fallback.day;
+
+  return {
+    year: clampYear(yearRaw),
+    month: monthRaw,
+    day,
+  };
 }
 
 const MIN_YEAR = 1920;
@@ -116,19 +185,27 @@ function SheetBody({
   );
 }
 
-export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePickerModalProps) {
-  const [currentYear, setCurrentYear] = useState(2004);
-  const [currentMonth, setCurrentMonth] = useState(3);
-  const [selectedDay, setSelectedDay] = useState<number | null>(1);
+export function DatePickerModal({
+  isVisible,
+  onClose,
+  onSelectDate,
+  value,
+  selectionMode = "date",
+}: DatePickerModalProps) {
+  const today = getTodayParts();
+  const [currentYear, setCurrentYear] = useState(today.year);
+  const [currentMonth, setCurrentMonth] = useState(today.month);
+  const [selectedDay, setSelectedDay] = useState<number | null>(today.day);
   const [viewMode, setViewMode] = useState<"month" | "day">("month");
   const [showYearPicker, setShowYearPicker] = useState(false);
-  const [pickerYear, setPickerYear] = useState(currentYear);
-  const pickerYearRef = useRef(currentYear);
+  const [pickerYear, setPickerYear] = useState(today.year);
+  const pickerYearRef = useRef(today.year);
 
   const translateY = useSharedValue(SHEET_OFFSET);
 
   const years = useMemo(
-    () => Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => MAX_YEAR - i),
+    () =>
+      Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => MAX_YEAR - i),
     [],
   );
 
@@ -140,6 +217,17 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
 
   useEffect(() => {
     if (isVisible) {
+      const parts = parsePickerValue(value, selectionMode);
+      setCurrentYear(parts.year);
+      setCurrentMonth(parts.month);
+      setSelectedDay(parts.day);
+      setPickerYear(parts.year);
+      pickerYearRef.current = parts.year;
+      setShowYearPicker(false);
+      setViewMode(
+        selectionMode === "date" && parts.day != null ? "day" : "month",
+      );
+
       translateY.value = withTiming(0, {
         duration: 280,
         easing: Easing.out(Easing.cubic),
@@ -149,7 +237,7 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
       setShowYearPicker(false);
       setViewMode("month");
     }
-  }, [isVisible, translateY]);
+  }, [isVisible, value, selectionMode, translateY]);
 
   const sheetAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -165,6 +253,12 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
   };
 
   const handleMonthSelect = (month: number) => {
+    if (selectionMode === "yearMonth") {
+      const formattedMonth = String(month).padStart(2, "0");
+      onSelectDate(`${currentYear}.${formattedMonth}`);
+      onClose();
+      return;
+    }
     setCurrentMonth(month);
     setViewMode("day");
   };
@@ -257,17 +351,32 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
           <DatePickerSheet>
             <SheetHeader>
               <Pressable onPress={handleHeaderBack} className="p-2">
-                <Text className="text-text-sub2 font-pretendard text-md font-medium">〈</Text>
+                <Text
+                  className="text-md text-text-sub2"
+                  style={pretendard(500)}
+                >
+                  〈
+                </Text>
               </Pressable>
 
               <Pressable onPress={openYearPicker} disabled={viewMode === "day"}>
-                <Text className="font-pretendard text-md font-bold text-text-main">
-                  {viewMode === "month" ? `${currentYear}년` : `${currentYear}년 ${currentMonth}월`}
+                <Text
+                  className="text-xl text-text-main"
+                  style={pretendard(700)}
+                >
+                  {viewMode === "month"
+                    ? `${currentYear}년`
+                    : `${currentYear}년 ${currentMonth}월`}
                 </Text>
               </Pressable>
 
               <Pressable onPress={handleHeaderForward} className="p-2">
-                <Text className="text-text-sub2 font-pretendard text-md font-medium">〉</Text>
+                <Text
+                  className="text-lg text-text-sub2"
+                  style={pretendard(500)}
+                >
+                  〉
+                </Text>
               </Pressable>
             </SheetHeader>
 
@@ -283,16 +392,20 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
                         style={[
                           sheetStyles.monthCell,
                           {
-                            backgroundColor: isSelected ? COLORS.charcoal : COLORS.white,
-                            borderColor: isSelected ? COLORS.charcoal : COLORS.gray,
+                            backgroundColor: isSelected
+                              ? COLORS.charcoal
+                              : COLORS.white,
+                            borderColor: isSelected
+                              ? COLORS.charcoal
+                              : COLORS.gray,
                           },
                         ]}
                       >
                         <Text
-                          className="font-pretendard text-sm"
+                          className="text-md"
                           style={{
+                            ...pretendard(isSelected ? 700 : 500),
                             color: isSelected ? COLORS.white : COLORS.text,
-                            fontWeight: isSelected ? "700" : "500",
                           }}
                         >
                           {month}월
@@ -306,7 +419,10 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
               {viewMode === "day" && (
                 <View className="flex-row flex-wrap justify-start">
                   {emptySpaces.map((_, index) => (
-                    <View key={`empty-${index}`} className="w-[14.28%] h-[40px] mb-2" />
+                    <View
+                      key={`empty-${index}`}
+                      className="w-[14.28%] h-[40px] mb-2"
+                    />
                   ))}
 
                   {daysArray.map((day) => {
@@ -321,15 +437,17 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
                           style={[
                             sheetStyles.dayDot,
                             {
-                              backgroundColor: isSelected ? COLORS.main : "transparent",
+                              backgroundColor: isSelected
+                                ? COLORS.main
+                                : "transparent",
                             },
                           ]}
                         >
                           <Text
-                            className="font-pretendard text-sm"
+                            className="text-sm"
                             style={{
+                              ...pretendard(isSelected ? 700 : 400),
                               color: isSelected ? COLORS.white : COLORS.text,
-                              fontWeight: isSelected ? "700" : "400",
                             }}
                           >
                             {day}
@@ -357,12 +475,27 @@ export function DatePickerModal({ isVisible, onClose, onSelectDate }: DatePicker
           >
             <DatePickerSheet>
               <SheetHeader>
-                <Pressable onPress={() => setShowYearPicker(false)} className="py-1 px-2">
-                  <Text className="font-pretendard text-md text-text-sub2">취소</Text>
+                <Pressable
+                  onPress={() => setShowYearPicker(false)}
+                  className="py-1 px-2"
+                >
+                  <Text
+                    className="text-md text-text-sub2"
+                    style={pretendard(400)}
+                  >
+                    취소
+                  </Text>
                 </Pressable>
-                <Text className="font-pretendard text-md font-bold text-text-main">{pickerYear}년</Text>
+                <Text
+                  className="text-lg text-text-main"
+                  style={pretendard(700)}
+                >
+                  {pickerYear}년
+                </Text>
                 <Pressable onPress={confirmYearPicker} className="py-1 px-2">
-                  <Text className="font-pretendard text-md font-bold text-main">완료</Text>
+                  <Text className="text-md text-main" style={pretendard(700)}>
+                    완료
+                  </Text>
                 </Pressable>
               </SheetHeader>
 
