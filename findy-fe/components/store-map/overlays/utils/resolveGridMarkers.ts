@@ -6,6 +6,7 @@ import type {
   ShoppingMapItem,
 } from "../types";
 import { gridCellCenterToPixel } from "./gridToPixel";
+import { snapToNearestShelf } from "./shelfGrid";
 
 function getCellType(config: StoreMapConfig, gridX: number, gridY: number) {
   return config.cells.find((c) => c.x === gridX && c.y === gridY)?.type;
@@ -51,11 +52,12 @@ function toMarker<T extends MapGridPoint & { id: string; name: string }>(
   cellPx: number,
   label: string
 ): ResolvedGridMarker {
-  assertShelfCell(config, item.gridX, item.gridY, label);
+  const shelf = snapToNearestShelf(config, item.gridX, item.gridY);
+  assertShelfCell(config, shelf.gridX, shelf.gridY, label);
   return {
     id: item.id,
     name: item.name,
-    center: gridCellCenterToPixel(item.gridX, item.gridY, cellPx),
+    center: gridCellCenterToPixel(shelf.gridX, shelf.gridY, cellPx),
   };
 }
 
