@@ -1,5 +1,6 @@
 import { SquareButton } from "@/components/common/SquareButton";
 import { COLORS, SPACING } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
