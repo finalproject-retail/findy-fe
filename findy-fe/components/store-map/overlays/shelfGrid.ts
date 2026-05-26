@@ -1,5 +1,5 @@
-import type { StoreMapConfig } from "../../types";
-import type { MapGridPoint } from "../types";
+import type { StoreMapConfig } from "../types";
+import type { MapGridPoint } from "./types";
 
 function getCell(config: StoreMapConfig, gridX: number, gridY: number) {
   return config.cells.find((c) => c.x === gridX && c.y === gridY);

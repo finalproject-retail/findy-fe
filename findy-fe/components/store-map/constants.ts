@@ -15,8 +15,16 @@ export const ZOOM_DETAIL_MIN = 1.4;
 export const ZOOM_MAX = 3.2;
 export const ZOOM_STEP = 0.18;
 
+/** 지도 진입 시 현위치 기준 확대 배율 (fit 대비) */
+export const USER_LOCATION_FOCUS_ZOOM_FACTOR = 2.4;
+
 /** 확대 시 하단(벽면) 매대까지 pan 여유 — 좌우에는 적용 안 함 */
 export const MAP_PAN_BOTTOM_EXTRA_PX = 96;
+/** 확대 시 상단 pan 여유 */
+export const MAP_PAN_TOP_EXTRA_PX = 56;
+/** 바텀시트 가림 높이 대비 추가 pan 비율 */
+export const MAP_PAN_INSET_BOTTOM_RATIO = 0.35;
+export const MAP_PAN_INSET_TOP_RATIO = 0.12;
 
 export const SHELF_BLOCK_RADIUS = 2;
 export const ZONE_BLOCK_RADIUS = 3;

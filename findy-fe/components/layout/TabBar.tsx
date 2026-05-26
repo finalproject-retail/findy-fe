@@ -96,6 +96,11 @@ export function TabBar({
   descriptors,
   insets,
 }: BottomTabBarProps) {
+  const currentRoute = state.routes[state.index]?.name;
+  if (currentRoute === "map") {
+    return null;
+  }
+
   const bottomInset = insets.bottom;
   const mapRouteIndex = state.routes.findIndex((route) => route.name === "map");
   const mapRoute = mapRouteIndex >= 0 ? state.routes[mapRouteIndex] : null;

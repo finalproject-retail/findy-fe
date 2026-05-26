@@ -1,43 +1,76 @@
 import { StoreMapView } from "@/components/store-map";
 import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
-import { LAYOUT } from "@/constants/theme";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapOverlayControls } from "./MapOverlayControls";
-import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { MapShoppingBottomSheet } from "./shopping-sheet";
+import {
+  getSheetCollapsedBottomLift,
+  getSheetCollapsedPeekHeight,
+  getSheetMapBottomInset,
+} from "./shopping-sheet/constants";
 
 export function MapScreen() {
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const {
-    navigationData,
-    navigationRefreshKey,
-    refreshNavigationOverlay,
-  } = useMapNavigation();
+  const { navigationData, navigationRefreshKey, refreshNavigationOverlay } =
+    useMapNavigation();
 
-  const tabBarInset = LAYOUT.tabBarTotalHeight + insets.bottom;
-  const mapFitWidth = windowWidth;
-  const mapFitHeight = Math.max(1, windowHeight - tabBarInset);
+  const collapsedPeekHeight = getSheetCollapsedPeekHeight(insets.bottom);
+  const collapsedBottomLift = getSheetCollapsedBottomLift(insets.bottom);
+  const mapBottomInset = getSheetMapBottomInset(insets.bottom);
+  const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
+  const [sheetVisibleHeight, setSheetVisibleHeight] = useState(0);
+  const mapContentBottomInset = Math.max(mapBottomInset, sheetVisibleHeight);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: MAP_FLOOR_COLOR }}>
-      <View style={styles.mapLayer}>
-        <StoreMapView
-          fitWidth={mapFitWidth}
-          fitHeight={mapFitHeight}
-          contentBottomInset={tabBarInset}
-          navigationData={navigationData}
-          navigationRefreshKey={navigationRefreshKey}
-        />
+    <View style={styles.root}>
+      <View
+        style={styles.mapArea}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          if (width > 0 && height > 0) {
+            setMapLayout({ width, height });
+          }
+        }}
+      >
+        {mapLayout.height > 0 ? (
+          <StoreMapView
+            fitWidth={mapLayout.width}
+            fitHeight={mapLayout.height}
+            contentBottomInset={mapContentBottomInset}
+            navigationData={navigationData}
+            navigationRefreshKey={navigationRefreshKey}
+          />
+        ) : null}
+        <MapOverlayControls onRefreshPress={refreshNavigationOverlay} />
       </View>
 
-      <MapOverlayControls onRefreshPress={refreshNavigationOverlay} />
+      <GestureHandlerRootView style={styles.sheetHost} pointerEvents="box-none">
+        <MapShoppingBottomSheet
+          peekHeight={collapsedPeekHeight}
+          collapsedBottomLift={collapsedBottomLift}
+          onVisibleHeightChange={setSheetVisibleHeight}
+        />
+      </GestureHandlerRootView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mapLayer: {
+  root: {
+    flex: 1,
+    backgroundColor: MAP_FLOOR_COLOR,
+  },
+  mapArea: {
+    flex: 1,
+    minHeight: 0,
+    position: "relative",
+    overflow: "hidden",
+  },
+  sheetHost: {
     ...StyleSheet.absoluteFillObject,
   },
 });

@@ -11,7 +11,7 @@ import {
   getStockCount,
   getUnitPrice,
   isLowStock,
-} from "./utils";
+} from "@/components/cart/cartItemUtils";
 
 const THUMB_SIZE = 80;
 const DELETE_SIZE = 22;
