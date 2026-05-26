@@ -23,13 +23,14 @@ export function RecommendedProductCard({
 }: RecommendedProductCardProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { addToCart } = useCart();
 
   const openProductDetail = () => {
     router.push(`/product/${product.id}`);
   };
 
   const handleAddToCart = () => {
-    // TODO: 장바구니 API — 상품 1개 담기
+    addToCart(product, 1);
     showToast(TOAST_MESSAGES.addedToCart);
   };
 

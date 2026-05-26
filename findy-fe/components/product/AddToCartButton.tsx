@@ -1,17 +1,21 @@
 import CartIcon from "@/assets/icons/cart-icon.svg";
+import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Pressable, Text } from "react-native";
+import type { Product } from "./types";
 
 type AddToCartButtonProps = {
+  product: Product;
   onPress?: () => void;
 };
 
-export function AddToCartButton({ onPress }: AddToCartButtonProps) {
+export function AddToCartButton({ product, onPress }: AddToCartButtonProps) {
   const { showToast } = useToast();
+  const { addToCart } = useCart();
 
   const handlePress = () => {
-    // TODO: 장바구니 API — 상품 1개 담기
+    addToCart(product, 1);
     showToast(TOAST_MESSAGES.addedToCart);
     onPress?.();
   };

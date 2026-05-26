@@ -80,7 +80,10 @@ export function PopularProductCard({
           </View>
         </Pressable>
 
-        <AddToCartButton onPress={() => onAddToCart?.(product.id)} />
+        <AddToCartButton
+          product={product}
+          onPress={() => onAddToCart?.(product.id)}
+        />
       </View>
     </View>
   );

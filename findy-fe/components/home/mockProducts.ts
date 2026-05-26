@@ -89,6 +89,17 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
   {
+    id: "ramen-cup",
+    name: "[농심] 사리곰탕 소컵 6입",
+    image: require("@/assets/images/product/noodle.png"),
+    discountPercent: 33,
+    price: 4060,
+    category: "면/통조림 · 라면",
+    originalPrice: 6060,
+    couponPrice: 4060,
+    stockCount: 0,
+  },
+  {
     id: "coffee",
     name: "카누 미니 디카페인 30T",
     image: require("@/assets/images/product/coffee.png"),
