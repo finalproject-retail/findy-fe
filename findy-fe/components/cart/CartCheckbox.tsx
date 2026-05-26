@@ -1,11 +1,14 @@
+import CheckGreenIcon from "@/assets/icons/check-green.svg";
 import CheckOffIcon from "@/assets/icons/check-off.svg";
 import CheckOnIcon from "@/assets/icons/check-on.svg";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 
 const CHECKBOX_SIZE = 24;
 
 type CartCheckboxProps = {
   checked: boolean;
+  /** 지도 쇼핑 시트 — 바코드 픽 완료(초록 체크, 비활성) */
+  picked?: boolean;
   disabled?: boolean;
   onPress?: () => void;
   accessibilityLabel: string;
@@ -13,24 +16,32 @@ type CartCheckboxProps = {
 
 export function CartCheckbox({
   checked,
+  picked = false,
   disabled = false,
   onPress,
   accessibilityLabel,
 }: CartCheckboxProps) {
-  const Icon = checked ? CheckOnIcon : CheckOffIcon;
+  const Icon = picked
+    ? CheckGreenIcon
+    : checked
+      ? CheckOnIcon
+      : CheckOffIcon;
+  const isDisabled = disabled || picked;
 
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={isDisabled}
       hitSlop={8}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked, disabled }}
+      accessibilityState={{ checked: checked || picked, disabled: isDisabled }}
       accessibilityLabel={accessibilityLabel}
       className="items-center justify-center"
-      style={{ opacity: disabled ? 0.4 : 1 }}
+      style={{ opacity: isDisabled && !picked ? 0.4 : 1 }}
     >
-      <Icon width={CHECKBOX_SIZE} height={CHECKBOX_SIZE} />
+      <View pointerEvents="none">
+        <Icon width={CHECKBOX_SIZE} height={CHECKBOX_SIZE} />
+      </View>
     </Pressable>
   );
 }

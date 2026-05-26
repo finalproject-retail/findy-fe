@@ -114,8 +114,8 @@ export function StoreMapOverlays({
         mapHeight={mapHeight}
         cellPx={cellPx}
       />
-      <ShoppingItemMarkerLayer markers={shoppingMarkers} cellPx={cellPx} />
       <RecommendationAdMarkerLayer markers={recommendedMarkers} cellPx={cellPx} />
+      <ShoppingItemMarkerLayer markers={shoppingMarkers} cellPx={cellPx} />
       <UserLocationMarker location={data.currentLocation} cellPx={cellPx} />
 
       {__DEV__ && activeLegIndex < maxLegIndex ? (

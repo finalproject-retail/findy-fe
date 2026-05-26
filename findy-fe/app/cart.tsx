@@ -1,6 +1,7 @@
 import { Header } from "@/components/common";
 import {
   CART_FOOTER_HEIGHT,
+  cartToShoppingMapItems,
   CartEmptyState,
   CartFooter,
   CartItemRow,
@@ -9,7 +10,6 @@ import {
   CartSoldOutItemRow,
 } from "@/components/cart";
 import { SafeView } from "@/components/layout";
-import { cartToShoppingMapItems } from "@/components/cart/cartToShoppingMapItems";
 import { SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
@@ -19,7 +19,7 @@ import { pretendard } from "@/utils/pretendard";
 
 export default function CartScreen() {
   const router = useRouter();
-  const { applyShoppingItems } = useMapNavigation();
+  const { startShoppingTrip } = useMapNavigation();
   const {
     availableItems,
     soldOutItems,
@@ -33,10 +33,11 @@ export default function CartScreen() {
   const isEmpty = availableItems.length === 0 && soldOutItems.length === 0;
 
   const handleStartShoppingWithRoute = () => {
+    const selectedLines = availableItems.filter((item) => item.selected);
     const shoppingItems = cartToShoppingMapItems(availableItems);
-    if (shoppingItems.length === 0) return;
+    if (shoppingItems.length === 0 || selectedLines.length === 0) return;
 
-    applyShoppingItems(shoppingItems);
+    startShoppingTrip(selectedLines, shoppingItems);
     router.push("/route-generating");
   };
 

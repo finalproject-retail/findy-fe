@@ -5,7 +5,7 @@ import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { Pressable, Text, View } from "react-native";
 import { CartCheckbox } from "./CartCheckbox";
-import { getOriginalPrice, getUnitPrice } from "./utils";
+import { getOriginalPrice, getUnitPrice } from "@/components/cart/cartItemUtils";
 
 const THUMB_SIZE = 80;
 const DELETE_SIZE = 22;

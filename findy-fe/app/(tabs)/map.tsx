@@ -1,5 +1,5 @@
-import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
 import { MapScreen } from "@/components/map";
+import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
 
 export default function MapTabScreen() {
   return (

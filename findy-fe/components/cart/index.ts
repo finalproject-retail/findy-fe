@@ -6,3 +6,11 @@ export { CartQuantityStepper } from "./CartQuantityStepper";
 export { CartRecommendationSection } from "./CartRecommendationSection";
 export { CartSelectAllRow } from "./CartSelectAllRow";
 export { CartSoldOutItemRow } from "./CartSoldOutItemRow";
+export { cartToShoppingMapItems } from "./cartToShoppingMapItems";
+export {
+  getOriginalPrice,
+  getStockCount,
+  getUnitPrice,
+  isLowStock,
+  LOW_STOCK_THRESHOLD,
+} from "./cartItemUtils";

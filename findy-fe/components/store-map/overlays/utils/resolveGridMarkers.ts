@@ -6,7 +6,7 @@ import type {
   ShoppingMapItem,
 } from "../types";
 import { gridCellCenterToPixel } from "./gridToPixel";
-import { snapToNearestShelf } from "./shelfGrid";
+import { snapToNearestShelf } from "../shelfGrid";
 
 function getCellType(config: StoreMapConfig, gridX: number, gridY: number) {
   return config.cells.find((c) => c.x === gridX && c.y === gridY)?.type;

@@ -4,7 +4,7 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Pressable, Text, View } from "react-native";
-import { getUnitPrice } from "./utils";
+import { getUnitPrice } from "@/components/cart/cartItemUtils";
 
 export const CART_FOOTER_HEIGHT = 125;
 

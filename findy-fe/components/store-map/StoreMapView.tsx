@@ -16,9 +16,14 @@ import {
   BASE_CELL_PX,
   MAP_FLOOR_COLOR,
   MAP_PAN_BOTTOM_EXTRA_PX,
+  MAP_PAN_INSET_BOTTOM_RATIO,
+  MAP_PAN_INSET_TOP_RATIO,
+  MAP_PAN_TOP_EXTRA_PX,
+  USER_LOCATION_FOCUS_ZOOM_FACTOR,
   ZOOM_MAX,
   ZOOM_STEP,
 } from "./constants";
+import { gridCellCenterToPixel } from "./overlays/utils/gridToPixel";
 import { getEmartStoreMapConfig } from "./data/emart-floor-plan";
 import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
 import type { StoreMapNavigationMock } from "./overlays/types";
@@ -168,11 +173,14 @@ export function StoreMapView({
       minY = (vh - scaledH) / 2;
       maxY = minY;
     } else {
-      const bottomPad = MAP_PAN_BOTTOM_EXTRA_PX;
+      const inset = contentBottomInsetSv.value;
+      const bottomPad =
+        MAP_PAN_BOTTOM_EXTRA_PX + inset * MAP_PAN_INSET_BOTTOM_RATIO;
+      const topPad = MAP_PAN_TOP_EXTRA_PX + inset * MAP_PAN_INSET_TOP_RATIO;
       minX = overflowX > 0 ? -overflowX : (vw - scaledW) / 2;
       maxX = overflowX > 0 ? 0 : (vw - scaledW) / 2;
       minY = overflowY > 0 ? -overflowY - bottomPad : (vh - scaledH) / 2;
-      maxY = overflowY > 0 ? 0 : (vh - scaledH) / 2;
+      maxY = overflowY > 0 ? topPad : (vh - scaledH) / 2;
     }
 
     return {
@@ -192,7 +200,8 @@ export function StoreMapView({
         viewportSize.width,
         effectiveVh,
         scaledW,
-        scaledH
+        scaledH,
+        { contentBottomInset },
       );
       panX.value = next.x;
       panY.value = next.y;
@@ -271,9 +280,71 @@ export function StoreMapView({
     ]
   );
 
+  const focusOnUserLocation = useCallback(() => {
+    const location = navigationData?.currentLocation;
+    if (!location || viewportSize.width <= 0 || viewportSize.height <= 0) {
+      return;
+    }
+
+    const targetScale = clamp(
+      fitScale * USER_LOCATION_FOCUS_ZOOM_FACTOR,
+      minZoom,
+      maxZoom,
+    );
+    applyScaleState(targetScale);
+
+    const effectiveVh = viewportSize.height - contentBottomInset;
+    const scaledW = mapWidth * targetScale;
+    const scaledH = mapHeight * targetScale;
+    const center = gridCellCenterToPixel(
+      location.gridX,
+      location.gridY,
+      BASE_CELL_PX * targetScale,
+    );
+
+    const next = clampPanPosition(
+      viewportSize.width / 2 - center.x,
+      effectiveVh / 2 - center.y,
+      viewportSize.width,
+      effectiveVh,
+      scaledW,
+      scaledH,
+      { contentBottomInset },
+    );
+    panX.value = next.x;
+    panY.value = next.y;
+    savedPanX.value = next.x;
+    savedPanY.value = next.y;
+  }, [
+    applyScaleState,
+    contentBottomInset,
+    fitScale,
+    mapHeight,
+    mapWidth,
+    maxZoom,
+    minZoom,
+    navigationData?.currentLocation,
+    panX,
+    panY,
+    savedPanX,
+    savedPanY,
+    viewportSize.height,
+    viewportSize.width,
+  ]);
+
   useEffect(() => {
-    applyScaleState(fitScale);
-  }, [fitScale, applyScaleState]);
+    focusOnUserLocation();
+  }, [
+    focusOnUserLocation,
+    navigationRefreshKey,
+    navigationData?.currentLocation.gridX,
+    navigationData?.currentLocation.gridY,
+  ]);
+
+  useEffect(() => {
+    if (viewportSize.width <= 0) return;
+    applyPanClamp(scaleRef.current);
+  }, [contentBottomInset, applyPanClamp, viewportSize.width]);
 
   const syncOpacityWorklet = (nextScale: number) => {
     "worklet";
