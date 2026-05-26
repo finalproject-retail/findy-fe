@@ -21,7 +21,7 @@ function SpecRow({ label, value }: SpecRowProps) {
   return (
     <View className="flex-row" style={{ gap: SPACING.sm }}>
       <Text
-        className="text-lg text-text-sub"
+        className="text-md text-text-sub"
         style={{
           ...pretendard(400),
           width: LABEL_WIDTH,
@@ -29,7 +29,7 @@ function SpecRow({ label, value }: SpecRowProps) {
       >
         {label}
       </Text>
-      <Text className="flex-1 text-lg text-text-main" style={pretendard(400)}>
+      <Text className="flex-1 text-sm text-text-main" style={pretendard(400)}>
         {value}
       </Text>
     </View>
@@ -95,7 +95,7 @@ export function ProductDetailSpec({ product }: ProductDetailSpecProps) {
         <SpecRow label="중량/용량" value={spec.weightCapacity} />
         <View className="flex-row" style={{ gap: SPACING.sm }}>
           <Text
-            className="text-lg text-text-sub"
+            className="text-md text-text-sub"
             style={{
               ...pretendard(400),
               width: LABEL_WIDTH,
@@ -104,11 +104,11 @@ export function ProductDetailSpec({ product }: ProductDetailSpecProps) {
             알레르기 정보
           </Text>
           <View className="flex-1" style={{ gap: SPACING.xs }}>
-            <Text className="text-lg text-text-main" style={pretendard(400)}>
+            <Text className="text-md text-text-main" style={pretendard(400)}>
               {spec.allergyInfo}
             </Text>
             {spec.allergyNote ? (
-              <Text className="text-lg text-text-main" style={pretendard(400)}>
+              <Text className="text-md text-text-main" style={pretendard(400)}>
                 {spec.allergyNote}
               </Text>
             ) : null}

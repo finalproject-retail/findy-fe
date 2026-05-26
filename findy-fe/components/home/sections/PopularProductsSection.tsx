@@ -1,19 +1,15 @@
-import { PopularProductCard } from "@/components/product";
-import { MOCK_POPULAR_PRODUCTS } from "@/components/home/mockProducts";
+import { HOME_SECTION_LIMITS } from "@/components/home/constants";
 import { HomeSection } from "@/components/home/HomeSection";
-import { useCallback, useState } from "react";
+import { MOCK_POPULAR_PRODUCTS } from "@/components/home/mockProducts";
+import { PopularProductCard } from "@/components/product";
 import { View } from "react-native";
 
-const POPULAR_COUNT = 5;
-const popularProducts = MOCK_POPULAR_PRODUCTS.slice(0, POPULAR_COUNT);
+const popularProducts = MOCK_POPULAR_PRODUCTS.slice(
+  0,
+  HOME_SECTION_LIMITS.popularProducts,
+);
 
 export function PopularProductsSection() {
-  const [maxContentHeight, setMaxContentHeight] = useState(0);
-
-  const handleContentLayout = useCallback((height: number) => {
-    setMaxContentHeight((prev) => (height > prev ? height : prev));
-  }, []);
-
   return (
     <HomeSection title="🏆 실시간 인기 상품">
       <View className="gap-5">
@@ -22,8 +18,6 @@ export function PopularProductsSection() {
             key={product.id}
             product={product}
             rank={index + 1}
-            contentMinHeight={maxContentHeight || undefined}
-            onContentLayout={handleContentLayout}
           />
         ))}
       </View>

@@ -1,7 +1,6 @@
 import CartIcon from "@/assets/icons/cart-icon.svg";
-import { useCart } from "@/contexts/CartContext";
+import { COLORS, RADIUS, TYPOGRAPHY } from "@/constants/theme";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
-import { COLORS, RADIUS } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -9,8 +8,8 @@ import { Pressable, Text, View } from "react-native";
 import { formatPrice } from "../formatPrice";
 import type { Product } from "../types";
 
-const PRODUCT_NAME_HEIGHT = 40;
 const PRODUCT_NAME_LINE_HEIGHT = 20;
+const PRODUCT_NAME_MIN_HEIGHT = PRODUCT_NAME_LINE_HEIGHT * 2;
 const CART_BUTTON_SIZE = 32;
 
 type RecommendedProductCardProps = {
@@ -76,22 +75,23 @@ export function RecommendedProductCard({
         className="mt-2 gap-1"
       >
         <Text
-          className="text-lg text-text-main"
+          className="text-text-main"
           numberOfLines={2}
           style={{
             ...pretendard(500),
-            height: PRODUCT_NAME_HEIGHT,
+            fontSize: TYPOGRAPHY.size.sm,
             lineHeight: PRODUCT_NAME_LINE_HEIGHT,
+            minHeight: PRODUCT_NAME_MIN_HEIGHT,
           }}
         >
           {product.name}
         </Text>
 
         <View className="flex-row items-center gap-1">
-          <Text className="text-lg text-text-red" style={pretendard(700)}>
+          <Text className="text-md text-text-red" style={pretendard(700)}>
             {product.discountPercent}%
           </Text>
-          <Text className="text-lg text-text-main" style={pretendard(700)}>
+          <Text className="text-md text-text-main" style={pretendard(700)}>
             {formatPrice(product.price)}
           </Text>
         </View>

@@ -3,6 +3,7 @@ import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { Pressable, Text, View } from "react-native";
 import { formatPrice } from "../formatPrice";
+import { RemainingStockText } from "../RemainingStockText";
 import type { Product } from "../types";
 
 const THUMB_SIZE = 72;
@@ -164,7 +165,7 @@ export function ProductDetailCartSheet({
 
         <View className="flex-1" style={{ gap: SPACING.xs }}>
           <Text
-            className="text-lg text-text-main"
+            className="text-md text-text-main"
             numberOfLines={2}
             style={pretendard(500)}
           >
@@ -172,17 +173,15 @@ export function ProductDetailCartSheet({
           </Text>
 
           <View className="flex-row items-center gap-1">
-            <Text className="text-lg text-text-red" style={pretendard(700)}>
+            <Text className="text-md text-text-red" style={pretendard(700)}>
               {product.discountPercent}%
             </Text>
-            <Text className="text-lg text-text-main" style={pretendard(700)}>
+            <Text className="text-md text-text-main" style={pretendard(700)}>
               {formatPrice(unitPrice)}
             </Text>
           </View>
 
-          <Text className="text-sm text-text-blue" style={pretendard(400)}>
-            남은 재고 {stockCount}개
-          </Text>
+          <RemainingStockText stockCount={stockCount} size="sm" />
         </View>
 
         <QuantityStepper
@@ -208,10 +207,10 @@ export function ProductDetailCartSheet({
           justifyContent: "space-between",
         }}
       >
-        <Text className="text-lg text-text-main" style={pretendard(400)}>
+        <Text className="text-md text-text-main" style={pretendard(400)}>
           총 수량 <Text style={pretendard(700)}>{quantity}개</Text>
         </Text>
-        <Text className="text-lg text-text-main" style={pretendard(400)}>
+        <Text className="text-md text-text-main" style={pretendard(400)}>
           총 구매 금액{" "}
           <Text style={pretendard(700)}>{formatPrice(totalPrice)}</Text>
         </Text>
