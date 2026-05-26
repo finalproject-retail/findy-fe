@@ -1,5 +1,6 @@
 import CartIcon from "@/assets/icons/cart-icon.svg";
 import { COLORS, RADIUS, TYPOGRAPHY } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
