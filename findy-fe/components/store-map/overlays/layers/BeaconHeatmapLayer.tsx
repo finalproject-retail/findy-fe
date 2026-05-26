@@ -1,8 +1,10 @@
-import { Platform, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { BEACON_HEAT_OPACITY, BEACON_HEAT_SIZE_PX } from "../constants";
 import type { BeaconCongestionPoint } from "../types";
 import { gridCellCenterToPixel } from "../utils/gridToPixel";
 import { beaconHeatDiameter } from "../utils/overlayScale";
+import { BASE_CELL_PX } from "../../constants";
 
 type BeaconHeatmapLayerProps = {
   beacons: BeaconCongestionPoint[];
@@ -25,29 +27,16 @@ function BeaconHeatBlob({
   const center = gridCellCenterToPixel(beacon.gridX, beacon.gridY, cellPx);
   const size = heatSizePx(beacon.level, cellPx);
   const half = size / 2;
-  const opacity = BEACON_HEAT_OPACITY[beacon.level];
+  const baseOpacity = BEACON_HEAT_OPACITY[beacon.level];
+  const normalized = BASE_CELL_PX > 0 ? cellPx / BASE_CELL_PX : 1;
+  // 확대(매대) 지도에서만 살짝 더 진하게
+  const zoomBoost =
+    normalized <= 1 ? 1 : Math.min(1.35, 1 + (normalized - 1) * 0.35);
+  const opacity = Math.min(0.26, baseOpacity * zoomBoost);
 
-  if (Platform.OS === "web") {
-    const webOpacity = beacon.level === "HIGH" ? "opacity-[0.13]" : "opacity-[0.07]";
-    return (
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          left: center.x - half,
-          top: center.y - half,
-          width: size,
-          height: size,
-          overflow: "hidden",
-          borderRadius: half,
-        }}
-      >
-        <View
-          className={`h-full w-full rounded-full bg-red-500 blur-2xl ${webOpacity}`}
-        />
-      </View>
-    );
-  }
+  // SVG radial-gradient gives a smoother falloff than stacking 2 circles,
+  // and overlaps blend naturally via alpha compositing (web/native).
+  const gradientId = `heat-${beacon.gridX}-${beacon.gridY}-${beacon.level}`;
 
   return (
     <View
@@ -58,29 +47,18 @@ function BeaconHeatBlob({
         top: center.y - half,
         width: size,
         height: size,
-        borderRadius: half,
-        overflow: "hidden",
       }}
     >
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: half,
-          backgroundColor: `rgba(239, 68, 68, ${opacity})`,
-        }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          width: size * 0.75,
-          height: size * 0.75,
-          borderRadius: (size * 0.75) / 2,
-          left: size * 0.125,
-          top: size * 0.125,
-          backgroundColor: `rgba(239, 68, 68, ${opacity * 0.5})`,
-        }}
-      />
+      <Svg width={size} height={size} style={styles.svg}>
+        <Defs>
+          <RadialGradient id={gradientId} cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor="#EF4444" stopOpacity={opacity} />
+            <Stop offset="45%" stopColor="#EF4444" stopOpacity={opacity * 0.55} />
+            <Stop offset="100%" stopColor="#EF4444" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={half} cy={half} r={half} fill={`url(#${gradientId})`} />
+      </Svg>
     </View>
   );
 }
@@ -98,3 +76,11 @@ export function BeaconHeatmapLayer({ beacons, cellPx }: BeaconHeatmapLayerProps)
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  svg: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+  },
+});
