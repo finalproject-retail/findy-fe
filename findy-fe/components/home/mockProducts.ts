@@ -106,7 +106,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: "ramen-cup",
     name: "[농심] 사리곰탕 소컵 6입",
-    image: require("@/assets/images/product/noodle.png"),
+    image: require("@/assets/images/product/noodle2.png"),
     discountPercent: 22,
     price: 4980,
     category: "면/통조림 · 라면",
@@ -119,8 +119,8 @@ export const MOCK_PRODUCTS: Product[] = [
   },
   {
     id: "yogurt",
-    name: "[빙그레] 바나나맛 우유 200mL x 6개",
-    image: require("@/assets/images/product/green-tea.png"),
+    name: "[빙그레] 바나나맛 우유 240mL x 4입",
+    image: require("@/assets/images/product/milk.png"),
     discountPercent: 15,
     price: 5400,
     category: "유제품 · 우유",
@@ -133,10 +133,10 @@ export const MOCK_PRODUCTS: Product[] = [
   },
   {
     id: "tofu",
-    name: "[풀무원] 순두부 300g",
-    image: require("@/assets/images/product/beef.png"),
+    name: "[풀무원] 소가 크고 단단한 두부 500g",
+    image: require("@/assets/images/product/tofu.png"),
     discountPercent: 8,
-    price: 1650,
+    price: 2500,
     category: "가공식품 · 두부",
     originalPrice: 1790,
     couponPrice: 1650,
@@ -146,8 +146,8 @@ export const MOCK_PRODUCTS: Product[] = [
   /** 품절 — 홈 노출 제외, 검색·최근 본·구매 내역 등에서만 사용 */
   {
     id: "oat-milk",
-    name: "[매일] 상상우유 1L",
-    image: require("@/assets/images/product/coffee.png"),
+    name: "[매일] 소화가 잘되는 우유(930mL X 2입)",
+    image: require("@/assets/images/product/milk2.png"),
     discountPercent: 12,
     price: 2640,
     category: "유제품 · 우유",
