@@ -6,7 +6,7 @@
 
 ## 📌 사전 준비물
 1. **Node.js** 설치 (LTS 버전 권장)
-2. 스마트폰에 **Expo Go** 앱 설치 (iOS/Android)
+2. **Development Build** 필수 (비콘 BLE — Expo Go 불가). Android Studio 설정은 [findy-mobile/ANDROID_STUDIO_SETUP.md](../findy-mobile/ANDROID_STUDIO_SETUP.md) 참고.
 3. 에디터: **Cursor** 또는 **VS Code**
 
 <br>
@@ -28,12 +28,15 @@ npm install react-native-css-interop
 설정이 바뀐 경우나 처음 실행할 때는 **캐시를 지우고 실행**하는 것이 가장 안전합니다.
 
 ```bash
-# 캐시 삭제 후 실행 (강력 권장)
-npx expo start -c
+cd findy-fe
+cp .env.example .env   # EXPO_PUBLIC_MAP_API_URL = PC IP
+npm install
+npx expo run:android   # 최초 1회 (BLE 네이티브)
+npm start
 ```
 
-* 터미널에 뜬 **QR 코드**를 스마트폰 카메라로 스캔하여 **Expo Go**에서 확인하세요.
-* 만약 Wi-Fi 환경이 다르다면 `npx expo start --tunnel`을 사용하세요.
+* 비콘·지도 통합: [findy-fe/docs/BEACON_INTEGRATION.md](./findy-fe/docs/BEACON_INTEGRATION.md)
+* 지도 탭에서 BLE 자동 시작 → **현재 위치**가 `MapNavigationContext`에 반영됩니다.
 
 <br>
 
