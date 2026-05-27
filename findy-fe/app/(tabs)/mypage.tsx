@@ -1,6 +1,6 @@
 import { Header } from "@/components/common";
 import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
-import { useRouter } from "expo-router";
+import { type Href, useRouter } from "expo-router";
 import {
   MOCK_MYPAGE_USER,
   MypageGreeting,
@@ -27,7 +27,11 @@ export default function MypageScreen() {
 
   return (
     <SafeView edges={TAB_SCREEN_EDGES}>
-      <Header title="마이핀디" rightIcons={["search", "bell", "cart"]} />
+      <Header
+        title="마이핀디"
+        rightIcons={["search", "bell", "cart"]}
+        onSearchPress={() => router.push("/search" as Href)}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

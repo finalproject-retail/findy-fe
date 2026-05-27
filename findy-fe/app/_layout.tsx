@@ -1,7 +1,7 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
-import { PointsProvider } from "@/contexts/PointsContext";
+import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -22,6 +22,7 @@ function RootLayoutNav() {
       <Stack.Screen name="recently-viewed" />
       <Stack.Screen name="purchase-history" />
       <Stack.Screen name="faq" />
+      <Stack.Screen name="search" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
@@ -83,13 +84,13 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
-        <PointsProvider>
+        <RecentSearchProvider>
           <MapNavigationProvider>
             <ToastProvider>
               <RootLayoutNav />
             </ToastProvider>
           </MapNavigationProvider>
-        </PointsProvider>
+        </RecentSearchProvider>
       </CartProvider>
     </AuthProvider>
   );

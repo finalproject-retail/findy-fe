@@ -1,3 +1,4 @@
+export { DropdownFilter, type DropdownFilterOption } from "./DropdownFilter";
 export { CharcoalSquareButton, type CharcoalSquareButtonProps } from "./CharcoalSquareButton";
 export { SquareButton, type SquareButtonProps } from "./SquareButton";
 export { DatePickerModal, type DatePickerSelectionMode } from "./DatePicker";

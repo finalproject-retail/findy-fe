@@ -23,6 +23,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export const TOAST_MESSAGES = {
   addedToCart: "장바구니에 담겼습니다",
+  addedToShoppingList: "쇼핑 리스트에 추가했습니다",
   couponDownloaded: "쿠폰을 다운로드 받았습니다",
   passwordChanged: "비밀번호 변경이 완료 되었습니다.",
   notificationConsentDeclined: "알림 수신 동의가 거절 되었습니다.",
