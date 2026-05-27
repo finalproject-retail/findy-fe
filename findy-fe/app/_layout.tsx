@@ -2,6 +2,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
+import { MapShoppingNotificationProvider } from "@/contexts/MapShoppingNotificationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -28,6 +29,7 @@ function RootLayoutNav() {
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
+      <Stack.Screen name="notifications" />
       <Stack.Screen name="(auth)" />
     </Stack>
   );
@@ -89,11 +91,13 @@ export default function RootLayout() {
         <RecentSearchProvider>
           <PointsProvider>
             <MapNavigationProvider>
-              <BeaconLocationProvider>
-                <ToastProvider>
-                  <RootLayoutNav />
-                </ToastProvider>
-              </BeaconLocationProvider>
+              <MapShoppingNotificationProvider>
+                <BeaconLocationProvider>
+                  <ToastProvider>
+                    <RootLayoutNav />
+                  </ToastProvider>
+                </BeaconLocationProvider>
+              </MapShoppingNotificationProvider>
             </MapNavigationProvider>
           </PointsProvider>
         </RecentSearchProvider>

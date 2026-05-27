@@ -1,6 +1,7 @@
 import { BarcodePointRewardModal } from "@/components/map/BarcodePointRewardModal";
 import { ScanBarcodeCancelModal } from "@/components/map/ScanBarcodeCancelModal";
 import { useMapBarcodePick, useMapNavigation } from "@/contexts/MapNavigationContext";
+import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
@@ -80,6 +81,7 @@ export function MapShoppingBottomSheet({
   } | null>(null);
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
+  const { showRelatedProductNotification } = useMapShoppingNotifications();
   const { commitPendingBarcodeRewards } = usePoints();
   const {
     navigationData,
@@ -335,12 +337,24 @@ export function MapShoppingBottomSheet({
 
   const handleBarcodePick = useCallback(
     (productId: string) => {
+      const line = tripLineItems.find((item) => item.productId === productId);
+      const prevPicked = pickedQuantityByProductId[productId] ?? 0;
       const rewardPoints = pickProductFromBarcode(productId);
+
+      if (line && prevPicked < line.quantity) {
+        showRelatedProductNotification(line.product);
+      }
+
       if (rewardPoints !== null) {
         setPointRewardModal({ visible: true, points: rewardPoints });
       }
     },
-    [pickProductFromBarcode],
+    [
+      pickProductFromBarcode,
+      pickedQuantityByProductId,
+      showRelatedProductNotification,
+      tripLineItems,
+    ],
   );
 
   const handleRemoveItem = useCallback(
