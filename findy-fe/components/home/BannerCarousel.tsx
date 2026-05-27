@@ -10,19 +10,36 @@ import {
   useWindowDimensions,
 } from "react-native";
 
-const BANNER_HEIGHT = 240;
+const BANNER_ASPECT_WIDTH = 4;
+const BANNER_ASPECT_HEIGHT = 3;
 const AUTO_PLAY_INTERVAL_MS = 5000;
-const SLIDE_COUNT = 10;
 
-const BANNER_SLIDES = Array.from({ length: SLIDE_COUNT }, (_, index) => ({
+const AD_BANNER_SOURCES = [
+  require("@/assets/images/ad/ad-1.png"),
+  require("@/assets/images/ad/ad-2.png"),
+  require("@/assets/images/ad/ad-3.png"),
+  require("@/assets/images/ad/ad-4.png"),
+  require("@/assets/images/ad/ad-5.png"),
+  require("@/assets/images/ad/ad-6.png"),
+  require("@/assets/images/ad/ad-7.png"),
+  require("@/assets/images/ad/ad-8.png"),
+  require("@/assets/images/ad/ad-9.png"),
+  require("@/assets/images/ad/ad-10.png"),
+] as const;
+
+const SLIDE_COUNT = AD_BANNER_SOURCES.length;
+
+const BANNER_SLIDES = AD_BANNER_SOURCES.map((source, index) => ({
   id: String(index + 1),
-  source: require("@/assets/images/findy-ad.png"),
+  source,
 }));
 
 type BannerSlide = (typeof BANNER_SLIDES)[number];
 
 export function BannerCarousel() {
   const { width: screenWidth } = useWindowDimensions();
+  const bannerHeight =
+    (screenWidth * BANNER_ASPECT_HEIGHT) / BANNER_ASPECT_WIDTH;
   const listRef = useRef<FlatList<BannerSlide>>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
@@ -60,19 +77,19 @@ export function BannerCarousel() {
 
   const renderItem: ListRenderItem<BannerSlide> = useCallback(
     ({ item }) => (
-      <View style={{ width: screenWidth, height: BANNER_HEIGHT }}>
+      <View style={{ width: screenWidth, height: bannerHeight }}>
         <Image
           source={item.source}
-          style={{ width: "100%", height: BANNER_HEIGHT }}
+          style={{ width: "100%", height: bannerHeight }}
           contentFit="cover"
         />
       </View>
     ),
-    [screenWidth],
+    [screenWidth, bannerHeight],
   );
 
   return (
-    <View style={{ height: BANNER_HEIGHT, width: "100%" }}>
+    <View style={{ height: bannerHeight, width: "100%" }}>
       <FlatList
         ref={listRef}
         data={BANNER_SLIDES}

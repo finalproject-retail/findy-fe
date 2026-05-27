@@ -6,6 +6,8 @@ export const SHEET_HANDLE_ROW_HEIGHT = SPACING.sm * 2 + SHEET_HANDLE_HEIGHT;
 export const SHEET_BORDER_RADIUS = 20;
 export const SHEET_MAX_HEIGHT_RATIO = 0.46;
 export const SHEET_EXPANDED_MAX_PX = 400;
+/** 푸터 버튼이 홈 인디케이터에 잘리지 않도록 추가 여백 */
+export const SHEET_FOOTER_EXTRA_BOTTOM_PADDING = SPACING.lg;
 
 /** 접었을 때 핸들 블록(핸들 + 위·아래 소량 패딩) */
 export const SHEET_PEEK_TOP_PADDING = SPACING.xs;

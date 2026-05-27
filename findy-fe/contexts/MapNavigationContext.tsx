@@ -10,6 +10,8 @@ import type {
   ShoppingMapItem,
   StoreMapNavigationMock,
 } from "@/components/store-map/overlays/types";
+import { usePoints } from "@/contexts/PointsContext";
+import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 import {
   createContext,
   useCallback,
@@ -82,6 +84,7 @@ function mergeTripLineItems(
 }
 
 export function MapNavigationProvider({ children }: PropsWithChildren) {
+  const { clearPendingBarcodeRewards } = usePoints();
   const [navigationData, setNavigationData] =
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
@@ -89,7 +92,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [pickedQuantityByProductId, setPickedQuantityByProductId] = useState<
     Record<string, number>
   >({});
-
   const hasActiveTrip = tripLineItems.length > 0;
 
   const refreshNavigationOverlay = useCallback(() => {
@@ -114,6 +116,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
   const startShoppingTrip = useCallback(
     (lineItems: CartLineItem[], mapItems: ShoppingMapItem[]) => {
+      clearPendingBarcodeRewards();
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
       setNavigationData((prev) => ({
@@ -122,7 +125,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       }));
       setNavigationRefreshKey((key) => key + 1);
     },
-    [],
+    [clearPendingBarcodeRewards],
   );
 
   const endShoppingTrip = useCallback(() => {
@@ -269,6 +272,7 @@ export function useIsShoppingListMode() {
 export function useMapBarcodePick() {
   const { markProductPicked, tripLineItems, pickedQuantityByProductId } =
     useMapNavigation();
+  const { addPendingBarcodeReward } = usePoints();
 
   const getPickedQuantity = (productId: string) =>
     pickedQuantityByProductId[productId] ?? 0;
@@ -279,5 +283,22 @@ export function useMapBarcodePick() {
     return getPickedQuantity(productId) >= line.quantity;
   };
 
-  return { markProductPicked, getPickedQuantity, isFullyPicked };
+  const pickProductFromBarcode = useCallback(
+    (productId: string, amount?: number) => {
+      markProductPicked(productId, amount);
+      const rewardPoints = rollBarcodePointReward();
+      if (rewardPoints !== null) {
+        addPendingBarcodeReward(rewardPoints);
+      }
+      return rewardPoints;
+    },
+    [addPendingBarcodeReward, markProductPicked],
+  );
+
+  return {
+    markProductPicked,
+    pickProductFromBarcode,
+    getPickedQuantity,
+    isFullyPicked,
+  };
 }

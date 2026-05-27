@@ -21,6 +21,7 @@ type CartContextValue = {
   soldOutItems: CartLineItem[];
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
+  removeFromCartMany: (productIds: string[]) => void;
   setQuantity: (productId: string, quantity: number) => void;
   toggleSelect: (productId: string) => void;
   toggleSelectAll: () => void;
@@ -87,6 +88,12 @@ export function CartProvider({ children }: PropsWithChildren) {
     setItems((prev) => prev.filter((item) => item.productId !== productId));
   }, []);
 
+  const removeFromCartMany = useCallback((productIds: string[]) => {
+    if (productIds.length === 0) return;
+    const idSet = new Set(productIds);
+    setItems((prev) => prev.filter((item) => !idSet.has(item.productId)));
+  }, []);
+
   const setQuantity = useCallback((productId: string, quantity: number) => {
     setItems((prev) =>
       prev.map((item) => {
@@ -129,6 +136,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       soldOutItems,
       addToCart,
       removeFromCart,
+      removeFromCartMany,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
@@ -139,6 +147,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       soldOutItems,
       addToCart,
       removeFromCart,
+      removeFromCartMany,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
