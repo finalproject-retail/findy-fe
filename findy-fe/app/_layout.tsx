@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
+import { PointsProvider } from "@/contexts/PointsContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -79,11 +80,13 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
-        <MapNavigationProvider>
-          <ToastProvider>
-            <RootLayoutNav />
-          </ToastProvider>
-        </MapNavigationProvider>
+        <PointsProvider>
+          <MapNavigationProvider>
+            <ToastProvider>
+              <RootLayoutNav />
+            </ToastProvider>
+          </MapNavigationProvider>
+        </PointsProvider>
       </CartProvider>
     </AuthProvider>
   );

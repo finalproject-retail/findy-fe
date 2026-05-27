@@ -7,7 +7,11 @@ import { NavigationPathLayer } from "./layers/NavigationPathLayer";
 import { RecommendationAdMarkerLayer } from "./layers/RecommendationAdMarkerLayer";
 import { ShoppingItemMarkerLayer } from "./layers/ShoppingItemMarkerLayer";
 import { UserLocationMarker } from "./layers/UserLocationMarker";
+import { MapProductMarkerCallout } from "./MapProductMarkerCallout";
 import type { StoreMapNavigationMock } from "./types";
+import type { CartLineItem } from "@/contexts/CartContext";
+import { MAP_OVERLAY_MARKER_HEIGHT } from "./constants";
+import { scaledMarkerSize } from "./utils/overlayScale";
 import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
 import { buildNavigationPathSegmentsFromAisleLegs } from "./utils/buildNavigationPath";
 import { orderShoppingMinimumRoute } from "./utils/orderShoppingRoute";
@@ -26,6 +30,13 @@ type StoreMapOverlaysProps = {
   data?: StoreMapNavigationMock;
   /** 새로고침·살 상품 목록 변경 시 0으로 리셋 → 경로 재탐색 */
   navigationRefreshKey?: number;
+  /** 바코드 수령 완료된 쇼핑 마커 id (상품 id) */
+  pickedMarkerIds?: ReadonlySet<string>;
+  selectedMarkerProductId?: string | null;
+  tripLineItems?: CartLineItem[];
+  onShoppingMarkerPress?: (productId: string) => void;
+  showCongestion?: boolean;
+  showRoute?: boolean;
 };
 
 export function StoreMapOverlays({
@@ -35,6 +46,12 @@ export function StoreMapOverlays({
   mapHeight,
   data = MAP_NAVIGATION_MOCK,
   navigationRefreshKey = 0,
+  pickedMarkerIds,
+  selectedMarkerProductId = null,
+  tripLineItems = [],
+  onShoppingMarkerPress,
+  showCongestion = true,
+  showRoute = true,
 }: StoreMapOverlaysProps) {
   const routeOrder = useMemo(
     () =>
@@ -85,6 +102,24 @@ export function StoreMapOverlays({
     [cellPx, config, data.shoppingItems]
   );
 
+  const pinHeight = scaledMarkerSize(MAP_OVERLAY_MARKER_HEIGHT, cellPx);
+
+  const selectedTripLine = useMemo(
+    () =>
+      selectedMarkerProductId
+        ? tripLineItems.find((item) => item.productId === selectedMarkerProductId)
+        : undefined,
+    [selectedMarkerProductId, tripLineItems],
+  );
+
+  const selectedMarker = useMemo(
+    () =>
+      selectedMarkerProductId
+        ? shoppingMarkers.find((marker) => marker.id === selectedMarkerProductId)
+        : undefined,
+    [selectedMarkerProductId, shoppingMarkers],
+  );
+
   const recommendedMarkers = useMemo(
     () => resolveRecommendedMarkers(config, data.recommendedItems, cellPx),
     [cellPx, config, data.recommendedItems]
@@ -102,20 +137,38 @@ export function StoreMapOverlays({
       style={[styles.root, { width: mapWidth, height: mapHeight }]}
       pointerEvents="box-none"
     >
-      <BeaconHeatmapLayer
-        beacons={data.beaconCongestion}
-        cellPx={cellPx}
-        mapWidth={mapWidth}
-        mapHeight={mapHeight}
-      />
-      <NavigationPathLayer
-        segments={pathSegments}
-        mapWidth={mapWidth}
-        mapHeight={mapHeight}
-        cellPx={cellPx}
-      />
+      {showCongestion ? (
+        <BeaconHeatmapLayer
+          beacons={data.beaconCongestion}
+          cellPx={cellPx}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+        />
+      ) : null}
+      {showRoute ? (
+        <NavigationPathLayer
+          segments={pathSegments}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          cellPx={cellPx}
+        />
+      ) : null}
       <RecommendationAdMarkerLayer markers={recommendedMarkers} cellPx={cellPx} />
-      <ShoppingItemMarkerLayer markers={shoppingMarkers} cellPx={cellPx} />
+      <ShoppingItemMarkerLayer
+        markers={shoppingMarkers}
+        cellPx={cellPx}
+        pickedMarkerIds={pickedMarkerIds}
+        selectedMarkerId={selectedMarkerProductId}
+        onMarkerPress={onShoppingMarkerPress}
+      />
+      {selectedTripLine && selectedMarker ? (
+        <MapProductMarkerCallout
+          product={selectedTripLine.product}
+          quantity={selectedTripLine.quantity}
+          anchor={selectedMarker.center}
+          pinHeight={pinHeight}
+        />
+      ) : null}
       <UserLocationMarker location={data.currentLocation} cellPx={cellPx} />
 
       {__DEV__ && activeLegIndex < maxLegIndex ? (

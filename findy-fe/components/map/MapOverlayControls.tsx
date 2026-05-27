@@ -2,11 +2,13 @@ import BackIcon from "@/assets/icons/back-icon.svg";
 import MapBellIcon from "@/assets/icons/map_bell.svg";
 import MapMenuIcon from "@/assets/icons/map_menu.svg";
 import MapSearchIcon from "@/assets/icons/map_search.svg";
+import { MapLayerMenuPopover } from "@/components/map/MapLayerMenuPopover";
 import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import {
   MAP_FLOATING_ICON_SIZE,
@@ -28,8 +30,11 @@ type MapOverlayControlsProps = {
   onRefreshPress?: () => void;
   onSearchPress?: () => void;
   onBellPress?: () => void;
-  onMenuPress?: () => void;
   onBackPress?: () => void;
+  showCongestion: boolean;
+  showRoute: boolean;
+  onToggleCongestion: () => void;
+  onToggleRoute: () => void;
 };
 
 function FloatingIconButton({
@@ -69,10 +74,20 @@ export function MapOverlayControls({
   onRefreshPress,
   onSearchPress,
   onBellPress,
-  onMenuPress,
   onBackPress,
+  showCongestion,
+  showRoute,
+  onToggleCongestion,
+  onToggleRoute,
 }: MapOverlayControlsProps) {
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const menuPopoverTop =
+    MAP_OVERLAY_TOP_INSET +
+    MAP_FLOATING_ICON_SIZE * 3 +
+    MAP_OVERLAY_ACTION_GAP * 2 +
+    6;
 
   const handleBack = () => {
     if (onBackPress) {
@@ -88,6 +103,29 @@ export function MapOverlayControls({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {menuOpen ? (
+        <Pressable
+          style={styles.menuBackdrop}
+          onPress={() => setMenuOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="메뉴 닫기"
+        />
+      ) : null}
+
+      {menuOpen ? (
+        <View
+          pointerEvents="box-none"
+          style={[styles.menuPopoverHost, { top: menuPopoverTop }]}
+        >
+          <MapLayerMenuPopover
+            showCongestion={showCongestion}
+            showRoute={showRoute}
+            onToggleCongestion={onToggleCongestion}
+            onToggleRoute={onToggleRoute}
+          />
+        </View>
+      ) : null}
+
       <View
         pointerEvents="box-none"
         className="flex-row items-start"
@@ -154,7 +192,10 @@ export function MapOverlayControls({
           <FloatingIconButton onPress={onBellPress} accessibilityLabel="알림">
             <MapBellIcon width={MAP_FLOATING_ICON_SIZE} height={MAP_FLOATING_ICON_SIZE} />
           </FloatingIconButton>
-          <FloatingIconButton onPress={onMenuPress} accessibilityLabel="메뉴">
+          <FloatingIconButton
+            onPress={() => setMenuOpen((open) => !open)}
+            accessibilityLabel="지도 레이어 메뉴"
+          >
             <MapMenuIcon width={MAP_FLOATING_ICON_SIZE} height={MAP_FLOATING_ICON_SIZE} />
           </FloatingIconButton>
         </View>
@@ -162,3 +203,15 @@ export function MapOverlayControls({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+  },
+  menuPopoverHost: {
+    position: "absolute",
+    right: SPACING.screen,
+    zIndex: 50,
+  },
+});

@@ -8,13 +8,16 @@ import {
 } from "@/components/cart/cartItemUtils";
 import { formatPrice } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
-import { COLORS, SPACING } from "@/constants/theme";
+import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { Pressable, Text, View } from "react-native";
 
-const THUMB_SIZE = 72;
-const DELETE_SIZE = 22;
+const CHECKBOX_SIZE = 24;
+const THUMB_SIZE = 60;
+const DELETE_SIZE = 26;
+const ROW_GAP = SPACING.sm;
+const TITLE_LINE_HEIGHT = 20;
 
 type MapShoppingSheetItemProps = {
   item: CartLineItem;
@@ -48,9 +51,9 @@ export function MapShoppingSheetItem({
       onLongPress={onSimulatePick}
       delayLongPress={400}
       className="border-b border-light-gray px-screen"
-      style={{ paddingVertical: SPACING.md }}
+      style={{ paddingVertical: SPACING.sm }}
     >
-      <View className="flex-row items-start" style={{ gap: SPACING.sm }}>
+      <View className="flex-row items-start" style={{ gap: ROW_GAP }}>
         <CartCheckbox
           checked={false}
           picked={isFullyPicked}
@@ -69,20 +72,33 @@ export function MapShoppingSheetItem({
           contentFit="cover"
         />
 
-        <View className="min-w-0 flex-1" style={{ gap: SPACING.xs }}>
-          <View className="flex-row items-start justify-between gap-2">
+        <View className="min-w-0 flex-1" style={{ gap: 3 }}>
+          <View className="flex-row items-start" style={{ gap: SPACING.xs }}>
             <Text
-              className="flex-1 text-lg"
               numberOfLines={2}
-              style={{ ...pretendard(500), ...struckStyle, color: struckStyle?.color ?? COLORS.text }}
+              style={{
+                flex: 1,
+                ...pretendard(500),
+                fontSize: TYPOGRAPHY.size.md,
+                lineHeight: TITLE_LINE_HEIGHT,
+                ...struckStyle,
+                color: struckStyle?.color ?? COLORS.text,
+              }}
             >
               {product.name}
             </Text>
+
             <Pressable
               onPress={onRemove}
-              hitSlop={8}
+              hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel={`${product.name} 삭제`}
+              style={{
+                width: DELETE_SIZE,
+                height: TITLE_LINE_HEIGHT,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               <Text
                 style={{
@@ -97,17 +113,54 @@ export function MapShoppingSheetItem({
             </Pressable>
           </View>
 
-          <View className="flex-row flex-wrap items-center gap-1">
+          {lowStock ? (
             <Text
-              className="text-lg text-text-red"
-              style={{ ...pretendard(700), ...struckStyle }}
+              style={{
+                ...pretendard(400),
+                fontSize: TYPOGRAPHY.size.xs,
+                color: COLORS.redText,
+              }}
+            >
+              품절임박 {stockCount}개 남음
+            </Text>
+          ) : (
+            <Text
+              style={{
+                ...pretendard(400),
+                fontSize: TYPOGRAPHY.size.xs,
+                color: COLORS.blueText,
+              }}
+            >
+              남은 재고 {stockCount}개
+            </Text>
+          )}
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              flexWrap: "nowrap",
+              gap: SPACING.xs,
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              style={{
+                ...pretendard(700),
+                fontSize: TYPOGRAPHY.size.md,
+                color: COLORS.redText,
+                flexShrink: 0,
+                ...struckStyle,
+              }}
             >
               {product.discountPercent}%
             </Text>
             <Text
-              className="text-lg"
+              numberOfLines={1}
               style={{
                 ...pretendard(700),
+                fontSize: TYPOGRAPHY.size.md,
+                flexShrink: 0,
                 ...struckStyle,
                 color: struckStyle?.color ?? COLORS.text,
               }}
@@ -115,29 +168,28 @@ export function MapShoppingSheetItem({
               {formatPrice(unitPrice)}
             </Text>
             <Text
-              className="text-sm text-text-sub"
+              numberOfLines={1}
               style={{
                 ...pretendard(400),
+                fontSize: TYPOGRAPHY.size.sm,
+                color: COLORS.subText,
                 textDecorationLine: "line-through",
                 opacity: isFullyPicked ? 0.7 : 1,
+                flexShrink: 1,
               }}
             >
               {formatPrice(originalPrice)}
             </Text>
           </View>
 
-          {lowStock ? (
-            <Text className="text-sm text-text-red" style={pretendard(400)}>
-              품절임박 {stockCount}개 남음
-            </Text>
-          ) : (
-            <Text className="text-sm text-text-blue" style={pretendard(400)}>
-              남은 재고 {stockCount}개
-            </Text>
-          )}
-
-          <View className="flex-row justify-end pt-1">
+          <View
+            style={{
+              alignSelf: "flex-end",
+              marginTop: SPACING.xs,
+            }}
+          >
             <CartQuantityStepper
+              compact
               quantity={quantity}
               maxQuantity={maxQuantity}
               onDecrease={() => onQuantityChange(quantity - 1)}

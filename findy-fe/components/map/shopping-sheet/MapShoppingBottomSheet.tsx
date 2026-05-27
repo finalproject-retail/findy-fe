@@ -1,5 +1,10 @@
-import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { BarcodePointRewardModal } from "@/components/map/BarcodePointRewardModal";
+import { ScanBarcodeCancelModal } from "@/components/map/ScanBarcodeCancelModal";
+import { useMapBarcodePick, useMapNavigation } from "@/contexts/MapNavigationContext";
+import type { CartLineItem } from "@/contexts/CartContext";
+import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
@@ -29,10 +34,14 @@ import {
   SHEET_MAX_HEIGHT_RATIO,
   SHEET_PEEK_HANDLE_BLOCK_HEIGHT,
 } from "./constants";
+import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
+import { orderShoppingMinimumRoute } from "@/components/store-map/overlays/utils/orderShoppingRoute";
+import { ScanBarcodeRequiredModal } from "@/components/map/ScanBarcodeRequiredModal";
 import { MapShoppingSheetEmpty } from "./MapShoppingSheetEmpty";
 import { MapShoppingSheetFooter } from "./MapShoppingSheetFooter";
 import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
+import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 
 const SNAP_MS = 260;
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -41,27 +50,62 @@ type MapShoppingBottomSheetProps = {
   peekHeight: number;
   collapsedBottomLift: number;
   onVisibleHeightChange?: (height: number) => void;
+  onDismissProductCallout?: () => void;
 };
 
 export function MapShoppingBottomSheet({
   peekHeight,
   collapsedBottomLift,
   onVisibleHeightChange,
+  onDismissProductCallout,
 }: MapShoppingBottomSheetProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
+  const { addToCart } = useCart();
   const [showBody, setShowBodyVisible] = useState(true);
+  const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
+  const [shopLaterModalVisible, setShopLaterModalVisible] = useState(false);
+  const [pointRewardModal, setPointRewardModal] = useState<{
+    visible: boolean;
+    points: number;
+  }>({ visible: false, points: 0 });
+  const [cancelScanModal, setCancelScanModal] = useState<{
+    productId: string;
+    productName: string;
+    quantity: number;
+  } | null>(null);
   const scrollY = useSharedValue(0);
+  const { pickProductFromBarcode } = useMapBarcodePick();
+  const { commitPendingBarcodeRewards } = usePoints();
   const {
+    navigationData,
     tripLineItems,
     pickedQuantityByProductId,
     hasActiveTrip,
     endShoppingTrip,
-    markProductPicked,
     removeTripItem,
     setTripItemQuantity,
   } = useMapNavigation();
+
+  const routeProductIds = useMemo(() => {
+    const config = getEmartStoreMapConfig();
+    return orderShoppingMinimumRoute(
+      config,
+      navigationData.currentLocation,
+      navigationData.shoppingItems,
+    ).map((item) => item.id);
+  }, [navigationData.currentLocation, navigationData.shoppingItems]);
+
+  const sortedTripLineItems = useMemo(
+    () =>
+      sortTripLineItemsForChecklist(
+        tripLineItems,
+        pickedQuantityByProductId,
+        routeProductIds,
+      ),
+    [tripLineItems, pickedQuantityByProductId, routeProductIds],
+  );
 
   const expandedContentHeight = useMemo(
     () =>
@@ -70,15 +114,6 @@ export function MapShoppingBottomSheet({
         SHEET_EXPANDED_MAX_PX,
       ),
     [screenHeight],
-  );
-
-  const sortedTripLineItems = useMemo(
-    () =>
-      sortTripLineItemsForChecklist(
-        tripLineItems,
-        pickedQuantityByProductId,
-      ),
-    [tripLineItems, pickedQuantityByProductId],
   );
 
   const collapsedHeight = peekHeight;
@@ -156,6 +191,9 @@ export function MapShoppingBottomSheet({
         }
       })
       .onStart(() => {
+        if (onDismissProductCallout) {
+          runOnJS(onDismissProductCallout)();
+        }
         dragStartHeight.value = sheetHeight.value;
         if (sheetHeight.value <= minH + 1) {
           runOnJS(updateShowBody)(true);
@@ -192,6 +230,7 @@ export function MapShoppingBottomSheet({
     expandedHeight,
     scrollY,
     sheetHeight,
+    onDismissProductCallout,
     updateShowBody,
   ]);
 
@@ -240,15 +279,79 @@ export function MapShoppingBottomSheet({
   });
 
   const handleShopLater = () => {
+    onDismissProductCallout?.();
+    if (hasActiveTrip) {
+      setShopLaterModalVisible(true);
+      return;
+    }
+    router.replace("/(tabs)");
+  };
+
+  const handleCancelShopLater = () => {
+    setShopLaterModalVisible(false);
+  };
+
+  const handleConfirmShopLater = () => {
+    for (const line of tripLineItems) {
+      addToCart(line.product, line.quantity);
+    }
+    endShoppingTrip();
+    setShopLaterModalVisible(false);
     router.replace("/(tabs)");
   };
 
   const handleFinishShopping = () => {
+    onDismissProductCallout?.();
+    if (!hasActiveTrip) {
+      setScanBarcodeModalVisible(true);
+      return;
+    }
+    commitPendingBarcodeRewards();
     endShoppingTrip();
     router.replace("/(tabs)");
   };
 
+  const handleBarcodePick = useCallback(
+    (productId: string) => {
+      const rewardPoints = pickProductFromBarcode(productId);
+      if (rewardPoints !== null) {
+        setPointRewardModal({ visible: true, points: rewardPoints });
+      }
+    },
+    [pickProductFromBarcode],
+  );
+
+  const handleRemoveItem = useCallback(
+    (item: CartLineItem) => {
+      const picked = pickedQuantityByProductId[item.productId] ?? 0;
+      const isFullyPicked = picked >= item.quantity;
+
+      if (isFullyPicked) {
+        setCancelScanModal({
+          productId: item.productId,
+          productName: item.product.name,
+          quantity: item.quantity,
+        });
+        return;
+      }
+
+      removeTripItem(item.productId);
+    },
+    [pickedQuantityByProductId, removeTripItem],
+  );
+
+  const handleCancelBarcodeScanned = useCallback(() => {
+    if (!cancelScanModal) return;
+    removeTripItem(cancelScanModal.productId);
+    setCancelScanModal(null);
+  }, [cancelScanModal, removeTripItem]);
+
+  const handleDismissCancelModal = useCallback(() => {
+    setCancelScanModal(null);
+  }, []);
+
   return (
+    <>
     <GestureDetector gesture={panGesture}>
       <Animated.View style={[styles.sheetShell, sheetAnimatedStyle]}>
         <View style={styles.sheetSurface}>
@@ -267,6 +370,7 @@ export function MapShoppingBottomSheet({
               {hasActiveTrip ? (
                 <AnimatedScrollView
                   onScroll={scrollHandler}
+                  onScrollBeginDrag={onDismissProductCallout}
                   scrollEventThrottle={16}
                   bounces
                   showsVerticalScrollIndicator={false}
@@ -281,11 +385,11 @@ export function MapShoppingBottomSheet({
                       pickedQuantity={
                         pickedQuantityByProductId[item.productId] ?? 0
                       }
-                      onRemove={() => removeTripItem(item.productId)}
+                      onRemove={() => handleRemoveItem(item)}
                       onQuantityChange={(qty) =>
                         setTripItemQuantity(item.productId, qty)
                       }
-                      onSimulatePick={() => markProductPicked(item.productId)}
+                      onSimulatePick={() => handleBarcodePick(item.productId)}
                     />
                   ))}
                 </AnimatedScrollView>
@@ -306,6 +410,34 @@ export function MapShoppingBottomSheet({
         </View>
       </Animated.View>
     </GestureDetector>
+
+    <ScanBarcodeRequiredModal
+      visible={scanBarcodeModalVisible}
+      onConfirm={() => setScanBarcodeModalVisible(false)}
+    />
+
+    <BarcodePointRewardModal
+      visible={pointRewardModal.visible}
+      points={pointRewardModal.points}
+      onConfirm={() =>
+        setPointRewardModal((prev) => ({ ...prev, visible: false }))
+      }
+    />
+
+    <MapShopLaterConfirmModal
+      visible={shopLaterModalVisible}
+      onCancel={handleCancelShopLater}
+      onConfirm={handleConfirmShopLater}
+    />
+
+    <ScanBarcodeCancelModal
+      visible={cancelScanModal != null}
+      productName={cancelScanModal?.productName ?? ""}
+      quantity={cancelScanModal?.quantity ?? 1}
+      onBarcodeScanned={handleCancelBarcodeScanned}
+      onDismiss={handleDismissCancelModal}
+    />
+    </>
   );
 }
 
