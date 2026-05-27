@@ -5,7 +5,6 @@ import { MOCK_COUPONS } from "@/components/coupon";
 import { formatPrice } from "@/components/product";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
-import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
@@ -42,15 +41,12 @@ export default function PaymentScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [itemsExpanded, setItemsExpanded] = useState(false);
-  const { balance, pendingBarcodeRewardPoints, commitPendingBarcodeRewards } =
-    usePoints();
-  const { endShoppingTrip } = useMapNavigation();
+  const { balance, pendingBarcodeRewardPoints } = usePoints();
   const {
     checkoutItems,
     selectedCoupon,
     usedPoints,
     setUsedPoints,
-    clearCheckout,
   } = useCheckout();
 
   const subtotal = useMemo(
@@ -110,10 +106,8 @@ export default function PaymentScreen() {
   };
 
   const handleCreateQr = () => {
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
-    clearCheckout();
-    router.replace("/(tabs)");
+    if (checkoutItems.length === 0) return;
+    router.push("/payment-qr");
   };
 
   return (
