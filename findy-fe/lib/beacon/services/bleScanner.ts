@@ -1,7 +1,7 @@
 import type { BeaconScan } from "@/lib/beacon/types";
+import Constants from "expo-constants";
 import * as Location from "expo-location";
 import { PermissionsAndroid, Platform } from "react-native";
-import { BleManager, ScanCallbackType, ScanMode } from "react-native-ble-plx";
 import { formatBleMac, isPhysicalMinewMac } from "@/lib/beacon/config/physicalBeacons";
 import {
   describeBleAdvertisement,
@@ -9,7 +9,14 @@ import {
   parseBlePlxDevice,
 } from "@/lib/beacon/utils/ibeacon";
 
-let manager: BleManager | null;
+/** Expo Go·웹에는 react-native-ble-plx가 없어 정적 import 시 크래시 또는 번들 실패 */
+const BLE_UNAVAILABLE =
+  Constants.executionEnvironment === "storeClient" || Platform.OS === "web";
+
+type PlxModule = typeof import("react-native-ble-plx");
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 동적 로드된 BleManager 인스턴스
+let manager: any = null;
 
 type BleDebugSnapshot = {
   id: string;
@@ -32,7 +39,7 @@ export type BleScanDebugInfo = {
   sampleIds: string[];
 };
 
-function getManager() {
+function getManager(BleManager: PlxModule["BleManager"]) {
   if (!manager) {
     manager = new BleManager();
   }
@@ -91,7 +98,7 @@ function permissionErrorMessage(reason: "bluetooth" | "location") {
   );
 }
 
-function waitForPoweredOn(ble: BleManager) {
+function waitForPoweredOn(ble: { onStateChange: (cb: (state: string) => void, emit: boolean) => { remove: () => void } }) {
   return new Promise<void>((resolve, reject) => {
     const subscription = ble.onStateChange((state) => {
       if (state === "PoweredOn") {
@@ -113,7 +120,11 @@ function waitForPoweredOn(ble: BleManager) {
   });
 }
 
-async function ensureBluetoothReady(ble: BleManager) {
+async function ensureBluetoothReady(ble: {
+  state: () => Promise<string>;
+  onStateChange: (cb: (state: string) => void, emit: boolean) => { remove: () => void };
+  enable: () => Promise<void>;
+}) {
   const state = await ble.state();
   if (state === "PoweredOn") {
     return;
@@ -147,6 +158,12 @@ export async function startBleScan(
   onError?: (error: Error) => void,
   onDebug?: (info: BleScanDebugInfo) => void,
 ): Promise<() => void> {
+  if (BLE_UNAVAILABLE) {
+    return () => {};
+  }
+
+  const { BleManager, ScanCallbackType, ScanMode } = await import("react-native-ble-plx");
+
   const perm = await requestAndroidBlePermissions();
   if (!perm.ok) {
     throw new Error(permissionErrorMessage(perm.reason));
@@ -160,7 +177,7 @@ export async function startBleScan(
   }
 
   destroyBleManager();
-  const ble = getManager();
+  const ble = getManager(BleManager);
   await ensureBluetoothReady(ble);
 
   let otherPacketCount = 0;
@@ -179,7 +196,7 @@ export async function startBleScan(
       callbackType: ScanCallbackType.AllMatches,
       legacyScan: false,
     },
-    (error, device) => {
+    (error: Error | null, device: Parameters<typeof parseBlePlxDevice>[0] | null) => {
       if (error) {
         onError?.(error);
         return;
@@ -263,6 +280,9 @@ export async function startBleScan(
 }
 
 export function destroyBleManager() {
+  if (BLE_UNAVAILABLE) {
+    return;
+  }
   if (manager) {
     manager.stopDeviceScan().catch(() => {});
     manager.destroy();

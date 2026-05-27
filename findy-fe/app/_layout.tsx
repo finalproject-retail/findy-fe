@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
+import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
@@ -29,6 +30,8 @@ function RootLayoutNav() {
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
+      <Stack.Screen name="payment" />
+      <Stack.Screen name="payment-coupons" />
       <Stack.Screen name="(auth)" />
     </Stack>
   );
@@ -88,17 +91,19 @@ export default function RootLayout() {
     <AuthProvider>
       <CartProvider>
         <RecentSearchProvider>
-          <PointsProvider>
-            <StoreMapConfigProvider>
-              <MapNavigationProvider>
-                <BeaconLocationProvider>
-                <ToastProvider>
-                  <RootLayoutNav />
-                </ToastProvider>
-                </BeaconLocationProvider>
-              </MapNavigationProvider>
-            </StoreMapConfigProvider>
-          </PointsProvider>
+          <CheckoutProvider>
+            <PointsProvider>
+              <StoreMapConfigProvider>
+                <MapNavigationProvider>
+                  <BeaconLocationProvider>
+                    <ToastProvider>
+                      <RootLayoutNav />
+                    </ToastProvider>
+                  </BeaconLocationProvider>
+                </MapNavigationProvider>
+              </StoreMapConfigProvider>
+            </PointsProvider>
+          </CheckoutProvider>
         </RecentSearchProvider>
       </CartProvider>
     </AuthProvider>

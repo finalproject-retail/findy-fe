@@ -2,7 +2,7 @@ import { BarcodePointRewardModal } from "@/components/map/BarcodePointRewardModa
 import { ScanBarcodeCancelModal } from "@/components/map/ScanBarcodeCancelModal";
 import { useMapBarcodePick, useMapNavigation } from "@/contexts/MapNavigationContext";
 import type { CartLineItem } from "@/contexts/CartContext";
-import { usePoints } from "@/contexts/PointsContext";
+import { useCheckout } from "@/contexts/CheckoutContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
@@ -64,6 +64,7 @@ export function MapShoppingBottomSheet({
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
   const { addToCart } = useCart();
+  const { setCheckoutFromTrip } = useCheckout();
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
   const [shopLaterModalVisible, setShopLaterModalVisible] = useState(false);
@@ -80,7 +81,6 @@ export function MapShoppingBottomSheet({
   } | null>(null);
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
-  const { commitPendingBarcodeRewards } = usePoints();
   const {
     navigationData,
     tripLineItems,
@@ -317,9 +317,8 @@ export function MapShoppingBottomSheet({
       setFinishShoppingModalVisible(true);
       return;
     }
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
-    router.replace("/(tabs)");
+    setCheckoutFromTrip(tripLineItems, pickedQuantityByProductId);
+    router.push("/payment");
   };
 
   const handleCancelFinishShopping = () => {
@@ -327,10 +326,9 @@ export function MapShoppingBottomSheet({
   };
 
   const handleConfirmFinishShopping = () => {
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
+    setCheckoutFromTrip(tripLineItems, pickedQuantityByProductId);
     setFinishShoppingModalVisible(false);
-    router.replace("/(tabs)");
+    router.push("/payment");
   };
 
   const handleBarcodePick = useCallback(
