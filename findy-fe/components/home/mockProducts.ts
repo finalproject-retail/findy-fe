@@ -91,7 +91,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: "ramen-cup",
     name: "[농심] 사리곰탕 소컵 6입",
-    image: require("@/assets/images/product/noodle.png"),
+    image: require("@/assets/images/product/noodle2.png"),
     discountPercent: 33,
     price: 4060,
     category: "면/통조림 · 라면",
@@ -115,17 +115,17 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: "ramen-cup",
-    name: "[농심] 사리곰탕 소컵 6입",
-    image: require("@/assets/images/product/noodle2.png"),
+    id: "mara",
+    name: "홈밀 사천식 마라탕 566G",
+    image: require("@/assets/images/product/mara.png"),
     discountPercent: 22,
-    price: 4980,
+    price: 14980,
     category: "면/통조림 · 라면",
-    originalPrice: 6390,
-    couponPrice: 4980,
+    originalPrice: 16390,
+    couponPrice: 14980,
     stockCount: 3,
     availableCoupons: [
-      { id: "ramen-cup-10", discountPercent: 10, downloaded: false },
+      { id: "mara-10", discountPercent: 10, downloaded: false },
     ],
   },
   {
