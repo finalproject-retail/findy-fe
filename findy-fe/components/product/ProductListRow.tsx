@@ -1,13 +1,17 @@
+import { getProductById } from "@/components/home/mockProducts";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
+import { useIsShoppingListMode, useMapNavigation } from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { formatPrice } from "./formatPrice";
 import { isOutOfStock } from "./isOutOfStock";
 import { RemainingStockText } from "./RemainingStockText";
+import { resolveCatalogProductId } from "./resolveCatalogProductId";
 import type { Product } from "./types";
 
 const IMAGE_SIZE = 100;
@@ -25,19 +29,35 @@ export function ProductListRow({
   const router = useRouter();
   const { showToast } = useToast();
   const { addToCart } = useCart();
-  const soldOut = isOutOfStock(product);
-  const stockCount = product.stockCount ?? 0;
+  const isShoppingListMode = useIsShoppingListMode();
+  const { addProductToShoppingTrip } = useMapNavigation();
+  const catalogProduct = useMemo(() => {
+    const catalogId = resolveCatalogProductId(product.id);
+    return getProductById(catalogId) ?? product;
+  }, [product]);
+  const soldOut = isOutOfStock(catalogProduct);
+  const stockCount = catalogProduct.stockCount ?? 0;
+  const actionLabel = isShoppingListMode
+    ? "쇼핑 리스트에 추가"
+    : "장바구니 담기";
   const originalPrice =
-    product.originalPrice ??
-    Math.round(product.price / (1 - product.discountPercent / 100));
+    catalogProduct.originalPrice ??
+    Math.round(
+      catalogProduct.price / (1 - catalogProduct.discountPercent / 100),
+    );
 
   const openProductDetail = () => {
-    router.push(`/product/${product.id}`);
+    router.push(`/product/${resolveCatalogProductId(product.id)}`);
   };
 
-  const handleAddToCart = () => {
+  const handleAddPress = () => {
     if (soldOut) return;
-    addToCart(product);
+    if (isShoppingListMode) {
+      addProductToShoppingTrip(catalogProduct);
+      showToast(TOAST_MESSAGES.addedToShoppingList);
+      return;
+    }
+    addToCart(catalogProduct);
     showToast(TOAST_MESSAGES.addedToCart);
   };
 
@@ -62,7 +82,7 @@ export function ProductListRow({
       >
         <View style={{ width: IMAGE_SIZE, height: IMAGE_SIZE }}>
           <Image
-            source={product.image}
+            source={catalogProduct.image}
             style={{
               width: IMAGE_SIZE,
               height: IMAGE_SIZE,
@@ -107,15 +127,15 @@ export function ProductListRow({
             style={pretendard(500)}
             numberOfLines={2}
           >
-            {product.name}
+            {catalogProduct.name}
           </Text>
 
           <View className="flex-row flex-wrap items-center gap-1">
             <Text className="text-md text-text-red" style={pretendard(700)}>
-              {product.discountPercent}%
+              {catalogProduct.discountPercent}%
             </Text>
             <Text className="text-md text-text-main" style={pretendard(700)}>
-              {formatPrice(product.price)}
+              {formatPrice(catalogProduct.price)}
             </Text>
             <Text
               className="text-sm text-text-sub2"
@@ -130,9 +150,9 @@ export function ProductListRow({
           <View className="flex-row items-end justify-between">
             <RemainingStockText stockCount={stockCount} />
             <Pressable
-              onPress={handleAddToCart}
+              onPress={handleAddPress}
               accessibilityRole="button"
-              accessibilityLabel="장바구니에 담기"
+              accessibilityLabel={actionLabel}
               style={{
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.xs,
@@ -143,7 +163,7 @@ export function ProductListRow({
               }}
             >
               <Text className="text-xs text-charcoal" style={pretendard(500)}>
-                장바구니 담기
+                {actionLabel}
               </Text>
             </Pressable>
           </View>

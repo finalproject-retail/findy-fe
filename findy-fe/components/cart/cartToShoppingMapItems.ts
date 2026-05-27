@@ -76,3 +76,12 @@ export function cartToShoppingMapItems(
 
   return result;
 }
+
+/** 진행 중인 쇼핑 리스트(트립) → 지도 마커·경로 재탐색용 */
+export function tripLineItemsToShoppingMapItems(
+  items: CartLineItem[],
+): ShoppingMapItem[] {
+  return cartToShoppingMapItems(
+    items.map((item) => ({ ...item, selected: true })),
+  );
+}

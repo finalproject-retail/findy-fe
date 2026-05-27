@@ -1,6 +1,10 @@
 import { SquareButton } from "@/components/common/SquareButton";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
+import {
+  useIsShoppingListMode,
+  useMapNavigation,
+} from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -21,6 +25,8 @@ export function ProductDetailCartBar({
 }: ProductDetailCartBarProps) {
   const { showToast } = useToast();
   const { addToCart } = useCart();
+  const isShoppingListMode = useIsShoppingListMode();
+  const { addProductToShoppingTrip } = useMapNavigation();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const soldOut = isOutOfStock(product);
@@ -34,10 +40,19 @@ export function ProductDetailCartBar({
     setSheetVisible(false);
   };
 
+  const actionLabel = isShoppingListMode
+    ? "쇼핑 리스트에 추가"
+    : "장바구니 담기";
+
   const handleConfirm = () => {
-    addToCart(product, quantity);
+    if (isShoppingListMode) {
+      addProductToShoppingTrip(product, quantity);
+      showToast(TOAST_MESSAGES.addedToShoppingList);
+    } else {
+      addToCart(product, quantity);
+      showToast(TOAST_MESSAGES.addedToCart);
+    }
     closeSheet();
-    showToast(TOAST_MESSAGES.addedToCart);
     onPress?.();
   };
 
@@ -96,10 +111,10 @@ export function ProductDetailCartBar({
         <SquareButton
           onPress={handleBarPress}
           disabled={soldOut}
-          accessibilityLabel={soldOut ? "품절" : "장바구니 담기"}
+          accessibilityLabel={soldOut ? "품절" : actionLabel}
           style={{ flex: 1 }}
         >
-          {soldOut ? "품절" : "장바구니 담기"}
+          {soldOut ? "품절" : actionLabel}
         </SquareButton>
       </View>
     </>

@@ -1,6 +1,7 @@
 import { StoreMapView } from "@/components/store-map";
 import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -14,6 +15,7 @@ import {
 } from "./shopping-sheet/constants";
 
 export function MapScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { navigationData, navigationRefreshKey, refreshNavigationOverlay } =
     useMapNavigation();
@@ -45,7 +47,10 @@ export function MapScreen() {
             navigationRefreshKey={navigationRefreshKey}
           />
         ) : null}
-        <MapOverlayControls onRefreshPress={refreshNavigationOverlay} />
+        <MapOverlayControls
+          onRefreshPress={refreshNavigationOverlay}
+          onSearchPress={() => router.push("/search" as Href)}
+        />
       </View>
 
       <GestureHandlerRootView style={styles.sheetHost} pointerEvents="box-none">
