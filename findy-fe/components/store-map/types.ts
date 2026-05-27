@@ -67,4 +67,6 @@ export type StoreMapConfig = {
   cells: StoreCellMapping[];
   units: ShelfUnit[];
   zones: CategoryZone[];
+  /** map-service store_maps.map_image_url (없으면 로컬 도면 이미지) */
+  mapImageUrl?: string | null;
 };

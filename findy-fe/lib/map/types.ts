@@ -1,0 +1,45 @@
+/** map-service GET /api/v1/stores/{storeId}/map-config */
+
+export type StoreMapConfigApi = {
+  store: {
+    storeId: number;
+    storeName: string;
+    address: string;
+    status: string;
+  };
+  map: {
+    mapId: number;
+    mapImageUrl: string | null;
+    widthMeters: number;
+    heightMeters: number;
+  };
+  layout: {
+    gridCols: number;
+    gridRows: number;
+    cellSizeMeters: number;
+    gridIdFormula: string;
+  };
+  grids: Array<{
+    gridId: number;
+    gridX: number;
+    gridY: number;
+    cellType: string;
+  }>;
+  beacons: Array<{
+    beaconId: number;
+    gridId: number;
+    gridX: number;
+    gridY: number;
+    beaconUuid: string;
+    major: number | null;
+    minor: number | null;
+    mac: string | null;
+  }>;
+};
+
+export type ApiEnvelope<T> = {
+  success: boolean;
+  code?: string;
+  message?: string;
+  data?: T;
+};
