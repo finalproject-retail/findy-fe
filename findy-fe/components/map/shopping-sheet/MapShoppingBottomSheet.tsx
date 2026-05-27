@@ -42,6 +42,7 @@ import { MapShoppingSheetFooter } from "./MapShoppingSheetFooter";
 import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
+import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 
 const SNAP_MS = 260;
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -66,6 +67,8 @@ export function MapShoppingBottomSheet({
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
   const [shopLaterModalVisible, setShopLaterModalVisible] = useState(false);
+  const [finishShoppingModalVisible, setFinishShoppingModalVisible] =
+    useState(false);
   const [pointRewardModal, setPointRewardModal] = useState<{
     visible: boolean;
     points: number;
@@ -306,8 +309,27 @@ export function MapShoppingBottomSheet({
       setScanBarcodeModalVisible(true);
       return;
     }
+    const hasUnpicked = tripLineItems.some((line) => {
+      const picked = pickedQuantityByProductId[line.productId] ?? 0;
+      return picked < line.quantity;
+    });
+    if (hasUnpicked) {
+      setFinishShoppingModalVisible(true);
+      return;
+    }
     commitPendingBarcodeRewards();
     endShoppingTrip();
+    router.replace("/(tabs)");
+  };
+
+  const handleCancelFinishShopping = () => {
+    setFinishShoppingModalVisible(false);
+  };
+
+  const handleConfirmFinishShopping = () => {
+    commitPendingBarcodeRewards();
+    endShoppingTrip();
+    setFinishShoppingModalVisible(false);
     router.replace("/(tabs)");
   };
 
@@ -335,16 +357,23 @@ export function MapShoppingBottomSheet({
         return;
       }
 
+      // 쇼핑 리스트에서 제외하면 장바구니로 다시 복귀
+      addToCart(item.product, item.quantity);
       removeTripItem(item.productId);
     },
-    [pickedQuantityByProductId, removeTripItem],
+    [addToCart, pickedQuantityByProductId, removeTripItem],
   );
 
   const handleCancelBarcodeScanned = useCallback(() => {
     if (!cancelScanModal) return;
+    // 취소 스캔으로 제외되는 상품도 장바구니로 복귀
+    const line = tripLineItems.find((item) => item.productId === cancelScanModal.productId);
+    if (line) {
+      addToCart(line.product, line.quantity);
+    }
     removeTripItem(cancelScanModal.productId);
     setCancelScanModal(null);
-  }, [cancelScanModal, removeTripItem]);
+  }, [addToCart, cancelScanModal, removeTripItem, tripLineItems]);
 
   const handleDismissCancelModal = useCallback(() => {
     setCancelScanModal(null);
@@ -428,6 +457,12 @@ export function MapShoppingBottomSheet({
       visible={shopLaterModalVisible}
       onCancel={handleCancelShopLater}
       onConfirm={handleConfirmShopLater}
+    />
+
+    <MapFinishShoppingConfirmModal
+      visible={finishShoppingModalVisible}
+      onCancel={handleCancelFinishShopping}
+      onConfirm={handleConfirmFinishShopping}
     />
 
     <ScanBarcodeCancelModal
