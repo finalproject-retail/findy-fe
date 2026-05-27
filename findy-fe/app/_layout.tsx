@@ -1,4 +1,3 @@
-import { PointsProvider } from "@/contexts/PointsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
