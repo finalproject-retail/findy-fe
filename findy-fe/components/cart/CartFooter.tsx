@@ -1,9 +1,9 @@
-import { Button } from "@/components/common/Button";
+import { SquareButton } from "@/components/common/SquareButton";
 import { formatPrice } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { getUnitPrice } from "@/components/cart/cartItemUtils";
 
 export const CART_FOOTER_HEIGHT = 125;
@@ -11,14 +11,9 @@ export const CART_FOOTER_HEIGHT = 125;
 type CartFooterProps = {
   availableItems: CartLineItem[];
   onCheckout: () => void;
-  onStartShopping: () => void;
 };
 
-export function CartFooter({
-  availableItems,
-  onCheckout,
-  onStartShopping,
-}: CartFooterProps) {
+export function CartFooter({ availableItems, onCheckout }: CartFooterProps) {
   const selectedItems = availableItems.filter((item) => item.selected);
   const selectedQuantity = selectedItems.reduce(
     (sum, item) => sum + item.quantity,
@@ -33,7 +28,6 @@ export function CartFooter({
     0,
   );
   const hasSelection = selectedQuantity > 0;
-  const isEmpty = availableItems.length === 0;
 
   return (
     <View
@@ -59,33 +53,15 @@ export function CartFooter({
       </View>
 
       {hasSelection ? (
-        <Button onPress={onCheckout}>쇼핑 시작하기</Button>
+        <SquareButton onPress={onCheckout}>쇼핑 시작하기</SquareButton>
       ) : (
-        <Pressable
-          onPress={onStartShopping}
-          disabled={!isEmpty && availableItems.length > 0}
-          accessibilityRole="button"
+        <SquareButton
+          disabled
           accessibilityLabel="쇼핑 시작하기"
-          accessibilityState={{
-            disabled: !isEmpty && availableItems.length > 0,
-          }}
-          className="w-full min-h-[52px] items-center justify-center rounded-full px-lg py-lg"
-          style={{
-            backgroundColor: COLORS.gray,
-            borderRadius: RADIUS.full,
-            opacity: !isEmpty && availableItems.length > 0 ? 0.6 : 1,
-          }}
+          accessibilityState={{ disabled: true }}
         >
-          <Text
-            style={{
-              ...pretendard(600),
-              fontSize: TYPOGRAPHY.size.lg,
-              color: COLORS.white,
-            }}
-          >
-            쇼핑 시작하기
-          </Text>
-        </Pressable>
+          쇼핑 시작하기
+        </SquareButton>
       )}
     </View>
   );

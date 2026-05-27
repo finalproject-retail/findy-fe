@@ -1,7 +1,10 @@
+import { PointsProvider } from "@/contexts/PointsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
+import { PointsProvider } from "@/contexts/PointsContext";
+import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -20,6 +23,10 @@ function RootLayoutNav() {
       <Stack.Screen name="product/[id]" />
       <Stack.Screen name="points" />
       <Stack.Screen name="recently-viewed" />
+      <Stack.Screen name="purchase-history" />
+      <Stack.Screen name="faq" />
+      <Stack.Screen name="search" />
+      <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
       <Stack.Screen name="(auth)" />
@@ -80,13 +87,17 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
-        <MapNavigationProvider>
-          <BeaconLocationProvider>
-            <ToastProvider>
-              <RootLayoutNav />
-            </ToastProvider>
-          </BeaconLocationProvider>
-        </MapNavigationProvider>
+        <RecentSearchProvider>
+          <PointsProvider>
+            <MapNavigationProvider>
+              <BeaconLocationProvider>
+                <ToastProvider>
+                  <RootLayoutNav />
+                </ToastProvider>
+              </BeaconLocationProvider>
+            </MapNavigationProvider>
+          </PointsProvider>
+        </RecentSearchProvider>
       </CartProvider>
     </AuthProvider>
   );

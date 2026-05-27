@@ -21,7 +21,7 @@ export function ProductDetailInfo({
 }: ProductDetailInfoProps) {
   const { width: screenWidth } = useWindowDimensions();
   const recommendCardWidth =
-    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3;
+    (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3.1;
 
   const category = product.category ?? "카테고리";
   const couponPrice = product.couponPrice ?? product.price;

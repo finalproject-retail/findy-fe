@@ -1,3 +1,8 @@
+import {
+  cartToShoppingMapItems,
+  tripLineItemsToShoppingMapItems,
+} from "@/components/cart/cartToShoppingMapItems";
+import type { Product } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { MAP_NAVIGATION_EMPTY } from "@/components/store-map/overlays/mock/mapNavigationEmpty";
 import { fetchCongestionSnapshotOnRefresh } from "@/components/store-map/overlays/mock/congestionSnapshots";
@@ -5,6 +10,8 @@ import type {
   ShoppingMapItem,
   StoreMapNavigationMock,
 } from "@/components/store-map/overlays/types";
+import { usePoints } from "@/contexts/PointsContext";
+import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 import {
   createContext,
   useCallback,
@@ -32,13 +39,52 @@ type MapNavigationContextValue = {
   patchNavigationData: (patch: Partial<StoreMapNavigationMock>) => void;
   removeTripItem: (productId: string) => void;
   setTripItemQuantity: (productId: string, quantity: number) => void;
+  addProductToShoppingTrip: (product: Product, quantity?: number) => void;
 };
 
 const MapNavigationContext = createContext<MapNavigationContextValue | null>(
   null,
 );
 
+function maxTripQuantity(product: Product) {
+  const stock = product.stockCount ?? 99;
+  return Math.max(stock, 1);
+}
+
+function mergeTripLineItems(
+  prev: CartLineItem[],
+  product: Product,
+  quantity: number,
+): CartLineItem[] {
+  const maxQty = maxTripQuantity(product);
+  const existing = prev.find((item) => item.productId === product.id);
+
+  if (existing) {
+    return prev.map((item) =>
+      item.productId === product.id
+        ? {
+            ...item,
+            product,
+            quantity: Math.min(item.quantity + quantity, maxQty),
+            selected: true,
+          }
+        : item,
+    );
+  }
+
+  return [
+    ...prev,
+    {
+      productId: product.id,
+      product,
+      quantity: Math.min(Math.max(quantity, 1), maxQty),
+      selected: true,
+    },
+  ];
+}
+
 export function MapNavigationProvider({ children }: PropsWithChildren) {
+  const { clearPendingBarcodeRewards } = usePoints();
   const [navigationData, setNavigationData] =
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
@@ -46,16 +92,19 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [pickedQuantityByProductId, setPickedQuantityByProductId] = useState<
     Record<string, number>
   >({});
-
   const hasActiveTrip = tripLineItems.length > 0;
 
   const refreshNavigationOverlay = useCallback(() => {
     setNavigationData((prev) => ({
       ...prev,
+      shoppingItems:
+        tripLineItems.length > 0
+          ? tripLineItemsToShoppingMapItems(tripLineItems)
+          : prev.shoppingItems,
       beaconCongestion: fetchCongestionSnapshotOnRefresh(),
     }));
     setNavigationRefreshKey((key) => key + 1);
-  }, []);
+  }, [tripLineItems]);
 
   const applyShoppingItems = useCallback((items: ShoppingMapItem[]) => {
     setNavigationData((prev) => ({
@@ -67,6 +116,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
   const startShoppingTrip = useCallback(
     (lineItems: CartLineItem[], mapItems: ShoppingMapItem[]) => {
+      clearPendingBarcodeRewards();
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
       setNavigationData((prev) => ({
@@ -75,7 +125,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       }));
       setNavigationRefreshKey((key) => key + 1);
     },
-    [],
+    [clearPendingBarcodeRewards],
   );
 
   const endShoppingTrip = useCallback(() => {
@@ -103,19 +153,20 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   );
 
   const removeTripItem = useCallback((productId: string) => {
-    setTripLineItems((prev) =>
-      prev.filter((item) => item.productId !== productId),
-    );
+    setTripLineItems((prev) => {
+      const next = prev.filter((item) => item.productId !== productId);
+      setNavigationData((nav) => ({
+        ...nav,
+        shoppingItems: tripLineItemsToShoppingMapItems(next),
+      }));
+      setNavigationRefreshKey((key) => key + 1);
+      return next;
+    });
     setPickedQuantityByProductId((prev) => {
       const next = { ...prev };
       delete next[productId];
       return next;
     });
-    setNavigationData((prev) => ({
-      ...prev,
-      shoppingItems: prev.shoppingItems.filter((item) => item.id !== productId),
-    }));
-    setNavigationRefreshKey((key) => key + 1);
   }, []);
 
   const setTripItemQuantity = useCallback((productId: string, quantity: number) => {
@@ -146,6 +197,19 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [],
   );
 
+  const addProductToShoppingTrip = useCallback(
+    (product: Product, quantity = 1) => {
+      setTripLineItems((prev) => {
+        const next = mergeTripLineItems(prev, product, quantity);
+        const mapItems = tripLineItemsToShoppingMapItems(next);
+        setNavigationData((nav) => ({ ...nav, shoppingItems: mapItems }));
+        setNavigationRefreshKey((key) => key + 1);
+        return next;
+      });
+    },
+    [],
+  );
+
   const value = useMemo(
     () => ({
       navigationData,
@@ -162,6 +226,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       patchNavigationData,
       removeTripItem,
       setTripItemQuantity,
+      addProductToShoppingTrip,
     }),
     [
       navigationData,
@@ -178,6 +243,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       patchNavigationData,
       removeTripItem,
       setTripItemQuantity,
+      addProductToShoppingTrip,
     ],
   );
 
@@ -196,10 +262,17 @@ export function useMapNavigation() {
   return context;
 }
 
+/** 지도 쇼핑 중(장바구니 → 쇼핑 시작) 대체 상품 검색·담기 UI */
+export function useIsShoppingListMode() {
+  const context = useContext(MapNavigationContext);
+  return context?.hasActiveTrip ?? false;
+}
+
 /** 바코드 스캔 연동용 — 상품 1개 픽 완료 처리 */
 export function useMapBarcodePick() {
   const { markProductPicked, tripLineItems, pickedQuantityByProductId } =
     useMapNavigation();
+  const { addPendingBarcodeReward } = usePoints();
 
   const getPickedQuantity = (productId: string) =>
     pickedQuantityByProductId[productId] ?? 0;
@@ -210,5 +283,22 @@ export function useMapBarcodePick() {
     return getPickedQuantity(productId) >= line.quantity;
   };
 
-  return { markProductPicked, getPickedQuantity, isFullyPicked };
+  const pickProductFromBarcode = useCallback(
+    (productId: string, amount?: number) => {
+      markProductPicked(productId, amount);
+      const rewardPoints = rollBarcodePointReward();
+      if (rewardPoints !== null) {
+        addPendingBarcodeReward(rewardPoints);
+      }
+      return rewardPoints;
+    },
+    [addPendingBarcodeReward, markProductPicked],
+  );
+
+  return {
+    markProductPicked,
+    pickProductFromBarcode,
+    getPickedQuantity,
+    isFullyPicked,
+  };
 }

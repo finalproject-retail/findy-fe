@@ -14,10 +14,9 @@ type ProductRecommendSectionProps = {
 };
 
 function getRecommendedProducts(productId: string): Product[] {
-  return getInStockProducts().filter((item) => item.id !== productId).slice(
-    0,
-    MAX_RECOMMENDED,
-  );
+  return getInStockProducts()
+    .filter((item) => item.id !== productId)
+    .slice(0, MAX_RECOMMENDED);
 }
 
 export function ProductRecommendSection({
@@ -41,7 +40,7 @@ export function ProductRecommendSection({
       }}
     >
       <View className="flex-row items-center justify-between">
-        <Text className="text-xl text-text-main" style={pretendard(700)}>
+        <Text className="text-lg text-text-main" style={pretendard(700)}>
           이 상품은 어때요?
         </Text>
         <View

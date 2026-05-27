@@ -23,7 +23,7 @@ export default function CartScreen() {
   const {
     availableItems,
     soldOutItems,
-    removeFromCart,
+    removeFromCartMany,
     setQuantity,
     toggleSelect,
     toggleSelectAll,
@@ -38,6 +38,7 @@ export default function CartScreen() {
     if (shoppingItems.length === 0 || selectedLines.length === 0) return;
 
     startShoppingTrip(selectedLines, shoppingItems);
+    removeFromCartMany(selectedLines.map((item) => item.productId));
     router.push("/route-generating");
   };
 
@@ -103,7 +104,6 @@ export default function CartScreen() {
           <CartFooter
             availableItems={availableItems}
             onCheckout={handleStartShoppingWithRoute}
-            onStartShopping={() => router.replace("/(tabs)")}
           />
         </View>
       </View>
