@@ -60,6 +60,10 @@ export default function PaymentQrScreen() {
     router.back();
   };
 
+  const handleMockQrScan = () => {
+    router.replace("/payment-complete");
+  };
+
   if (checkoutItems.length === 0) {
     return null;
   }
@@ -79,9 +83,17 @@ export default function PaymentQrScreen() {
               <Text style={styles.messageLine}>QR을 인식해주세요.</Text>
             </View>
 
-            <View style={styles.qrCard}>
+            <Pressable
+              onPress={handleMockQrScan}
+              accessibilityRole="button"
+              accessibilityLabel="QR 인식 (개발용)"
+              style={({ pressed }) => [
+                styles.qrCard,
+                pressed ? styles.qrCardPressed : null,
+              ]}
+            >
               <PaymentQrPlaceholder size={QR_SIZE} />
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -140,6 +152,9 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderWidth: BORDER.base,
     borderColor: COLORS.lightGray,
+  },
+  qrCardPressed: {
+    opacity: 0.92,
   },
   footer: {
     flexShrink: 0,

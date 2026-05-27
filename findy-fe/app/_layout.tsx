@@ -33,6 +33,7 @@ function RootLayoutNav() {
       <Stack.Screen name="payment" />
       <Stack.Screen name="payment-coupons" />
       <Stack.Screen name="payment-qr" />
+      <Stack.Screen name="payment-complete" />
       <Stack.Screen name="(auth)" />
     </Stack>
   );
