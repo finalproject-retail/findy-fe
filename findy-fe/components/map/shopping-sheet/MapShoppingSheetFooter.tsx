@@ -1,5 +1,5 @@
 import { getUnitPrice } from "@/components/cart/cartItemUtils";
-import { formatPrice } from "@/components/product";
+import { formatPrice, isOutOfStock } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
@@ -22,15 +22,18 @@ export function MapShoppingSheetFooter({
   onFinishShopping,
   bottomInset = 0,
 }: MapShoppingSheetFooterProps) {
-  const totalQuantity = tripLineItems.reduce(
+  const purchasableItems = tripLineItems.filter(
+    (item) => !isOutOfStock(item.product),
+  );
+  const totalQuantity = purchasableItems.reduce(
     (sum, item) => sum + item.quantity,
     0,
   );
-  const pickedQuantity = tripLineItems.reduce(
+  const pickedQuantity = purchasableItems.reduce(
     (sum, item) => sum + (pickedQuantityByProductId[item.productId] ?? 0),
     0,
   );
-  const totalPrice = tripLineItems.reduce(
+  const totalPrice = purchasableItems.reduce(
     (sum, item) => sum + getUnitPrice(item.product) * item.quantity,
     0,
   );

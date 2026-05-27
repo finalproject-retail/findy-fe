@@ -1,3 +1,4 @@
+import { isOutOfStock } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
 
 function routeRank(productId: string, routeProductIds: readonly string[]) {
@@ -14,6 +15,10 @@ export function sortTripLineItemsForChecklist(
   return items
     .map((item, index) => ({ item, index }))
     .sort((a, b) => {
+      const aSoldOut = isOutOfStock(a.item.product);
+      const bSoldOut = isOutOfStock(b.item.product);
+      if (aSoldOut !== bSoldOut) return aSoldOut ? -1 : 1;
+
       const aDone =
         (pickedQuantityByProductId[a.item.productId] ?? 0) >= a.item.quantity;
       const bDone =
