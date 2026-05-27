@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
+import { PointsProvider } from "@/contexts/PointsContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
@@ -85,11 +86,13 @@ export default function RootLayout() {
     <AuthProvider>
       <CartProvider>
         <RecentSearchProvider>
-          <MapNavigationProvider>
-            <ToastProvider>
-              <RootLayoutNav />
-            </ToastProvider>
-          </MapNavigationProvider>
+          <PointsProvider>
+            <MapNavigationProvider>
+              <ToastProvider>
+                <RootLayoutNav />
+              </ToastProvider>
+            </MapNavigationProvider>
+          </PointsProvider>
         </RecentSearchProvider>
       </CartProvider>
     </AuthProvider>
