@@ -81,8 +81,6 @@ export function StoreMapView({
   showCongestion = true,
   showRoute = true,
 }: StoreMapViewProps) {
-  const selectedMarkerRef = useRef(selectedMarkerProductId);
-  selectedMarkerRef.current = selectedMarkerProductId;
   const config = useMemo(() => getEmartStoreMapConfig(), []);
   const mapWidth = config.cols * BASE_CELL_PX;
   const mapHeight = config.rows * BASE_CELL_PX;
@@ -122,6 +120,7 @@ export function StoreMapView({
   const fitScaleSv = useSharedValue(fitScale);
   const minZoomSv = useSharedValue(minZoom);
   const maxZoomSv = useSharedValue(maxZoom);
+  const hasSelectedMarkerSv = useSharedValue(Boolean(selectedMarkerProductId));
 
   const scaleRef = useRef(fitScale);
   const [renderScale, setRenderScale] = useState(fitScale);
@@ -174,6 +173,10 @@ export function StoreMapView({
     minZoomSv,
     maxZoomSv,
   ]);
+
+  useEffect(() => {
+    hasSelectedMarkerSv.value = Boolean(selectedMarkerProductId);
+  }, [hasSelectedMarkerSv, selectedMarkerProductId]);
 
   const clampPanWorklet = (x: number, y: number, s: number) => {
     "worklet";
@@ -416,7 +419,7 @@ export function StoreMapView({
   const pan = Gesture.Pan()
     .minDistance(4)
     .onStart(() => {
-      if (selectedMarkerRef.current && onDismissMarkerCallout) {
+      if (hasSelectedMarkerSv.value && onDismissMarkerCallout) {
         runOnJS(onDismissMarkerCallout)();
       }
       savedPanX.value = panX.value;
@@ -442,7 +445,7 @@ export function StoreMapView({
   const tapDismiss = Gesture.Tap()
     .maxDistance(14)
     .onEnd(() => {
-      if (selectedMarkerRef.current && onMapTapDismiss) {
+      if (hasSelectedMarkerSv.value && onMapTapDismiss) {
         runOnJS(onMapTapDismiss)();
       }
     });

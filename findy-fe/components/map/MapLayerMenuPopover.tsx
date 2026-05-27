@@ -6,7 +6,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 const TOGGLE_WIDTH = 34;
 const TOGGLE_HEIGHT = 19;
-const MENU_WIDTH = 142;
+const MENU_WIDTH = 120;
 
 type MapLayerMenuPopoverProps = {
   showCongestion: boolean;
@@ -57,7 +57,11 @@ export function MapLayerMenuPopover({
         enabled={showCongestion}
         onToggle={onToggleCongestion}
       />
-      <LayerToggleRow label="경로" enabled={showRoute} onToggle={onToggleRoute} />
+      <LayerToggleRow
+        label="경로"
+        enabled={showRoute}
+        onToggle={onToggleRoute}
+      />
     </View>
   );
 }
@@ -70,7 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     gap: SPACING.lg,
     ...Platform.select({
       ios: {
@@ -89,12 +93,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 38,
+    minHeight: 24,
   },
   label: {
     ...pretendard(500),
-    fontSize: TYPOGRAPHY.size.lg,
+    fontSize: TYPOGRAPHY.size.md,
     color: COLORS.text,
-    lineHeight: 24,
+    lineHeight: 22,
   },
 });
