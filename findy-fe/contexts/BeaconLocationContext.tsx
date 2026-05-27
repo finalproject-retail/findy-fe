@@ -1,9 +1,9 @@
 import {
   BEACON_EMA_ALPHA,
   BEACON_REQUIRED_STREAK_DEFAULT,
-  gridIdToGridPoint,
-  MINOR_TO_GRID_ID,
 } from "@/constants/beacon";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { getAccessToken } from "@/lib/api/client";
 import { sendBeaconGridChange } from "@/lib/beacon/api/beaconSignals";
 import {
@@ -22,6 +22,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -30,7 +31,6 @@ import {
 import { Share } from "react-native";
 import { useMapNavigation } from "./MapNavigationContext";
 
-const STORE_ID = 1;
 const MAX_SCAN_LOG_ROWS = 10_000;
 
 type BeaconLocationContextValue = {
@@ -50,6 +50,7 @@ const BeaconLocationContext = createContext<BeaconLocationContextValue | null>(
 
 export function BeaconLocationProvider({ children }: PropsWithChildren) {
   const { patchNavigationData } = useMapNavigation();
+  const { storeId, minorToGridId, storeMapConfig } = useStoreMapConfig();
   const filterRef = useRef(createBeaconRssiFilter({ alpha: BEACON_EMA_ALPHA }));
   const zoneRef = useRef({
     lastSentGridId: null as number | null,
@@ -58,6 +59,21 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
   });
   const stopScanRef = useRef<(() => void) | null>(null);
   const scanLogRef = useRef<BeaconScanLogRow[]>([]);
+  const minorToGridIdRef = useRef(minorToGridId);
+  const storeIdRef = useRef(storeId);
+  const gridColsRef = useRef(storeMapConfig.cols);
+
+  useEffect(() => {
+    minorToGridIdRef.current = minorToGridId;
+  }, [minorToGridId]);
+
+  useEffect(() => {
+    storeIdRef.current = storeId;
+  }, [storeId]);
+
+  useEffect(() => {
+    gridColsRef.current = storeMapConfig.cols;
+  }, [storeMapConfig.cols]);
 
   const [isScanning, setIsScanning] = useState(false);
   const [currentGridId, setCurrentGridId] = useState<number | null>(null);
@@ -106,7 +122,7 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
       if (gridId == null) {
         return;
       }
-      const { gridX, gridY } = gridIdToGridPoint(gridId);
+      const { gridX, gridY } = gridIdToGridPoint(gridId, gridColsRef.current);
       patchNavigationData({
         currentLocation: { gridX, gridY },
       });
@@ -116,12 +132,13 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
 
   const processScan = useCallback(
     async (scan: BeaconScan) => {
-      if (scan.minor != null && MINOR_TO_GRID_ID[String(scan.minor)] == null) {
+      const minorMap = minorToGridIdRef.current;
+      if (scan.minor != null && minorMap[String(scan.minor)] == null) {
         return;
       }
 
       filterRef.current.pruneStale();
-      const userGridId = filterRef.current.ingest(scan, MINOR_TO_GRID_ID);
+      const userGridId = filterRef.current.ingest(scan, minorMap);
 
       appendScanLog(scan, userGridId);
       applyUserGrid(userGridId);
@@ -145,7 +162,7 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
       }
 
       try {
-        await sendBeaconGridChange(STORE_ID, scan, userGridId);
+        await sendBeaconGridChange(storeIdRef.current, scan, userGridId);
         zone.lastSentGridId = userGridId;
         zone.pendingGridId = null;
         zone.streak = 0;

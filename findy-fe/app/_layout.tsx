@@ -3,6 +3,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
@@ -88,13 +89,15 @@ export default function RootLayout() {
       <CartProvider>
         <RecentSearchProvider>
           <PointsProvider>
-            <MapNavigationProvider>
-              <BeaconLocationProvider>
+            <StoreMapConfigProvider>
+              <MapNavigationProvider>
+                <BeaconLocationProvider>
                 <ToastProvider>
                   <RootLayoutNav />
                 </ToastProvider>
-              </BeaconLocationProvider>
-            </MapNavigationProvider>
+                </BeaconLocationProvider>
+              </MapNavigationProvider>
+            </StoreMapConfigProvider>
           </PointsProvider>
         </RecentSearchProvider>
       </CartProvider>

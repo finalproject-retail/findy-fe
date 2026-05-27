@@ -25,7 +25,9 @@ import {
 } from "./constants";
 import { gridCellCenterToPixel } from "./overlays/utils/gridToPixel";
 import { getEmartStoreMapConfig } from "./data/emart-floor-plan";
+import { StoreMapFloorBackground } from "./StoreMapFloorBackground";
 import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
+import type { StoreMapConfig } from "./types";
 import type { StoreMapNavigationMock } from "./overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { StoreMapShelfLayer } from "./StoreMapShelfLayer";
@@ -42,6 +44,8 @@ const MAX_SHELF_GAP_PX = 4;
 const FIT_SCALE_EPSILON = 0.008;
 
 type StoreMapViewProps = {
+  /** API map-config 또는 로컬 fallback */
+  storeMapConfig?: StoreMapConfig;
   fitWidth?: number;
   fitHeight?: number;
   /** 탭바 등 하단에 가려지는 영역 — pan·fit 높이에서 제외 */
@@ -67,6 +71,7 @@ function shelfGapFromScale(scale: number, fitScale: number): number {
 }
 
 export function StoreMapView({
+  storeMapConfig: storeMapConfigProp,
   fitWidth = SCREEN_WIDTH * 0.88,
   fitHeight = SCREEN_HEIGHT * 0.55,
   contentBottomInset = 0,
@@ -81,7 +86,10 @@ export function StoreMapView({
   showCongestion = true,
   showRoute = true,
 }: StoreMapViewProps) {
-  const config = useMemo(() => getEmartStoreMapConfig(), []);
+  const config = useMemo(
+    () => storeMapConfigProp ?? getEmartStoreMapConfig(),
+    [storeMapConfigProp],
+  );
   const mapWidth = config.cols * BASE_CELL_PX;
   const mapHeight = config.rows * BASE_CELL_PX;
 
@@ -500,6 +508,11 @@ export function StoreMapView({
           <View style={styles.gestureSurface}>
             <Animated.View style={animatedMapStyle}>
               <View style={{ width: config.cols * cellPx, height: config.rows * cellPx }}>
+                <StoreMapFloorBackground
+                  width={config.cols * cellPx}
+                  height={config.rows * cellPx}
+                  mapImageUrl={config.mapImageUrl}
+                />
                 <Animated.View
                   style={[StyleSheet.absoluteFill, animatedShelfStyle]}
                   pointerEvents="none"
