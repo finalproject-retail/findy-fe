@@ -1,4 +1,5 @@
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
@@ -23,6 +24,7 @@ export function ProductListRow({
 }: ProductListRowProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { addToCart } = useCart();
   const soldOut = isOutOfStock(product);
   const stockCount = product.stockCount ?? 0;
   const originalPrice =
@@ -35,7 +37,7 @@ export function ProductListRow({
 
   const handleAddToCart = () => {
     if (soldOut) return;
-    // TODO: 장바구니 API
+    addToCart(product);
     showToast(TOAST_MESSAGES.addedToCart);
   };
 
