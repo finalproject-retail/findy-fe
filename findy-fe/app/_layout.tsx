@@ -1,5 +1,7 @@
+import { PointsProvider } from "@/contexts/PointsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
@@ -85,15 +87,17 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
-        <PointsProvider>
-          <RecentSearchProvider>
+        <RecentSearchProvider>
+          <PointsProvider>
             <MapNavigationProvider>
-              <ToastProvider>
-                <RootLayoutNav />
-              </ToastProvider>
+              <BeaconLocationProvider>
+                <ToastProvider>
+                  <RootLayoutNav />
+                </ToastProvider>
+              </BeaconLocationProvider>
             </MapNavigationProvider>
-          </RecentSearchProvider>
-        </PointsProvider>
+          </PointsProvider>
+        </RecentSearchProvider>
       </CartProvider>
     </AuthProvider>
   );
