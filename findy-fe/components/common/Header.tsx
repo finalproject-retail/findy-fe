@@ -1,5 +1,4 @@
 import BackIcon from "@/assets/icons/back-icon.svg";
-import BellIcon from "@/assets/icons/bell-icon.svg";
 import CartIcon from "@/assets/icons/cart-icon.svg";
 import SearchIcon from "@/assets/icons/search-icon.svg";
 import PinkLogo from "@/assets/images/pink-logo.svg";
@@ -67,19 +66,6 @@ export function Header({
             className="items-center justify-center"
           >
             <SearchIcon width={ICON_SIZE} height={ICON_SIZE} />
-          </Pressable>
-        );
-      case "bell":
-        return (
-          <Pressable
-            key="bell"
-            onPress={onBellPress}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="알림"
-            className="items-center justify-center"
-          >
-            <BellIcon width={ICON_SIZE} height={ICON_SIZE} />
           </Pressable>
         );
       case "cart":
