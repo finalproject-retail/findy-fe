@@ -15,10 +15,12 @@ import {
   type PointHistoryFilterType,
 } from "@/components/point";
 import { SPACING } from "@/constants/theme";
+import { usePoints } from "@/contexts/PointsContext";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 
 export default function PointsScreen() {
+  const { balance } = usePoints();
   const [period, setPeriod] = useState<PeriodInquiryValue>(
     getDefaultPeriodInquiryValue,
   );
@@ -34,7 +36,7 @@ export default function PointsScreen() {
       <Header title="포인트" showBack />
       <ScrollView showsVerticalScrollIndicator={false}>
         <PointSummaryCard
-          balance={MOCK_POINT_SUMMARY.balance}
+          balance={balance}
           expiringThisMonth={MOCK_POINT_SUMMARY.expiringThisMonth}
         />
 

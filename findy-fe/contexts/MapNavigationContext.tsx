@@ -5,6 +5,8 @@ import type {
   ShoppingMapItem,
   StoreMapNavigationMock,
 } from "@/components/store-map/overlays/types";
+import { usePoints } from "@/contexts/PointsContext";
+import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 import {
   createContext,
   useCallback,
@@ -39,6 +41,7 @@ const MapNavigationContext = createContext<MapNavigationContextValue | null>(
 );
 
 export function MapNavigationProvider({ children }: PropsWithChildren) {
+  const { clearPendingBarcodeRewards } = usePoints();
   const [navigationData, setNavigationData] =
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
@@ -67,6 +70,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
   const startShoppingTrip = useCallback(
     (lineItems: CartLineItem[], mapItems: ShoppingMapItem[]) => {
+      clearPendingBarcodeRewards();
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
       setNavigationData((prev) => ({
@@ -75,7 +79,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       }));
       setNavigationRefreshKey((key) => key + 1);
     },
-    [],
+    [clearPendingBarcodeRewards],
   );
 
   const endShoppingTrip = useCallback(() => {
@@ -196,10 +200,11 @@ export function useMapNavigation() {
   return context;
 }
 
-/** 바코드 스캔 연동용 — 상품 1개 픽 완료 처리 */
+/** 바코드 스캔 연동용 — 상품 픽 + 랜덤 포인트 당첨(10%) */
 export function useMapBarcodePick() {
   const { markProductPicked, tripLineItems, pickedQuantityByProductId } =
     useMapNavigation();
+  const { addPendingBarcodeReward } = usePoints();
 
   const getPickedQuantity = (productId: string) =>
     pickedQuantityByProductId[productId] ?? 0;
@@ -210,5 +215,22 @@ export function useMapBarcodePick() {
     return getPickedQuantity(productId) >= line.quantity;
   };
 
-  return { markProductPicked, getPickedQuantity, isFullyPicked };
+  const pickProductFromBarcode = useCallback(
+    (productId: string, amount?: number) => {
+      markProductPicked(productId, amount);
+      const rewardPoints = rollBarcodePointReward();
+      if (rewardPoints !== null) {
+        addPendingBarcodeReward(rewardPoints);
+      }
+      return rewardPoints;
+    },
+    [addPendingBarcodeReward, markProductPicked],
+  );
+
+  return {
+    markProductPicked,
+    pickProductFromBarcode,
+    getPickedQuantity,
+    isFullyPicked,
+  };
 }

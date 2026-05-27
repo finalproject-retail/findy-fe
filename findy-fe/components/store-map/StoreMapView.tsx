@@ -27,6 +27,7 @@ import { gridCellCenterToPixel } from "./overlays/utils/gridToPixel";
 import { getEmartStoreMapConfig } from "./data/emart-floor-plan";
 import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
 import type { StoreMapNavigationMock } from "./overlays/types";
+import type { CartLineItem } from "@/contexts/CartContext";
 import { StoreMapShelfLayer } from "./StoreMapShelfLayer";
 import { StoreMapZoneLayer } from "./StoreMapZoneLayer";
 import { getDetailBlend } from "./utils/zoomLevel";
@@ -48,6 +49,17 @@ type StoreMapViewProps = {
   navigationData?: StoreMapNavigationMock;
   /** 새로고침·장바구니 변경 시 경로 재탐색 트리거 */
   navigationRefreshKey?: number;
+  /** 바코드 수령 완료된 쇼핑 마커 id */
+  pickedMarkerIds?: ReadonlySet<string>;
+  selectedMarkerProductId?: string | null;
+  tripLineItems?: CartLineItem[];
+  onShoppingMarkerPress?: (productId: string) => void;
+  /** 지도 빈 곳 탭 */
+  onMapTapDismiss?: () => void;
+  /** 지도 드래그 등 — 항상 닫기 */
+  onDismissMarkerCallout?: () => void;
+  showCongestion?: boolean;
+  showRoute?: boolean;
 };
 
 function shelfGapFromScale(scale: number, fitScale: number): number {
@@ -60,7 +72,17 @@ export function StoreMapView({
   contentBottomInset = 0,
   navigationData,
   navigationRefreshKey = 0,
+  pickedMarkerIds,
+  selectedMarkerProductId = null,
+  tripLineItems = [],
+  onShoppingMarkerPress,
+  onMapTapDismiss,
+  onDismissMarkerCallout,
+  showCongestion = true,
+  showRoute = true,
 }: StoreMapViewProps) {
+  const selectedMarkerRef = useRef(selectedMarkerProductId);
+  selectedMarkerRef.current = selectedMarkerProductId;
   const config = useMemo(() => getEmartStoreMapConfig(), []);
   const mapWidth = config.cols * BASE_CELL_PX;
   const mapHeight = config.rows * BASE_CELL_PX;
@@ -394,6 +416,9 @@ export function StoreMapView({
   const pan = Gesture.Pan()
     .minDistance(4)
     .onStart(() => {
+      if (selectedMarkerRef.current && onDismissMarkerCallout) {
+        runOnJS(onDismissMarkerCallout)();
+      }
       savedPanX.value = panX.value;
       savedPanY.value = panY.value;
     })
@@ -414,7 +439,17 @@ export function StoreMapView({
       savedPanY.value = panY.value;
     });
 
-  const composed = Gesture.Simultaneous(pinch, pan);
+  const tapDismiss = Gesture.Tap()
+    .maxDistance(14)
+    .onEnd(() => {
+      if (selectedMarkerRef.current && onMapTapDismiss) {
+        runOnJS(onMapTapDismiss)();
+      }
+    });
+
+  const composed = selectedMarkerProductId
+    ? Gesture.Simultaneous(pinch, pan, tapDismiss)
+    : Gesture.Simultaneous(pinch, pan);
 
   const animatedMapStyle = useAnimatedStyle(() => {
     const s = scale.value;
@@ -485,6 +520,12 @@ export function StoreMapView({
                   mapHeight={config.rows * cellPx}
                   data={navigationData}
                   navigationRefreshKey={navigationRefreshKey}
+                  pickedMarkerIds={pickedMarkerIds}
+                  selectedMarkerProductId={selectedMarkerProductId}
+                  tripLineItems={tripLineItems}
+                  onShoppingMarkerPress={onShoppingMarkerPress}
+                  showCongestion={showCongestion}
+                  showRoute={showRoute}
                 />
               </View>
             </Animated.View>

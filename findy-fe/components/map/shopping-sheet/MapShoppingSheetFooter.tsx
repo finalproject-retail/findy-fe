@@ -1,10 +1,11 @@
 import { getUnitPrice } from "@/components/cart/cartItemUtils";
 import { formatPrice } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { SHEET_FOOTER_EXTRA_BOTTOM_PADDING } from "./constants";
+import { MapShoppingSheetFooterButton } from "./MapShoppingSheetFooterButton";
 
 type MapShoppingSheetFooterProps = {
   tripLineItems: CartLineItem[];
@@ -37,75 +38,92 @@ export function MapShoppingSheetFooter({
 
   return (
     <View
-      className="border-t border-light-gray bg-white"
-      style={{
-        paddingHorizontal: SPACING.screen,
-        paddingTop: SPACING.md,
-        paddingBottom: SPACING.sm + bottomInset,
-        gap: SPACING.md,
-      }}
+      style={[
+        styles.root,
+        {
+          paddingBottom:
+            SHEET_FOOTER_EXTRA_BOTTOM_PADDING + bottomInset,
+        },
+      ]}
     >
-      <View className="flex-row items-center justify-between">
-        <Text className="text-lg text-text-main" style={pretendard(400)}>
+      <View style={styles.summaryRow}>
+        <Text
+          style={{
+            ...pretendard(400),
+            fontSize: TYPOGRAPHY.size.md,
+            color: COLORS.text,
+          }}
+        >
           총 수량{" "}
           <Text style={pretendard(700)}>
             {hasTrip ? `${pickedQuantity} / ${totalQuantity}` : "0"}개
           </Text>
         </Text>
-        <Text className="text-lg text-text-main" style={pretendard(400)}>
+        <Text
+          style={{
+            ...pretendard(400),
+            fontSize: TYPOGRAPHY.size.md,
+            color: COLORS.text,
+          }}
+        >
           총 구매 금액{" "}
           <Text style={pretendard(700)}>{formatPrice(hasTrip ? totalPrice : 0)}</Text>
         </Text>
       </View>
 
-      <View className="flex-row items-center" style={{ gap: SPACING.sm }}>
-        <Pressable
-          onPress={onShopLater}
-          accessibilityRole="button"
-          accessibilityLabel="다음에 쇼핑하기"
-          className="min-h-[52px] items-center justify-center rounded-full border border-gray bg-white"
-          style={{ flex: 0.9, borderColor: COLORS.gray }}
-        >
-          <Text
-            className="text-md text-text-sub"
-            style={pretendard(600)}
+      <View style={styles.actionsRow}>
+        <View style={styles.actionCellOutline}>
+          <MapShoppingSheetFooterButton
+            variant="outline"
+            onPress={onShopLater}
+            accessibilityLabel="다음에 쇼핑하기"
           >
             다음에 쇼핑하기
-          </Text>
-        </Pressable>
+          </MapShoppingSheetFooterButton>
+        </View>
 
-        <Pressable
-          onPress={onFinishShopping}
-          accessibilityRole="button"
-          accessibilityLabel="쇼핑 완료하기"
-          className="min-h-[52px] overflow-hidden rounded-full"
-          style={{ flex: 1.55 }}
-        >
-          <LinearGradient
-            colors={[COLORS.main, "#FF7A9A"]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={{
-              flex: 1,
-              minHeight: 52,
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: RADIUS.full,
-              paddingHorizontal: SPACING.md,
-            }}
+        <View style={styles.actionCellPrimary}>
+          <MapShoppingSheetFooterButton
+            variant="primary"
+            onPress={onFinishShopping}
+            accessibilityLabel="쇼핑 완료하기"
           >
-            <Text
-              style={{
-                ...pretendard(600),
-                fontSize: TYPOGRAPHY.size.lg,
-                color: COLORS.white,
-              }}
-            >
-              쇼핑 완료하기
-            </Text>
-          </LinearGradient>
-        </Pressable>
+            쇼핑 완료하기
+          </MapShoppingSheetFooterButton>
+        </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flexShrink: 0,
+    backgroundColor: COLORS.white,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.lightGray,
+    paddingHorizontal: SPACING.screen,
+    paddingTop: SPACING.md,
+    gap: SPACING.md,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  actionsRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: SPACING.sm,
+  },
+  actionCellOutline: {
+    flex: 3,
+    flexShrink: 0,
+    minWidth: 0,
+  },
+  actionCellPrimary: {
+    flex: 7,
+    flexShrink: 0,
+    minWidth: 0,
+  },
+});

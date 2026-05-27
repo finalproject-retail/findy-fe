@@ -10,6 +10,7 @@ import {
   getRecentlyViewedProducts,
 } from "@/components/mypage";
 import { LAYOUT, SPACING } from "@/constants/theme";
+import { usePoints } from "@/contexts/PointsContext";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -18,6 +19,7 @@ const CONTENT_GAP = 28;
 export default function MypageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { balance } = usePoints();
   const scrollBottomPadding = LAYOUT.tabBarTotalHeight + insets.bottom;
   const recentlyViewed = getRecentlyViewedProducts(
     MOCK_MYPAGE_USER.recentlyViewedProductIds,
@@ -40,7 +42,7 @@ export default function MypageScreen() {
             email={MOCK_MYPAGE_USER.email}
           />
           <MypageMembershipCard
-            user={MOCK_MYPAGE_USER}
+            user={{ ...MOCK_MYPAGE_USER, points: balance }}
             onPointsPress={() => router.push("/points")}
           />
           <MypageRecentlyViewedSection
