@@ -12,7 +12,7 @@ import { isOutOfStock } from "../isOutOfStock";
 import type { Product } from "../types";
 import { ProductDetailCartSheet } from "./ProductDetailCartSheet";
 
-export const PRODUCT_DETAIL_CART_BAR_HEIGHT = 65;
+export const PRODUCT_DETAIL_CART_BAR_HEIGHT = 70;
 
 type ProductDetailCartBarProps = {
   product: Product;
@@ -100,7 +100,7 @@ export function ProductDetailCartBar({
       <View
         style={{
           height: PRODUCT_DETAIL_CART_BAR_HEIGHT,
-          justifyContent: "center",
+          paddingTop: SPACING.sm,
           paddingHorizontal: SPACING.screen,
           backgroundColor: COLORS.white,
           borderTopWidth: 1,

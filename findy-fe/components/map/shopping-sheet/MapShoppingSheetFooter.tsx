@@ -1,10 +1,9 @@
 import { getUnitPrice } from "@/components/cart/cartItemUtils";
 import { formatPrice, isOutOfStock } from "@/components/product";
-import type { CartLineItem } from "@/contexts/CartContext";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import type { CartLineItem } from "@/contexts/CartContext";
 import { pretendard } from "@/utils/pretendard";
 import { StyleSheet, Text, View } from "react-native";
-import { SHEET_FOOTER_EXTRA_BOTTOM_PADDING } from "./constants";
 import { MapShoppingSheetFooterButton } from "./MapShoppingSheetFooterButton";
 
 type MapShoppingSheetFooterProps = {
@@ -44,8 +43,7 @@ export function MapShoppingSheetFooter({
       style={[
         styles.root,
         {
-          paddingBottom:
-            SHEET_FOOTER_EXTRA_BOTTOM_PADDING + bottomInset,
+          paddingBottom: bottomInset,
         },
       ]}
     >
@@ -70,7 +68,9 @@ export function MapShoppingSheetFooter({
           }}
         >
           총 구매 금액{" "}
-          <Text style={pretendard(700)}>{formatPrice(hasTrip ? totalPrice : 0)}</Text>
+          <Text style={pretendard(700)}>
+            {formatPrice(hasTrip ? totalPrice : 0)}
+          </Text>
         </Text>
       </View>
 

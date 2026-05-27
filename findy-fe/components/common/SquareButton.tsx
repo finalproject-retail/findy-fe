@@ -3,6 +3,7 @@ import { pretendard } from "@/utils/pretendard";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   Text,
   View,
@@ -63,8 +64,14 @@ export function SquareButton({
             style={{
               ...pretendard(700),
               fontSize: TYPOGRAPHY.size.lg,
+              lineHeight: TYPOGRAPHY.size.lg,
               color: COLORS.white,
               textAlign: "center",
+              includeFontPadding: false,
+              textAlignVertical: "center",
+              paddingTop: 0,
+              paddingBottom: 0,
+              transform: [{ translateY: Platform.OS === "ios" ? -1 : 0 }],
             }}
           >
             {children}
