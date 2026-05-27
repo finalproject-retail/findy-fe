@@ -49,7 +49,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [pickedQuantityByProductId, setPickedQuantityByProductId] = useState<
     Record<string, number>
   >({});
-
   const hasActiveTrip = tripLineItems.length > 0;
 
   const refreshNavigationOverlay = useCallback(() => {
