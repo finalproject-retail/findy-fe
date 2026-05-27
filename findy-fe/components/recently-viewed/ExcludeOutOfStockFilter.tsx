@@ -1,18 +1,22 @@
-import { BORDER, COLORS, SPACING } from "@/constants/theme";
+import CheckOffIcon from "@/assets/icons/check-off.svg";
+import CheckOnIcon from "@/assets/icons/check-on.svg";
+import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text } from "react-native";
 
 type ExcludeOutOfStockFilterProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
 };
 
-const CHECKBOX_SIZE = 18;
+const CHECKBOX_SIZE = 22;
 
 export function ExcludeOutOfStockFilter({
   checked,
   onChange,
 }: ExcludeOutOfStockFilterProps) {
+  const CheckboxIcon = checked ? CheckOnIcon : CheckOffIcon;
+
   return (
     <Pressable
       onPress={() => onChange(!checked)}
@@ -22,24 +26,7 @@ export function ExcludeOutOfStockFilter({
       className="flex-row items-center"
       style={{ gap: SPACING.sm }}
     >
-      <View
-        style={{
-          width: CHECKBOX_SIZE,
-          height: CHECKBOX_SIZE,
-          borderWidth: BORDER.base,
-          borderColor: COLORS.gray,
-          borderRadius: 2,
-          backgroundColor: checked ? COLORS.text : COLORS.white,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {checked ? (
-          <Text className="text-xs text-white" style={pretendard(700)}>
-            ✓
-          </Text>
-        ) : null}
-      </View>
+      <CheckboxIcon width={CHECKBOX_SIZE} height={CHECKBOX_SIZE} />
       <Text className="text-md text-text-sub" style={pretendard(400)}>
         품절 상품 제외
       </Text>
