@@ -50,6 +50,7 @@ export default function MypageScreen() {
           <MypageMenuList
             onPurchaseHistoryPress={() => router.push("/purchase-history")}
             onFaqPress={() => router.push("/faq")}
+            onSettingsPress={() => router.push("/settings")}
           />
         </View>
       </ScrollView>
