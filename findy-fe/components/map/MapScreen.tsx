@@ -2,6 +2,7 @@ import { StoreMapView } from "@/components/store-map";
 import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
+import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { type Href, useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -41,13 +42,26 @@ export function MapScreen() {
     clearScanLog,
   } = useBeaconLocation();
 
+  const {
+    storeMapConfig,
+    isLoading: isMapConfigLoading,
+    error: mapConfigError,
+  } = useStoreMapConfig();
+
+  const startTrackingRef = useRef(startTracking);
+  const stopTrackingRef = useRef(stopTracking);
+
+  startTrackingRef.current = startTracking;
+  stopTrackingRef.current = stopTracking;
+
+  // map-config 로드 등으로 startTracking 참조가 바뀌어도 BLE를 끄지 않도록 deps 비움
   useFocusEffect(
     useCallback(() => {
-      void startTracking().catch(() => {});
+      void startTrackingRef.current().catch(() => {});
       return () => {
-        stopTracking();
+        stopTrackingRef.current();
       };
-    }, [startTracking, stopTracking]),
+    }, []),
   );
 
   const pickedMarkerIds = useMemo(() => {
@@ -105,6 +119,7 @@ export function MapScreen() {
       >
         {mapLayout.height > 0 ? (
           <StoreMapView
+            storeMapConfig={storeMapConfig}
             fitWidth={mapLayout.width}
             fitHeight={mapLayout.height}
             contentBottomInset={mapContentBottomInset}
@@ -161,6 +176,9 @@ export function MapScreen() {
         >
           <View style={styles.devBeaconPanel} pointerEvents="auto">
             <Text style={styles.devBeaconText}>
+              map-config {isMapConfigLoading ? "…" : mapConfigError ? "ERR" : "OK"}
+              {mapConfigError ? `\n${mapConfigError}` : ""}
+              {"\n"}
               BLE {isScanning ? "ON" : "OFF"} · grid {currentGridId ?? "-"} · CSV{" "}
               {scanLogCount}건
               {lastError ? `\n${lastError}` : ""}

@@ -4,6 +4,7 @@ import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { MapShoppingNotificationProvider } from "@/contexts/MapShoppingNotificationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
@@ -90,15 +91,17 @@ export default function RootLayout() {
       <CartProvider>
         <RecentSearchProvider>
           <PointsProvider>
-            <MapNavigationProvider>
-              <MapShoppingNotificationProvider>
-                <BeaconLocationProvider>
-                  <ToastProvider>
-                    <RootLayoutNav />
-                  </ToastProvider>
-                </BeaconLocationProvider>
-              </MapShoppingNotificationProvider>
-            </MapNavigationProvider>
+            <StoreMapConfigProvider>
+              <MapNavigationProvider>
+                <MapShoppingNotificationProvider>
+                  <BeaconLocationProvider>
+                    <ToastProvider>
+                      <RootLayoutNav />
+                    </ToastProvider>
+                  </BeaconLocationProvider>
+                </MapShoppingNotificationProvider>
+              </MapNavigationProvider>
+            </StoreMapConfigProvider>
           </PointsProvider>
         </RecentSearchProvider>
       </CartProvider>
