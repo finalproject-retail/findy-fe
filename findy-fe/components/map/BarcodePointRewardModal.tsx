@@ -2,7 +2,7 @@ import { CharcoalSquareButton } from "@/components/common/CharcoalSquareButton";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 
 /** present.svg(66×85) — SVG 안에 PNG가 박혀 있어 RN에서는 png로 표시 */
 const PRESENT_IMAGE = require("@/assets/icons/present.png");
@@ -27,15 +27,10 @@ export function BarcodePointRewardModal({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onConfirm}
+      onRequestClose={() => {}}
     >
       <View style={styles.overlay}>
-        <Pressable
-          style={styles.backdrop}
-          onPress={onConfirm}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-        />
+        <View style={styles.backdrop} pointerEvents="none" />
 
         <View style={styles.card} accessibilityViewIsModal>
           <Image

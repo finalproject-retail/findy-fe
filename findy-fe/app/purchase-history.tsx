@@ -6,31 +6,28 @@ import {
 } from "@/components/common";
 import { SafeView } from "@/components/layout";
 import {
-  MOCK_PURCHASE_HISTORY,
   PurchaseHistoryDateSection,
   PurchaseHistorySearchBar,
   filterPurchaseHistory,
   groupPurchaseHistoryByDate,
 } from "@/components/purchase-history";
+import { usePurchaseHistory } from "@/contexts/PurchaseHistoryContext";
 import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
 export default function PurchaseHistoryScreen() {
+  const { records } = usePurchaseHistory();
   const [query, setQuery] = useState("");
   const [period, setPeriod] = useState<PeriodInquiryValue>(
     getDefaultPeriodInquiryValue,
   );
 
   const dateGroups = useMemo(() => {
-    const filtered = filterPurchaseHistory(
-      MOCK_PURCHASE_HISTORY,
-      query,
-      period,
-    );
+    const filtered = filterPurchaseHistory(records, query, period);
     return groupPurchaseHistoryByDate(filtered);
-  }, [query, period]);
+  }, [query, period, records]);
 
   return (
     <SafeView>

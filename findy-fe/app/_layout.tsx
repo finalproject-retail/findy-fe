@@ -1,9 +1,11 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
+import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { MapShoppingNotificationProvider } from "@/contexts/MapShoppingNotificationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { PurchaseHistoryProvider } from "@/contexts/PurchaseHistoryContext";
 import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -30,6 +32,10 @@ function RootLayoutNav() {
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
+      <Stack.Screen name="payment" />
+      <Stack.Screen name="payment-coupons" />
+      <Stack.Screen name="payment-qr" />
+      <Stack.Screen name="payment-complete" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="(auth)" />
     </Stack>
@@ -90,19 +96,23 @@ export default function RootLayout() {
     <AuthProvider>
       <CartProvider>
         <RecentSearchProvider>
-          <PointsProvider>
-            <StoreMapConfigProvider>
-              <MapNavigationProvider>
-                <MapShoppingNotificationProvider>
-                  <BeaconLocationProvider>
-                    <ToastProvider>
-                      <RootLayoutNav />
-                    </ToastProvider>
-                  </BeaconLocationProvider>
-                </MapShoppingNotificationProvider>
-              </MapNavigationProvider>
-            </StoreMapConfigProvider>
-          </PointsProvider>
+          <CheckoutProvider>
+            <PurchaseHistoryProvider>
+              <PointsProvider>
+                <StoreMapConfigProvider>
+                  <MapNavigationProvider>
+                    <MapShoppingNotificationProvider>
+                      <BeaconLocationProvider>
+                        <ToastProvider>
+                          <RootLayoutNav />
+                        </ToastProvider>
+                      </BeaconLocationProvider>
+                    </MapShoppingNotificationProvider>
+                  </MapNavigationProvider>
+                </StoreMapConfigProvider>
+              </PointsProvider>
+            </PurchaseHistoryProvider>
+          </CheckoutProvider>
         </RecentSearchProvider>
       </CartProvider>
     </AuthProvider>

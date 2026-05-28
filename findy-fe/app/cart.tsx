@@ -23,6 +23,7 @@ export default function CartScreen() {
   const {
     availableItems,
     soldOutItems,
+    removeFromCart,
     removeFromCartMany,
     setQuantity,
     toggleSelect,

@@ -7,9 +7,11 @@ import { Button } from "@/components/common/Button";
 import { DatePickerModal } from "@/components/common/DatePicker";
 import { Header } from "@/components/common/Header";
 import { Input } from "@/components/common/Input";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,6 +23,20 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Gender = "female" | "male";
+
+/** DatePicker(yyyy.mm.dd) → API LocalDate(yyyy-MM-dd) */
+function toApiBirthDate(date: string): string {
+  return date.trim().replace(/\./g, "-");
+}
+
+/** UI gender → API enum (MALE | FEMALE) */
+function toApiGender(gender: Gender): "MALE" | "FEMALE" {
+  return gender === "male" ? "MALE" : "FEMALE";
+}
+
+function toApiPhoneNumber(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
 
 function PasswordField({
   placeholder,
@@ -90,14 +106,13 @@ export default function SignupScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false); // 👈 추가!!
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false); 
 
   const handleBirthdatePress = () => {
     setIsDatePickerVisible(true);
-
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     setNameError("");
     setIdError("");
     setPasswordError("");
@@ -140,9 +155,47 @@ export default function SignupScreen() {
     if (!isValid) return;
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const payload = {
+        email: id.trim(),
+        password,
+        name: name.trim(),
+        phoneNumber: toApiPhoneNumber(phone),
+        birthDate: toApiBirthDate(birthdate),
+        gender: toApiGender(gender!),
+      };
+      const response = await axios.post(
+        "http://192.168.0.32:8889/api/v1/users/signup",
+        payload,
+      );
+      const body = response.data as { success?: boolean; message?: string };
+      if (body?.success === false) {
+        throw new Error(body.message ?? "회원가입에 실패했습니다.");
+      }
       setIsLoading(false);
-    }, 1200);
+      Alert.alert("성공", body?.message ?? "회원가입 완료!", [
+        {
+          text: "확인",
+          onPress: () => router.replace("/login"),
+        },
+      ]);
+    } catch (error: unknown) {
+      setIsLoading(false);
+      let errorMsg = "회원가입 중 오류가 발생했습니다.";
+      if (error instanceof Error && error.message) {
+        errorMsg = error.message;
+      } else if (axios.isAxiosError(error) && error.response?.data) {
+        const data = error.response.data as {
+          message?: string | string[];
+        };
+        if (typeof data.message === "string") {
+          errorMsg = data.message;
+        } else if (Array.isArray(data.message)) {
+          errorMsg = data.message.join("\n");
+        }
+      }
+      Alert.alert("에러", errorMsg);
+    }
   };
 
   return (

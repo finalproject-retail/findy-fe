@@ -3,6 +3,7 @@ import { ScanBarcodeCancelModal } from "@/components/map/ScanBarcodeCancelModal"
 import { useMapBarcodePick, useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import type { CartLineItem } from "@/contexts/CartContext";
+import { useCheckout } from "@/contexts/CheckoutContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
@@ -65,6 +66,7 @@ export function MapShoppingBottomSheet({
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
   const { addToCart } = useCart();
+  const { setCheckoutFromTrip } = useCheckout();
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
   const [shopLaterModalVisible, setShopLaterModalVisible] = useState(false);
@@ -82,7 +84,7 @@ export function MapShoppingBottomSheet({
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
   const { showRelatedProductNotification } = useMapShoppingNotifications();
-  const { commitPendingBarcodeRewards } = usePoints();
+  const { clearPendingBarcodeRewards } = usePoints();
   const {
     navigationData,
     tripLineItems,
@@ -300,6 +302,7 @@ export function MapShoppingBottomSheet({
     for (const line of tripLineItems) {
       addToCart(line.product, line.quantity);
     }
+    clearPendingBarcodeRewards();
     endShoppingTrip();
     setShopLaterModalVisible(false);
     router.replace("/(tabs)");
@@ -319,9 +322,8 @@ export function MapShoppingBottomSheet({
       setFinishShoppingModalVisible(true);
       return;
     }
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
-    router.replace("/(tabs)");
+    setCheckoutFromTrip(tripLineItems, pickedQuantityByProductId);
+    router.push("/payment");
   };
 
   const handleCancelFinishShopping = () => {
@@ -329,10 +331,9 @@ export function MapShoppingBottomSheet({
   };
 
   const handleConfirmFinishShopping = () => {
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
+    setCheckoutFromTrip(tripLineItems, pickedQuantityByProductId);
     setFinishShoppingModalVisible(false);
-    router.replace("/(tabs)");
+    router.push("/payment");
   };
 
   const handleBarcodePick = useCallback(

@@ -19,15 +19,10 @@ export function MapFinishShoppingConfirmModal({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onCancel}
+      onRequestClose={() => {}}
     >
       <View style={styles.overlay}>
-        <Pressable
-          style={styles.backdrop}
-          onPress={onCancel}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-        />
+        <View style={styles.backdrop} pointerEvents="none" />
 
         <View style={styles.card} accessibilityViewIsModal>
           <Text style={styles.title}>
