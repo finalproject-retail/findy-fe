@@ -3,6 +3,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
+import { MapShoppingNotificationProvider } from "@/contexts/MapShoppingNotificationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { PurchaseHistoryProvider } from "@/contexts/PurchaseHistoryContext";
 import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
@@ -35,6 +36,7 @@ function RootLayoutNav() {
       <Stack.Screen name="payment-coupons" />
       <Stack.Screen name="payment-qr" />
       <Stack.Screen name="payment-complete" />
+      <Stack.Screen name="notifications" />
       <Stack.Screen name="(auth)" />
     </Stack>
   );
@@ -99,11 +101,13 @@ export default function RootLayout() {
               <PointsProvider>
                 <StoreMapConfigProvider>
                   <MapNavigationProvider>
-                    <BeaconLocationProvider>
-                      <ToastProvider>
-                        <RootLayoutNav />
-                      </ToastProvider>
-                    </BeaconLocationProvider>
+                    <MapShoppingNotificationProvider>
+                      <BeaconLocationProvider>
+                        <ToastProvider>
+                          <RootLayoutNav />
+                        </ToastProvider>
+                      </BeaconLocationProvider>
+                    </MapShoppingNotificationProvider>
                   </MapNavigationProvider>
                 </StoreMapConfigProvider>
               </PointsProvider>

@@ -13,7 +13,7 @@ import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useState } from "react";
-import { Pressable, Text, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, Text, View, useWindowDimensions } from "react-native";
 
 const THUMB_SIZE = 60;
 const DELETE_SIZE = 26;
@@ -226,7 +226,16 @@ export function MapShoppingSheetItem({
   return (
     <Pressable
       onLongPress={onSimulatePick}
-      delayLongPress={400}
+      delayLongPress={Platform.OS === "web" ? 200 : 400}
+      // 웹 ScrollView에서는 길게 누르기가 잘 안 먹어서 우클릭으로도 시뮬레이션
+      {...(Platform.OS === "web" && onSimulatePick
+        ? {
+            onContextMenu: (event: { preventDefault?: () => void }) => {
+              event.preventDefault?.();
+              onSimulatePick();
+            },
+          }
+        : {})}
       className="border-b border-light-gray px-screen"
       style={{ paddingVertical: SPACING.sm }}
     >
