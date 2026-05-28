@@ -2,8 +2,6 @@ import { Header } from "@/components/common";
 import { PaymentQrPlaceholder } from "@/components/payment/PaymentQrPlaceholder";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY, BORDER } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
-import { useMapNavigation } from "@/contexts/MapNavigationContext";
-import { usePoints } from "@/contexts/PointsContext";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -43,18 +41,12 @@ export default function PaymentQrScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { checkoutItems } = useCheckout();
-  const { endShoppingTrip } = useMapNavigation();
-  const { commitPendingBarcodeRewards } = usePoints();
 
   useEffect(() => {
     if (checkoutItems.length === 0) {
       router.replace("/payment");
-      return;
     }
-
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
-  }, [checkoutItems.length, commitPendingBarcodeRewards, endShoppingTrip, router]);
+  }, [checkoutItems.length, router]);
 
   const handleCancel = () => {
     router.back();

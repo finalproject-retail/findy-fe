@@ -1,7 +1,7 @@
 import { CharcoalSquareButton } from "@/components/common/CharcoalSquareButton";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 
 type ScanBarcodeRequiredModalProps = {
   visible: boolean;
@@ -18,15 +18,10 @@ export function ScanBarcodeRequiredModal({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onConfirm}
+      onRequestClose={() => {}}
     >
       <View style={styles.overlay}>
-        <Pressable
-          style={styles.backdrop}
-          onPress={onConfirm}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-        />
+        <View style={styles.backdrop} pointerEvents="none" />
 
         <View style={styles.card} accessibilityViewIsModal>
           <View style={styles.messageBlock}>

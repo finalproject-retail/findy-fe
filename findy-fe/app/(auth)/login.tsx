@@ -1,9 +1,12 @@
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import axios from "axios";
+import { setAccessToken } from "@/lib/api/client";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -168,7 +171,7 @@ export default function LoginScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setIdError("");
     setPasswordError("");
     let valid = true;
@@ -183,9 +186,48 @@ export default function LoginScreen() {
     if (!valid) return;
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      // NOTE: iOS Expo Go에서 `localhost`는 “아이폰 자신”을 가리킴.
+      // 유미님 로컬 서버(IP)로 호출해야 합니다.
+      const LOGIN_URL = "http://192.168.0.32:8889/api/v1/auth/login";
+
+      const response = await axios.post(
+        LOGIN_URL,
+        {
+          email: id.trim(),
+          password,
+          // 관리자 탭이 별도 role을 요구한다면 여기 payload에 추가하세요.
+          // role: tab,
+        },
+        { headers: { "Content-Type": "application/json" } },
+      );
+
+      const accessToken: string | undefined =
+        response.data?.data?.accessToken ??
+        response.data?.data?.token ??
+        response.data?.accessToken ??
+        response.data?.token;
+
+      if (!accessToken) {
+        throw new Error(
+          response.data?.message ??
+            "로그인 성공했지만 토큰을 받지 못했습니다.",
+        );
+      }
+
+      setAccessToken(accessToken);
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      let errorMsg = "로그인 중 오류가 발생했습니다.";
+      const message = error?.response?.data?.message;
+      if (typeof message === "string") errorMsg = message;
+      else if (Array.isArray(message)) errorMsg = message.join("\n");
+      else if (error?.message) errorMsg = error.message;
+
+      Alert.alert("에러", errorMsg);
+    } finally {
       setIsLoading(false);
-    }, 1200);
+    }
   };
 
   return (

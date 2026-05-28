@@ -4,6 +4,7 @@ import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
 import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { PurchaseHistoryProvider } from "@/contexts/PurchaseHistoryContext";
 import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -94,17 +95,19 @@ export default function RootLayout() {
       <CartProvider>
         <RecentSearchProvider>
           <CheckoutProvider>
-            <PointsProvider>
-              <StoreMapConfigProvider>
-                <MapNavigationProvider>
-                  <BeaconLocationProvider>
-                    <ToastProvider>
-                      <RootLayoutNav />
-                    </ToastProvider>
-                  </BeaconLocationProvider>
-                </MapNavigationProvider>
-              </StoreMapConfigProvider>
-            </PointsProvider>
+            <PurchaseHistoryProvider>
+              <PointsProvider>
+                <StoreMapConfigProvider>
+                  <MapNavigationProvider>
+                    <BeaconLocationProvider>
+                      <ToastProvider>
+                        <RootLayoutNav />
+                      </ToastProvider>
+                    </BeaconLocationProvider>
+                  </MapNavigationProvider>
+                </StoreMapConfigProvider>
+              </PointsProvider>
+            </PurchaseHistoryProvider>
           </CheckoutProvider>
         </RecentSearchProvider>
       </CartProvider>

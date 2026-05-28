@@ -3,10 +3,13 @@ import { CharcoalSquareButton } from "@/components/common";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { usePoints } from "@/contexts/PointsContext";
+import { usePurchaseHistory } from "@/contexts/PurchaseHistoryContext";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import {
   SafeAreaView,
@@ -21,12 +24,30 @@ export default function PaymentCompleteScreen() {
   const insets = useSafeAreaInsets();
   const { checkoutItems, clearCheckout } = useCheckout();
   const { removeFromCartMany } = useCart();
+  const { endShoppingTrip } = useMapNavigation();
+  const { commitPendingBarcodeRewards } = usePoints();
+  const { addPurchaseFromCheckout } = usePurchaseHistory();
+  const purchaseRecordedRef = useRef(false);
 
   useEffect(() => {
     if (checkoutItems.length === 0) {
       router.replace("/(tabs)");
+      return;
     }
-  }, [checkoutItems.length, router]);
+
+    if (purchaseRecordedRef.current) return;
+    purchaseRecordedRef.current = true;
+
+    addPurchaseFromCheckout(checkoutItems);
+    commitPendingBarcodeRewards();
+    endShoppingTrip();
+  }, [
+    addPurchaseFromCheckout,
+    checkoutItems,
+    commitPendingBarcodeRewards,
+    endShoppingTrip,
+    router,
+  ]);
 
   const handleConfirm = () => {
     const purchasedIds = checkoutItems.map((item) => item.productId);

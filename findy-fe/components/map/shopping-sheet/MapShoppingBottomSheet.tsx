@@ -3,6 +3,7 @@ import { ScanBarcodeCancelModal } from "@/components/map/ScanBarcodeCancelModal"
 import { useMapBarcodePick, useMapNavigation } from "@/contexts/MapNavigationContext";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
@@ -81,6 +82,7 @@ export function MapShoppingBottomSheet({
   } | null>(null);
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
+  const { clearPendingBarcodeRewards } = usePoints();
   const {
     navigationData,
     tripLineItems,
@@ -298,6 +300,7 @@ export function MapShoppingBottomSheet({
     for (const line of tripLineItems) {
       addToCart(line.product, line.quantity);
     }
+    clearPendingBarcodeRewards();
     endShoppingTrip();
     setShopLaterModalVisible(false);
     router.replace("/(tabs)");
