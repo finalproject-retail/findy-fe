@@ -1,5 +1,5 @@
 import { DropdownFilter } from "@/components/common/DropdownFilter";
-import { PRODUCT_SORT_OPTIONS, type ProductSortType } from "./mockSearch";
+import { PRODUCT_SORT_OPTIONS, type ProductSortType } from "./searchTypes";
 
 type ProductSortFilterProps = {
   value: ProductSortType;
