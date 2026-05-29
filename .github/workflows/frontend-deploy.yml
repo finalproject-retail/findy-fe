@@ -1,63 +1,49 @@
-# Expo Web export -> S3/CloudFront 배포
-name: Deploy Web
+name: Build and Push Frontend Image
 
 on:
   push:
     branches:
       - main
-      - dev
   workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+
 jobs:
-  deploy-web:
+  build-and-push:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: findy-fe
-
-    env:
-      EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
-      EXPO_PUBLIC_MAP_API_URL: ${{ secrets.EXPO_PUBLIC_MAP_API_URL }}
-      EXPO_PUBLIC_DEV_ACCESS_TOKEN: ${{ secrets.EXPO_PUBLIC_DEV_ACCESS_TOKEN }}
-      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: findy-fe/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Export web
-        run: npx expo export --platform web
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to S3
-        run: aws s3 sync dist s3://${{ secrets.S3_BUCKET }} --delete
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Invalidate CloudFront
-        if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        run: aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/*"
+      - name: Build and push Docker image
+        working-directory: findy-fe
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --build-arg EXPO_PUBLIC_API_URL="${{ secrets.EXPO_PUBLIC_API_URL }}" \
+            --build-arg EXPO_PUBLIC_MAP_API_URL="${{ secrets.EXPO_PUBLIC_MAP_API_URL }}" \
+            --build-arg EXPO_PUBLIC_DEV_ACCESS_TOKEN="${{ secrets.EXPO_PUBLIC_DEV_ACCESS_TOKEN }}" \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" \
+            .
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
