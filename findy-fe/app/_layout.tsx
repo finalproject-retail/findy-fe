@@ -29,6 +29,7 @@ function RootLayoutNav() {
       <Stack.Screen name="purchase-history" />
       <Stack.Screen name="faq" />
       <Stack.Screen name="search" />
+      <Stack.Screen name="category" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
       <Stack.Screen name="route-generating" />
