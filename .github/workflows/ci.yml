@@ -15,6 +15,10 @@ jobs:
   validate:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: findy-fe
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +28,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: findy-fe/package-lock.json
 
       - name: Install dependencies
         run: npm ci
