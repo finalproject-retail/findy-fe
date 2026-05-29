@@ -1,5 +1,6 @@
 export { BannerCarousel } from "./BannerCarousel";
 export { HomeSection } from "./HomeSection";
+export { HomeStoreFilter } from "./HomeStoreFilter";
 export { NewProductsSection } from "./sections/NewProductsSection";
 export { PopularProductsSection } from "./sections/PopularProductsSection";
 export { OnboardingRecommendSection } from "./sections/OnboardingRecommendSection";
