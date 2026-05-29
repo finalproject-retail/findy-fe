@@ -40,18 +40,20 @@ export function ProductDetailCartBar({
     setSheetVisible(false);
   };
 
-  const actionLabel = isShoppingListMode
-    ? "쇼핑 리스트에 추가"
-    : "장바구니 담기";
-
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (isShoppingListMode) {
       addProductToShoppingTrip(product, quantity);
       showToast(TOAST_MESSAGES.addedToShoppingList);
     } else {
-      addToCart(product, quantity);
-      showToast(TOAST_MESSAGES.addedToCart);
+      try {
+        await addToCart(product, quantity);
+        showToast(TOAST_MESSAGES.addedToCart);
+      } catch (error) {
+        console.error(error);
+        return;
+      }
     }
+
     closeSheet();
     onPress?.();
   };
