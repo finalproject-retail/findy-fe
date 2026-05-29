@@ -45,6 +45,12 @@ export default ({ config }) => ({
   },
   extra: {
     ...config.extra,
+    ...((process.env.EXPO_PROJECT_ID || config.extra?.eas?.projectId) && {
+      eas: {
+        ...config.extra?.eas,
+        projectId: process.env.EXPO_PROJECT_ID ?? config.extra?.eas?.projectId,
+      },
+    }),
     mapApiUrl:
       process.env.EXPO_PUBLIC_MAP_API_URL ?? "http://10.0.2.2:8888",
   },

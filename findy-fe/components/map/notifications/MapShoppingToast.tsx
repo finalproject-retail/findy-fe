@@ -1,26 +1,27 @@
+import { MAP_OVERLAY_TOP_INSET } from "@/components/map/constants";
 import { formatPrice } from "@/components/product";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
-  Modal,
+  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MapShoppingNotification } from "./types";
 
-export const MAP_SHOPPING_TOAST_DURATION_MS = 5000;
-const TOAST_PURPLE = "#7C3AED";
-const TOAST_BG = "#2B2D31";
+export const MAP_SHOPPING_TOAST_DURATION_MS = 6500;
+const TOAST_PURPLE = "#FF507C";
+const TOAST_BG = "#FFFFFF";
 const THUMB_SIZE = 44;
-const TOP_GAP = 6;
+const SWIPE_UP_DISMISS_OFFSET = 50;
+const SWIPE_UP_DISMISS_VELOCITY = 0.6;
+const DISMISS_SLIDE_OUT = -140;
 
 type MapShoppingToastProps = {
   notification: MapShoppingNotification;
@@ -31,22 +32,29 @@ export function MapShoppingToast({
   notification,
   onDismiss,
 }: MapShoppingToastProps) {
-  const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
-  const slideAnim = useRef(new Animated.Value(-140)).current;
+  const slideAnim = useRef(new Animated.Value(DISMISS_SLIDE_OUT)).current;
   const [timerProgress, setTimerProgress] = useState(1);
   const dismissedRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
   const { relatedProduct, headline } = notification;
+
+  const clearAutoDismissTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const dismissWithAnimation = useCallback(() => {
     if (dismissedRef.current) {
       return;
     }
     dismissedRef.current = true;
+    clearAutoDismissTimer();
     Animated.timing(slideAnim, {
-      toValue: -140,
+      toValue: DISMISS_SLIDE_OUT,
       duration: 220,
       useNativeDriver: true,
     }).start(({ finished }) => {
@@ -54,11 +62,71 @@ export function MapShoppingToast({
         onDismissRef.current();
       }
     });
+  }, [clearAutoDismissTimer, slideAnim]);
+
+  const startAutoDismissTimer = useCallback(() => {
+    clearAutoDismissTimer();
+    const startedAt = Date.now();
+    setTimerProgress(1);
+    timerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const next = Math.max(0, 1 - elapsed / MAP_SHOPPING_TOAST_DURATION_MS);
+      setTimerProgress(next);
+      if (next <= 0) {
+        clearAutoDismissTimer();
+        dismissWithAnimation();
+      }
+    }, 32);
+  }, [clearAutoDismissTimer, dismissWithAnimation]);
+
+  const snapBackToVisible = useCallback(() => {
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      damping: 18,
+      stiffness: 220,
+      useNativeDriver: true,
+    }).start();
   }, [slideAnim]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          gesture.dy < -8 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+        onPanResponderGrant: clearAutoDismissTimer,
+        onPanResponderMove: (_, gesture) => {
+          if (gesture.dy < 0) {
+            slideAnim.setValue(gesture.dy);
+          }
+        },
+        onPanResponderRelease: (_, gesture) => {
+          const shouldDismiss =
+            gesture.dy < -SWIPE_UP_DISMISS_OFFSET ||
+            gesture.vy < -SWIPE_UP_DISMISS_VELOCITY;
+          if (shouldDismiss) {
+            dismissWithAnimation();
+            return;
+          }
+          snapBackToVisible();
+          startAutoDismissTimer();
+        },
+        onPanResponderTerminate: () => {
+          snapBackToVisible();
+          startAutoDismissTimer();
+        },
+      }),
+    [
+      clearAutoDismissTimer,
+      dismissWithAnimation,
+      slideAnim,
+      snapBackToVisible,
+      startAutoDismissTimer,
+    ],
+  );
 
   useEffect(() => {
     dismissedRef.current = false;
-    slideAnim.setValue(-140);
+    slideAnim.setValue(DISMISS_SLIDE_OUT);
     setTimerProgress(1);
 
     Animated.spring(slideAnim, {
@@ -68,100 +136,80 @@ export function MapShoppingToast({
       useNativeDriver: true,
     }).start();
 
-    const startedAt = Date.now();
-    const tick = setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const next = Math.max(0, 1 - elapsed / MAP_SHOPPING_TOAST_DURATION_MS);
-      setTimerProgress(next);
-      if (next <= 0) {
-        clearInterval(tick);
-        dismissWithAnimation();
-      }
-    }, 32);
+    startAutoDismissTimer();
 
-    return () => clearInterval(tick);
-  }, [dismissWithAnimation, notification.id, slideAnim]);
-
-  const toastMaxWidth = Platform.OS === "web" ? Math.min(windowWidth, 480) : windowWidth;
-  const horizontalPad = SPACING.screen;
+    return clearAutoDismissTimer;
+  }, [
+    clearAutoDismissTimer,
+    notification.id,
+    slideAnim,
+    startAutoDismissTimer,
+  ]);
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      onRequestClose={dismissWithAnimation}
-    >
-      <View style={styles.modalRoot} pointerEvents="box-none">
-        <Animated.View
-          pointerEvents="box-none"
-          style={[
-            styles.toastAnchor,
-            {
-              top: insets.top + TOP_GAP,
-              paddingHorizontal: horizontalPad,
-              maxWidth: toastMaxWidth,
-              alignSelf: "center",
-              width: "100%",
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <View style={styles.shadowShell}>
-            <Pressable
-              onPress={dismissWithAnimation}
-              accessibilityRole="button"
-              accessibilityLabel="연관 상품 알림 닫기"
-              style={styles.toast}
-            >
-              <View style={styles.contentRow}>
-                <Image
-                  source={relatedProduct.image}
-                  style={styles.thumb}
-                  contentFit="cover"
-                />
-                <View style={styles.textCol}>
-                  <Text style={styles.headline} numberOfLines={2}>
-                    {headline}
-                  </Text>
-                  <Text style={styles.subtitle} numberOfLines={1}>
-                    {relatedProduct.name}
-                  </Text>
-                  <Text style={styles.price}>
-                    {formatPrice(relatedProduct.price)}
-                  </Text>
-                </View>
+    <View style={styles.overlayHost} pointerEvents="box-none">
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.toastAnchor,
+          {
+            top: MAP_OVERLAY_TOP_INSET,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.shadowShell} pointerEvents="auto">
+          <Pressable
+            onPress={dismissWithAnimation}
+            accessibilityRole="button"
+            accessibilityLabel="연관 상품 알림 닫기"
+            style={styles.toast}
+          >
+            <View style={styles.contentRow}>
+              <Image
+                source={relatedProduct.image}
+                style={styles.thumb}
+                contentFit="cover"
+              />
+              <View style={styles.textCol}>
+                <Text style={styles.headline} numberOfLines={2}>
+                  {headline}
+                </Text>
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {relatedProduct.name}
+                </Text>
+                <Text style={styles.price}>
+                  {formatPrice(relatedProduct.price)}
+                </Text>
               </View>
-              <View style={styles.timerTrack}>
-                <View
-                  style={[
-                    styles.timerFill,
-                    { width: `${timerProgress * 100}%` },
-                  ]}
-                />
-              </View>
-            </Pressable>
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
+            </View>
+            <View style={styles.timerTrack}>
+              <View
+                style={[styles.timerFill, { width: `${timerProgress * 100}%` }]}
+              />
+            </View>
+          </Pressable>
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  modalRoot: {
-    flex: 1,
-    backgroundColor: "transparent",
+  overlayHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 3000,
+    elevation: 30,
   },
   toastAnchor: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    left: SPACING.screen,
+    right: SPACING.screen,
     zIndex: 1,
   },
   shadowShell: {
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.md,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.28,
@@ -170,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: TOAST_BG,
   },
   toast: {
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.md,
     backgroundColor: TOAST_BG,
     overflow: "hidden",
   },
@@ -195,21 +243,21 @@ const styles = StyleSheet.create({
     ...pretendard(600),
     fontSize: 14,
     lineHeight: 20,
-    color: COLORS.white,
+    color: COLORS.text,
     ...(Platform.OS === "android" && { includeFontPadding: false }),
   },
   subtitle: {
     ...pretendard(400),
     fontSize: 13,
     lineHeight: 18,
-    color: "#B5BAC1",
+    color: COLORS.subText,
     ...(Platform.OS === "android" && { includeFontPadding: false }),
   },
   price: {
     ...pretendard(500),
     fontSize: 13,
     lineHeight: 18,
-    color: "#DCDDDE",
+    color: COLORS.subText,
     ...(Platform.OS === "android" && { includeFontPadding: false }),
   },
   timerTrack: {
