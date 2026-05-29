@@ -5,10 +5,9 @@ import { useMemo, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export type HomeStoreFilterOption = {
-  id: string;
-  label: string;
-};
+import type { HomeStoreOption } from "./storeOptions";
+
+export type HomeStoreFilterOption = HomeStoreOption;
 
 type HomeStoreFilterProps = {
   value: string;
