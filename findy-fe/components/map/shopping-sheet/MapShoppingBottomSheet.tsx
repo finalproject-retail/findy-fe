@@ -6,8 +6,14 @@ import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet, View, useWindowDimensions } from "react-native";
+import { formatProductCanceledMessage } from "@/utils/koreanParticle";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+} from "react-native";
 import {
   Gesture,
   GestureDetector,
@@ -43,8 +49,11 @@ import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
+import { MapShoppingCancelToastOverlay } from "./MapShoppingCancelToastOverlay";
 
 const SNAP_MS = 260;
+const CANCEL_TOAST_DURATION_MS = 2000;
+const FOOTER_AREA_HEIGHT_FALLBACK = 140;
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 type MapShoppingBottomSheetProps = {
@@ -78,6 +87,15 @@ export function MapShoppingBottomSheet({
     productName: string;
     quantity: number;
   } | null>(null);
+  const [cancelToastMessage, setCancelToastMessage] = useState<string | null>(
+    null,
+  );
+  const cancelToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [footerAreaHeight, setFooterAreaHeight] = useState(
+    FOOTER_AREA_HEIGHT_FALLBACK,
+  );
+  const cancelScanModalRef = useRef(cancelScanModal);
+  cancelScanModalRef.current = cancelScanModal;
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
   const { commitPendingBarcodeRewards } = usePoints();
@@ -364,16 +382,49 @@ export function MapShoppingBottomSheet({
     [addToCart, pickedQuantityByProductId, removeTripItem],
   );
 
+  const handleFooterAreaLayout = useCallback((event: LayoutChangeEvent) => {
+    const height = event.nativeEvent.layout.height;
+    if (height > 0) {
+      setFooterAreaHeight(height);
+    }
+  }, []);
+
+  const presentCancelToast = useCallback(
+    (productName: string) => {
+      if (cancelToastTimerRef.current) {
+        clearTimeout(cancelToastTimerRef.current);
+      }
+      const message = formatProductCanceledMessage(productName);
+      setCancelToastMessage(message);
+      cancelToastTimerRef.current = setTimeout(() => {
+        setCancelToastMessage(null);
+        cancelToastTimerRef.current = null;
+      }, CANCEL_TOAST_DURATION_MS);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (cancelToastTimerRef.current) {
+        clearTimeout(cancelToastTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleCancelBarcodeScanned = useCallback(() => {
-    if (!cancelScanModal) return;
+    const modal = cancelScanModalRef.current;
+    if (!modal) return;
+    const canceledProductName = modal.productName;
     // 취소 스캔으로 제외되는 상품도 장바구니로 복귀
-    const line = tripLineItems.find((item) => item.productId === cancelScanModal.productId);
+    const line = tripLineItems.find((item) => item.productId === modal.productId);
     if (line) {
       addToCart(line.product, line.quantity);
     }
-    removeTripItem(cancelScanModal.productId);
+    removeTripItem(modal.productId);
     setCancelScanModal(null);
-  }, [addToCart, cancelScanModal, removeTripItem, tripLineItems]);
+    presentCancelToast(canceledProductName);
+  }, [addToCart, presentCancelToast, removeTripItem, tripLineItems]);
 
   const handleDismissCancelModal = useCallback(() => {
     setCancelScanModal(null);
@@ -426,16 +477,26 @@ export function MapShoppingBottomSheet({
                 <MapShoppingSheetEmpty />
               )}
 
-              <MapShoppingSheetFooter
-                tripLineItems={tripLineItems}
-                pickedQuantityByProductId={pickedQuantityByProductId}
-                onShopLater={handleShopLater}
-                onFinishShopping={handleFinishShopping}
-                bottomInset={insets.bottom}
-              />
+              <View
+                style={styles.bottomStack}
+                onLayout={handleFooterAreaLayout}
+              >
+                <MapShoppingSheetFooter
+                  tripLineItems={tripLineItems}
+                  pickedQuantityByProductId={pickedQuantityByProductId}
+                  onShopLater={handleShopLater}
+                  onFinishShopping={handleFinishShopping}
+                  bottomInset={insets.bottom}
+                />
+              </View>
             </View>
           </Animated.View>
         ) : null}
+
+          <MapShoppingCancelToastOverlay
+            message={showBody ? cancelToastMessage : null}
+            bottomOffset={footerAreaHeight}
+          />
         </View>
       </Animated.View>
     </GestureDetector>
@@ -472,6 +533,7 @@ export function MapShoppingBottomSheet({
       onBarcodeScanned={handleCancelBarcodeScanned}
       onDismiss={handleDismissCancelModal}
     />
+
     </>
   );
 }
@@ -528,5 +590,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: SPACING.xs,
+  },
+  bottomStack: {
+    flexShrink: 0,
   },
 });
