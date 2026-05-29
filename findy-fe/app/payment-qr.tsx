@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { createOrder } from "@/lib/shopping/api";
 
 const QR_SIZE = 176;
 
@@ -52,8 +53,13 @@ export default function PaymentQrScreen() {
     router.back();
   };
 
-  const handleMockQrScan = () => {
-    router.replace("/payment-complete");
+  const handleMockQrScan = async () => {
+    try {
+      await createOrder();
+      router.replace("/payment-complete");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   if (checkoutItems.length === 0) {
