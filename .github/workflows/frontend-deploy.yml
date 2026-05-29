@@ -14,9 +14,9 @@ permissions:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-  INFRA_REPOSITORY: ${{ secrets.INFRA_REPOSITORY }}
-  INFRA_REPOSITORY_BRANCH: ${{ secrets.INFRA_REPOSITORY_BRANCH }}
-  INFRA_FRONTEND_IMAGE_FILE: ${{ secrets.INFRA_FRONTEND_IMAGE_FILE }}
+  INFRA_REPOSITORY: finalproject-retail/findy-infra
+  INFRA_REPOSITORY_BRANCH: dev
+  INFRA_FRONTEND_IMAGE_FILE: k8s/frontend.yml
 
 jobs:
   build-and-push:
