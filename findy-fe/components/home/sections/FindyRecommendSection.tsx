@@ -1,12 +1,12 @@
 import { HOME_SECTION_LIMITS } from "@/components/home/constants";
+import { useHomeSectionProducts } from "@/components/home/hooks/useHomeSectionProducts";
 import { HomeLoadMoreButton } from "@/components/home/HomeLoadMoreButton";
 import { HomeSection } from "@/components/home/HomeSection";
-import { getInStockProducts } from "@/components/home/mockProducts";
 import { ProductCard } from "@/components/product";
 import type { Product } from "@/components/product";
-import { SPACING } from "@/constants/theme";
-import { useMemo, useState } from "react";
-import { View, useWindowDimensions } from "react-native";
+import { COLORS, SPACING } from "@/constants/theme";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, View, useWindowDimensions } from "react-native";
 
 const GRID_GAP = 12;
 const COLUMN_COUNT = 3;
@@ -20,14 +20,27 @@ function chunkProducts<T>(items: T[], size: number): T[][] {
   return rows;
 }
 
-export function FindyRecommendSection() {
+type FindyRecommendSectionProps = {
+  storeId: string;
+};
+
+export function FindyRecommendSection({ storeId }: FindyRecommendSectionProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth =
     (screenWidth - SPACING.screen * 2 - GRID_GAP * (COLUMN_COUNT - 1)) /
     COLUMN_COUNT;
 
-  const allProducts = useMemo(() => getInStockProducts(), []);
+  const { products: allProducts, loading } = useHomeSectionProducts({
+    kind: "findy",
+    storeId,
+  });
+
   const [visibleCount, setVisibleCount] = useState<number>(initial);
+
+  useEffect(() => {
+    setVisibleCount(initial);
+  }, [storeId, allProducts.length]);
+
   const visibleProducts = allProducts.slice(0, visibleCount);
   const productRows = useMemo(
     () => chunkProducts(visibleProducts, COLUMN_COUNT),
@@ -48,27 +61,33 @@ export function FindyRecommendSection() {
 
   return (
     <HomeSection title="👀 핀디만의 추천">
-      <View style={{ gap: SPACING.lg }}>
-        <View style={{ gap: GRID_GAP }}>
-          {productRows.map((row, rowIndex) => (
-            <View
-              key={`findy-row-${rowIndex}`}
-              style={{ flexDirection: "row", gap: GRID_GAP }}
-            >
-              {row.map((product: Product) => (
-                <ProductCard
-                  key={`findy-${product.id}`}
-                  product={product}
-                  width={cardWidth}
-                />
-              ))}
-            </View>
-          ))}
+      {loading ? (
+        <View className="items-center py-6">
+          <ActivityIndicator color={COLORS.main} />
         </View>
-        {showToggle ? (
-          <HomeLoadMoreButton expanded={isExpanded} onPress={handleToggle} />
-        ) : null}
-      </View>
+      ) : (
+        <View style={{ gap: SPACING.lg }}>
+          <View style={{ gap: GRID_GAP }}>
+            {productRows.map((row, rowIndex) => (
+              <View
+                key={`findy-row-${rowIndex}`}
+                style={{ flexDirection: "row", gap: GRID_GAP }}
+              >
+                {row.map((product: Product) => (
+                  <ProductCard
+                    key={`findy-${product.id}`}
+                    product={product}
+                    width={cardWidth}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+          {showToggle ? (
+            <HomeLoadMoreButton expanded={isExpanded} onPress={handleToggle} />
+          ) : null}
+        </View>
+      )}
     </HomeSection>
   );
 }

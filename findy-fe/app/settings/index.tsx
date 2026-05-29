@@ -8,6 +8,7 @@ import {
   SettingsToggleRow,
 } from "@/components/settings";
 import { SPACING } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useSettingsPreferences } from "@/contexts/SettingsPreferencesContext";
 import { pretendard } from "@/utils/pretendard";
@@ -17,6 +18,7 @@ import { ScrollView, Text, View } from "react-native";
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const { showToast } = useToast();
   const [logoutVisible, setLogoutVisible] = useState(false);
   const {
@@ -44,8 +46,9 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleLogoutConfirm = () => {
+  const handleLogoutConfirm = async () => {
     setLogoutVisible(false);
+    await signOut();
     router.replace("/(auth)/login");
   };
 

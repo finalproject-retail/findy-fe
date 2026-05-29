@@ -1,4 +1,6 @@
 import { API_BASE_URL, API_TIMEOUT_MS } from "@/constants/api";
+import { attachAuthInterceptor } from "@/lib/api/attachAuthInterceptor";
+import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import { create, type AxiosError, isAxiosError } from "axios";
 
 export const apiClient = create({
@@ -21,12 +23,7 @@ export function getAccessToken() {
   return accessToken;
 }
 
-apiClient.interceptors.request.use((config) => {
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
-});
+attachAuthInterceptor(apiClient);
 
 export type ApiErrorBody = {
   message?: string;
@@ -34,13 +31,7 @@ export type ApiErrorBody = {
 };
 
 export function getApiErrorMessage(error: unknown): string {
-  if (isAxiosError(error)) {
-    const data = error.response?.data as ApiErrorBody | undefined;
-    if (data?.message) return data.message;
-    if (error.message) return error.message;
-  }
-  if (error instanceof Error) return error.message;
-  return "요청에 실패했습니다.";
+  return parseApiErrorMessage(error, "요청에 실패했습니다.");
 }
 
 export function isApiError(error: unknown): error is AxiosError {
