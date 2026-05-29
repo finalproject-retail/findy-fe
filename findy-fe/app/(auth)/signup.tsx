@@ -176,7 +176,11 @@ export default function SignupScreen() {
       Alert.alert("성공", body?.message ?? "회원가입 완료!", [
         {
           text: "확인",
-          onPress: () => router.replace("/login"),
+          onPress: () =>
+            router.replace({
+              pathname: "/login",
+              params: { name: name.trim() },
+            }),
         },
       ]);
     } catch (error: unknown) {

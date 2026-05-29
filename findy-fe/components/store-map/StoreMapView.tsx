@@ -398,19 +398,27 @@ export function StoreMapView({
       savedPanY.value = panY.value;
     })
     .onUpdate((e) => {
+      const prevScale = scale.value;
       const next = clamp(savedScale.value * e.scale, minZoomSv.value, maxZoomSv.value);
+      const ratio = prevScale > 0 ? next / prevScale : 1;
       scale.value = next;
       syncOpacityWorklet(next);
       runOnJS(syncRenderFromScale)(next);
+
+      const vw = viewportW.value;
+      const vh = viewportH.value - contentBottomInsetSv.value;
+      const sw = mapW.value * next;
+      const sh = mapH.value * next;
+
       if (next <= minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
-        const vw = viewportW.value;
-        const vh = viewportH.value - contentBottomInsetSv.value;
-        const sw = mapW.value * next;
-        const sh = mapH.value * next;
         panX.value = (vw - sw) / 2;
         panY.value = (vh - sh) / 2;
       } else {
-        const p = clampPanWorklet(panX.value, panY.value, next);
+        const cx = vw / 2;
+        const cy = vh / 2;
+        const nextPanX = cx - (cx - panX.value) * ratio;
+        const nextPanY = cy - (cy - panY.value) * ratio;
+        const p = clampPanWorklet(nextPanX, nextPanY, next);
         panX.value = p.x;
         panY.value = p.y;
       }

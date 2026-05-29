@@ -3,7 +3,7 @@ import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import axios from "axios";
 import { setAccessToken } from "@/lib/api/client";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -164,6 +164,7 @@ const styles = StyleSheet.create({
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { name: signupName } = useLocalSearchParams<{ name?: string }>();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -216,7 +217,16 @@ export default function LoginScreen() {
       }
 
       setAccessToken(accessToken);
-      router.replace("/(tabs)");
+
+      const userEmail = id.trim();
+      const userName =
+        response.data?.data?.name ??
+        response.data?.data?.user?.name ??
+        (typeof signupName === "string" ? signupName : "");
+      router.replace({
+        pathname: "/onboarding",
+        params: { email: userEmail, name: userName },
+      });
     } catch (error: any) {
       let errorMsg = "로그인 중 오류가 발생했습니다.";
       const message = error?.response?.data?.message;
