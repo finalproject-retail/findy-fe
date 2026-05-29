@@ -13,6 +13,9 @@ permissions:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  INFRA_REPOSITORY: ${{ secrets.INFRA_REPOSITORY }}
+  INFRA_REPOSITORY_BRANCH: ${{ secrets.INFRA_REPOSITORY_BRANCH }}
+  INFRA_FRONTEND_IMAGE_FILE: ${{ secrets.INFRA_FRONTEND_IMAGE_FILE }}
 
 jobs:
   build-and-push:
@@ -47,3 +50,30 @@ jobs:
             .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+      - name: Checkout infra repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.INFRA_REPOSITORY }}
+          ref: ${{ env.INFRA_REPOSITORY_BRANCH || 'main' }}
+          token: ${{ secrets.INFRA_REPOSITORY_TOKEN }}
+          path: infra
+
+      - name: Update frontend image tag in infra repository
+        working-directory: infra
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_FILE="${INFRA_FRONTEND_IMAGE_FILE:-apps/frontend/image.yaml}"
+          mkdir -p "$(dirname "$IMAGE_FILE")"
+          {
+            echo "image:"
+            echo "  repository: $ECR_REGISTRY/$ECR_REPOSITORY"
+            echo "  tag: $IMAGE_TAG"
+          } > "$IMAGE_FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$IMAGE_FILE"
+          git commit -m "chore(frontend): update image to $IMAGE_TAG" || exit 0
+          git push
