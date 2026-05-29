@@ -285,3 +285,31 @@ export async function getProductDetailApi(
     throw new Error(getApiErrorMessage(error));
   }
 }
+
+export type OrderCreateApi = {
+  orderId: number;
+  userId: number;
+  shoppingListId: number | null;
+  totalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  earnedReward: number;
+  orderStatus: string;
+};
+
+export async function createOrder(
+  userCouponId?: number | null,
+  userId = DEFAULT_USER_ID,
+): Promise<OrderCreateApi> {
+  try {
+    const response = await apiClient.post<ApiEnvelope<OrderCreateApi>>(
+      "/api/v1/orders",
+      userCouponId ? { userCouponId } : undefined,
+      { headers: userHeaders(userId) },
+    );
+
+    return unwrap(response.data);
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
