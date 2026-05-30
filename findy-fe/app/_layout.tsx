@@ -1,3 +1,4 @@
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
@@ -94,28 +95,30 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <CartProvider>
-        <RecentSearchProvider>
-          <CheckoutProvider>
-            <PurchaseHistoryProvider>
-              <PointsProvider>
-                <StoreMapConfigProvider>
-                  <MapNavigationProvider>
-                    <MapShoppingNotificationProvider>
-                      <BeaconLocationProvider>
-                        <ToastProvider>
-                          <RootLayoutNav />
-                        </ToastProvider>
-                      </BeaconLocationProvider>
-                    </MapShoppingNotificationProvider>
-                  </MapNavigationProvider>
-                </StoreMapConfigProvider>
-              </PointsProvider>
-            </PurchaseHistoryProvider>
-          </CheckoutProvider>
-        </RecentSearchProvider>
-      </CartProvider>
-    </AuthProvider>
+    <CartProvider>
+      <RecentSearchProvider>
+        <CheckoutProvider>
+          <PurchaseHistoryProvider>
+            <PointsProvider>
+              <StoreMapConfigProvider>
+                <MapNavigationProvider>
+                  <MapShoppingNotificationProvider>
+                    <BeaconLocationProvider>
+                      <ToastProvider>
+                        <AuthProvider>
+                          <AuthGuard>
+                            <RootLayoutNav />
+                          </AuthGuard>
+                        </AuthProvider>
+                      </ToastProvider>
+                    </BeaconLocationProvider>
+                  </MapShoppingNotificationProvider>
+                </MapNavigationProvider>
+              </StoreMapConfigProvider>
+            </PointsProvider>
+          </PurchaseHistoryProvider>
+        </CheckoutProvider>
+      </RecentSearchProvider>
+    </CartProvider>
   );
 }
