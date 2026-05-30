@@ -14,10 +14,14 @@ export function AddToCartButton({ product, onPress }: AddToCartButtonProps) {
   const { showToast } = useToast();
   const { addToCart } = useCart();
 
-  const handlePress = () => {
-    addToCart(product, 1);
-    showToast(TOAST_MESSAGES.addedToCart);
-    onPress?.();
+  const handlePress = async () => {
+    try {
+      await addToCart(product, 1);
+      showToast(TOAST_MESSAGES.addedToCart);
+      onPress?.();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
