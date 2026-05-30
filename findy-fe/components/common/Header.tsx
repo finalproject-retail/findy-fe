@@ -2,14 +2,18 @@ import BackIcon from "@/assets/icons/back-icon.svg";
 import CartIcon from "@/assets/icons/cart-icon.svg";
 import SearchIcon from "@/assets/icons/search-icon.svg";
 import PinkLogo from "@/assets/images/pink-logo.svg";
+import { COLORS } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
 import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
+import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 export type HeaderRightIcon = "search" | "bell" | "cart";
 
 const ICON_SIZE = 25;
 const MAX_RIGHT_ICONS = 3;
+const CART_BADGE_MIN_SIZE = 18;
 
 export interface HeaderProps {
   title?: string;
@@ -33,7 +37,15 @@ export function Header({
   onCartPress,
 }: HeaderProps) {
   const router = useRouter();
+  const { items: cartItems } = useCart();
   const icons = rightIcons.slice(0, MAX_RIGHT_ICONS);
+
+  const cartCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems],
+  );
+  const cartBadgeLabel =
+    cartCount > 99 ? "99+" : cartCount > 0 ? String(cartCount) : null;
 
   const handleCartPress = () => {
     if (onCartPress) {
@@ -75,10 +87,41 @@ export function Header({
             onPress={handleCartPress}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="장바구니"
+            accessibilityLabel={
+              cartCount > 0 ? `장바구니, ${cartCount}개` : "장바구니"
+            }
             className="items-center justify-center"
           >
-            <CartIcon width={ICON_SIZE} height={ICON_SIZE} />
+            <View>
+              <CartIcon width={ICON_SIZE} height={ICON_SIZE} />
+              {cartBadgeLabel ? (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -8,
+                    minWidth: CART_BADGE_MIN_SIZE,
+                    height: CART_BADGE_MIN_SIZE,
+                    borderRadius: CART_BADGE_MIN_SIZE / 2,
+                    backgroundColor: COLORS.main,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      ...pretendard(700),
+                      fontSize: 11,
+                      lineHeight: 14,
+                      color: COLORS.white,
+                    }}
+                  >
+                    {cartBadgeLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </Pressable>
         );
     }
