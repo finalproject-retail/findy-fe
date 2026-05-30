@@ -96,6 +96,7 @@ export function MapShoppingBottomSheet({
     endShoppingTrip,
     removeTripItem,
     setTripItemQuantity,
+    syncShoppingTrip,
   } = useMapNavigation();
 
   const routeProductIds = useMemo(() => {
