@@ -1,9 +1,9 @@
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
+import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
