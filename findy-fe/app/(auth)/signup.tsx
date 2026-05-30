@@ -3,11 +3,19 @@ import EyeOffIcon from "@/assets/icons/eye_off.svg";
 import EyeOnIcon from "@/assets/icons/eye_on.svg";
 import RadioButtonFillIcon from "@/assets/icons/radio-button-fill.svg";
 import RadioButtonIcon from "@/assets/icons/radio-button.svg";
+import { SignupSuccessModal } from "@/components/auth/SignupSuccessModal";
 import { Button } from "@/components/common/Button";
 import { DatePickerModal } from "@/components/common/DatePicker";
 import { Header } from "@/components/common/Header";
 import { Input } from "@/components/common/Input";
-import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
+import { postSignup } from "@/lib/auth/api/signup";
+import {
+  isValidSignupEmail,
+  isValidSignupPassword,
+  isValidSignupPhone,
+} from "@/lib/auth/signupValidation";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -85,6 +93,7 @@ function PasswordField({
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [name, setName] = useState("");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -105,6 +114,10 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState<{
+    visible: boolean;
+    message: string;
+  }>({ visible: false, message: "" });
 
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false); 
 
@@ -128,11 +141,19 @@ export default function SignupScreen() {
       isValid = false;
     }
     if (!id.trim()) {
-      setIdError("* 5자 이상 영문으로 된 아이디를 입력해 주세요. / 아이디 중복 확인을 해주세요.");
+      setIdError("* 이메일을 입력해 주세요.");
+      isValid = false;
+    } else if (!isValidSignupEmail(id)) {
+      setIdError("* 올바른 이메일 형식으로 입력해 주세요. (예: name@gmail.com)");
       isValid = false;
     }
     if (!password) {
       setPasswordError("* 8~16자리의 비밀번호를 입력해 주세요.");
+      isValid = false;
+    } else if (!isValidSignupPassword(password)) {
+      setPasswordError(
+        "* 영문, 숫자, 특수문자를 포함한 8~16자리 비밀번호를 입력해 주세요.",
+      );
       isValid = false;
     }
     if (!confirmPassword || password !== confirmPassword) {
@@ -140,7 +161,10 @@ export default function SignupScreen() {
       isValid = false;
     }
     if (!phone.trim()) {
-      setPhoneError("* 전화번호를 입력해 주세요. / 전화번호 형식에 맞게 입력해 주세요.");
+      setPhoneError("* 전화번호를 입력해 주세요.");
+      isValid = false;
+    } else if (!isValidSignupPhone(phone)) {
+      setPhoneError("* 전화번호 형식에 맞게 입력해 주세요. (예: 01012345678)");
       isValid = false;
     }
     if (!birthdate) {
@@ -156,49 +180,43 @@ export default function SignupScreen() {
 
     setIsLoading(true);
     try {
-      const payload = {
+      await signOut();
+      const body = await postSignup({
         email: id.trim(),
         password,
         name: name.trim(),
         phoneNumber: toApiPhoneNumber(phone),
         birthDate: toApiBirthDate(birthdate),
         gender: toApiGender(gender!),
-      };
-      const response = await axios.post(
-        "http://192.168.0.32:8889/api/v1/users/signup",
-        payload,
-      );
-      const body = response.data as { success?: boolean; message?: string };
+      });
       if (body?.success === false) {
         throw new Error(body.message ?? "회원가입에 실패했습니다.");
       }
       setIsLoading(false);
-      Alert.alert("성공", body?.message ?? "회원가입 완료!", [
-        {
-          text: "확인",
-          onPress: () =>
-            router.replace({
-              pathname: "/login",
-              params: { name: name.trim() },
-            }),
-        },
-      ]);
+      const successMessage =
+        body?.message?.trim() || "회원가입이 완료되었습니다. 로그인해 주세요.";
+      const goToLogin = () =>
+        router.replace({
+          pathname: "/login",
+          params: { name: name.trim() },
+        });
+
+      if (Platform.OS === "web") {
+        setSuccessModal({ visible: true, message: successMessage });
+      } else {
+        Alert.alert("성공", successMessage, [
+          {
+            text: "확인",
+            onPress: goToLogin,
+          },
+        ]);
+      }
     } catch (error: unknown) {
       setIsLoading(false);
-      let errorMsg = "회원가입 중 오류가 발생했습니다.";
-      if (error instanceof Error && error.message) {
-        errorMsg = error.message;
-      } else if (axios.isAxiosError(error) && error.response?.data) {
-        const data = error.response.data as {
-          message?: string | string[];
-        };
-        if (typeof data.message === "string") {
-          errorMsg = data.message;
-        } else if (Array.isArray(data.message)) {
-          errorMsg = data.message.join("\n");
-        }
-      }
-      Alert.alert("에러", errorMsg);
+      Alert.alert(
+        "회원가입 실패",
+        parseApiErrorMessage(error, "회원가입 중 오류가 발생했습니다."),
+      );
     }
   };
 
@@ -236,7 +254,7 @@ export default function SignupScreen() {
 
           {/* 2. 아이디 필드 (시안대로 버튼 없이 깔끔하게 변경) */}
           <View className="mb-md">
-            <Text className="font-pretendard text-sm font-bold text-text-main mb-[10px]">아이디</Text>
+            <Text className="font-pretendard text-sm font-bold text-text-main mb-[10px]">이메일</Text>
             <Input
               placeholder="xxxxxxx@gmail.com"
               value={id}
@@ -368,6 +386,17 @@ export default function SignupScreen() {
         onSelectDate={(date) => {
           setBirthdate(date);       // 선택한 날짜(yyyy.mm.dd)를 생년월일 상태에 저장
           setBirthdateError("");    // 날짜가 들어왔으니 기존 에러 메시지 초기화
+        }}
+      />
+      <SignupSuccessModal
+        visible={successModal.visible}
+        message={successModal.message}
+        onConfirm={() => {
+          setSuccessModal({ visible: false, message: "" });
+          router.replace({
+            pathname: "/login",
+            params: { name: name.trim() },
+          });
         }}
       />
     </SafeAreaView>

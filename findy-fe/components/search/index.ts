@@ -4,10 +4,6 @@ export { RecentSearchSection } from "./RecentSearchSection";
 export { SearchResultProductItem } from "./SearchResultProductItem";
 export { SearchScreenHeader } from "./SearchScreenHeader";
 export { SearchSuggestionsList } from "./SearchSuggestionsList";
-export {
-  getRelatedSearchSuggestions,
-  getSearchResultsSlice,
-  searchProducts,
-  SEARCH_PAGE_SIZE,
-  type ProductSortType,
-} from "./mockSearch";
+export { getRelatedSearchSuggestions } from "./mockSearch";
+export { PRODUCT_SORT_OPTIONS, type ProductSortType } from "./searchTypes";
+export { useProductSearch } from "./useProductSearch";

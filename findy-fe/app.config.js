@@ -32,7 +32,6 @@ export default ({ config }) => ({
       backgroundColor: "#FFFFFF",
       foregroundImage: "./assets/images/splash-logo.png",
     },
-    usesCleartextTraffic: true,
     permissions: [
       ...(config.android?.permissions ?? []),
       "android.permission.BLUETOOTH",

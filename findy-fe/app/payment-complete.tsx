@@ -1,7 +1,6 @@
 import BigLogo from "@/assets/icons/big-logo.svg";
 import { CharcoalSquareButton } from "@/components/common";
 import { COLORS, SPACING } from "@/constants/theme";
-import { useCart } from "@/contexts/CartContext";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { usePoints } from "@/contexts/PointsContext";
@@ -23,7 +22,6 @@ export default function PaymentCompleteScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { checkoutItems, clearCheckout } = useCheckout();
-  const { removeFromCartMany } = useCart();
   const { endShoppingTrip } = useMapNavigation();
   const { commitPendingBarcodeRewards } = usePoints();
   const { addPurchaseFromCheckout } = usePurchaseHistory();
@@ -50,10 +48,6 @@ export default function PaymentCompleteScreen() {
   ]);
 
   const handleConfirm = () => {
-    const purchasedIds = checkoutItems.map((item) => item.productId);
-    if (purchasedIds.length > 0) {
-      removeFromCartMany(purchasedIds);
-    }
     clearCheckout();
     router.replace("/(tabs)");
   };

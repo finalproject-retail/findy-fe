@@ -1,8 +1,10 @@
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
+import { useAuth } from "@/contexts/AuthContext";
+import { getApiErrorMessage } from "@/lib/api/client";
 import axios from "axios";
-import { setAccessToken } from "@/lib/api/client";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
 export default function LoginScreen() {
   const router = useRouter();
   const { name: signupName } = useLocalSearchParams<{ name?: string }>();
+  const { signIn, signOut } = useAuth();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -188,52 +191,32 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
-      // NOTE: iOS Expo Go에서 `localhost`는 “아이폰 자신”을 가리킴.
-      // 유미님 로컬 서버(IP)로 호출해야 합니다.
-      const LOGIN_URL = "http://192.168.0.32:8889/api/v1/auth/login";
-
-      const response = await axios.post(
-        LOGIN_URL,
-        {
-          email: id.trim(),
-          password,
-          // 관리자 탭이 별도 role을 요구한다면 여기 payload에 추가하세요.
-          // role: tab,
-        },
-        { headers: { "Content-Type": "application/json" } },
-      );
-
-      const accessToken: string | undefined =
-        response.data?.data?.accessToken ??
-        response.data?.data?.token ??
-        response.data?.accessToken ??
-        response.data?.token;
+      await signOut();
+      const loginBody = await postLogin(id.trim(), password);
+      const accessToken = extractAccessToken(loginBody);
 
       if (!accessToken) {
         throw new Error(
-          response.data?.message ??
-            "로그인 성공했지만 토큰을 받지 못했습니다.",
+          loginBody?.message ?? "로그인 성공했지만 토큰을 받지 못했습니다.",
         );
       }
 
-      setAccessToken(accessToken);
+      await signIn(accessToken);
 
       const userEmail = id.trim();
-      const userName =
-        response.data?.data?.name ??
-        response.data?.data?.user?.name ??
-        (typeof signupName === "string" ? signupName : "");
+      const userName = typeof signupName === "string" ? signupName : "";
       router.replace({
         pathname: "/onboarding",
         params: { email: userEmail, name: userName },
       });
-    } catch (error: any) {
-      let errorMsg = "로그인 중 오류가 발생했습니다.";
-      const message = error?.response?.data?.message;
-      if (typeof message === "string") errorMsg = message;
-      else if (Array.isArray(message)) errorMsg = message.join("\n");
-      else if (error?.message) errorMsg = error.message;
-
+    } catch (error: unknown) {
+      let errorMsg = getApiErrorMessage(error);
+      if (axios.isAxiosError(error) && error.response?.data) {
+        const message = (error.response.data as { message?: string | string[] })
+          .message;
+        if (typeof message === "string") errorMsg = message;
+        else if (Array.isArray(message)) errorMsg = message.join("\n");
+      }
       Alert.alert("에러", errorMsg);
     } finally {
       setIsLoading(false);

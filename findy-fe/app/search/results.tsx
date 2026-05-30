@@ -1,18 +1,17 @@
 import { SafeView } from "@/components/layout";
 import type { Product } from "@/components/product";
 import {
-  getSearchResultsSlice,
   ProductSortFilter,
-  searchProducts,
   SearchResultProductItem,
   SearchScreenHeader,
+  useProductSearch,
   type ProductSortType,
 } from "@/components/search";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useRecentSearch } from "@/contexts/RecentSearchContext";
 import { pretendard } from "@/utils/pretendard";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -29,25 +28,13 @@ export default function SearchResultsScreen() {
 
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<ProductSortType>("popularity");
-  const [page, setPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     setQuery(initialQuery);
   }, [initialQuery]);
 
-  const allResults = useMemo(() => searchProducts(query, sort), [query, sort]);
-
-  const visibleResults = useMemo(
-    () => getSearchResultsSlice(allResults, page),
-    [allResults, page],
-  );
-
-  const hasMore = visibleResults.length < allResults.length;
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, sort]);
+  const { products, loading, loadingMore, hasMore, error, loadMore } =
+    useProductSearch({ keyword: query, sort });
 
   const handleSubmit = useCallback(() => {
     const trimmed = query.trim();
@@ -56,17 +43,13 @@ export default function SearchResultsScreen() {
     router.setParams({ q: trimmed });
   }, [addRecentSearch, query, router]);
 
-  const loadMore = useCallback(() => {
-    if (!hasMore || loadingMore) return;
-    setLoadingMore(true);
-    setPage((prev) => prev + 1);
-    setLoadingMore(false);
-  }, [hasMore, loadingMore]);
-
   const renderItem: ListRenderItem<Product> = useCallback(
     ({ item }) => <SearchResultProductItem product={item} />,
     [],
   );
+
+  const listEmpty = !loading && !error && products.length === 0;
+  const showInitialLoading = loading && products.length === 0;
 
   return (
     <SafeView>
@@ -93,35 +76,51 @@ export default function SearchResultsScreen() {
         <ProductSortFilter value={sort} onChange={setSort} />
       </View>
 
-      <FlatList
-        data={visibleResults}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
-        keyboardShouldPersistTaps="handled"
-        style={{ flex: 1, zIndex: 0 }}
-        contentContainerStyle={{
-          paddingHorizontal: SPACING.screen,
-          paddingBottom: SPACING.xl,
-        }}
-        ListEmptyComponent={
-          <Text
-            className="text-center text-md text-text-sub"
-            style={{ ...pretendard(400), paddingTop: SPACING.xl }}
-          >
-            검색 결과가 없습니다.
-          </Text>
-        }
-        ListFooterComponent={
-          loadingMore && hasMore ? (
-            <View style={{ paddingVertical: SPACING.lg }}>
-              <ActivityIndicator />
-            </View>
-          ) : null
-        }
-      />
+      {showInitialLoading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          onEndReached={() => void loadMore()}
+          onEndReachedThreshold={0.4}
+          keyboardShouldPersistTaps="handled"
+          style={{ flex: 1, zIndex: 0 }}
+          contentContainerStyle={{
+            paddingHorizontal: SPACING.screen,
+            paddingBottom: SPACING.xl,
+            flexGrow: listEmpty || error ? 1 : undefined,
+          }}
+          ListEmptyComponent={
+            error ? (
+              <Text
+                className="text-center text-md text-text-red"
+                style={{ ...pretendard(400), paddingTop: SPACING.xl }}
+              >
+                {error}
+              </Text>
+            ) : listEmpty ? (
+              <Text
+                className="text-center text-md text-text-sub"
+                style={{ ...pretendard(400), paddingTop: SPACING.xl }}
+              >
+                검색 결과가 없습니다.
+              </Text>
+            ) : null
+          }
+          ListFooterComponent={
+            loadingMore && hasMore ? (
+              <View style={{ paddingVertical: SPACING.lg }}>
+                <ActivityIndicator />
+              </View>
+            ) : null
+          }
+        />
+      )}
     </SafeView>
   );
 }

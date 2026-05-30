@@ -31,6 +31,8 @@ export function ProductDetailCartBar({
   const [quantity, setQuantity] = useState(1);
   const soldOut = isOutOfStock(product);
 
+  const actionLabel = isShoppingListMode ? "쇼핑리스트 담기" : "장바구니 담기";
+
   const openSheet = () => {
     setQuantity(1);
     setSheetVisible(true);
@@ -40,29 +42,33 @@ export function ProductDetailCartBar({
     setSheetVisible(false);
   };
 
-  const actionLabel = isShoppingListMode
-    ? "쇼핑 리스트에 추가"
-    : "장바구니 담기";
-
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (isShoppingListMode) {
       addProductToShoppingTrip(product, quantity);
       showToast(TOAST_MESSAGES.addedToShoppingList);
     } else {
-      addToCart(product, quantity);
-      showToast(TOAST_MESSAGES.addedToCart);
+      try {
+        await addToCart(product, quantity);
+        showToast(TOAST_MESSAGES.addedToCart);
+      } catch (error) {
+        console.error(error);
+        return;
+      }
     }
+
     closeSheet();
     onPress?.();
   };
 
   const handleBarPress = () => {
     if (soldOut) return;
+
     if (sheetVisible) {
       handleConfirm();
-    } else {
-      openSheet();
+      return;
     }
+
+    openSheet();
   };
 
   return (
@@ -81,6 +87,7 @@ export function ProductDetailCartBar({
             accessibilityRole="button"
             accessibilityLabel="닫기"
           />
+
           <View
             style={[
               styles.sheetAnchor,
