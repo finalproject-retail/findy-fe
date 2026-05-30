@@ -45,6 +45,9 @@ import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
+import { scanShoppingListItem } from "@/lib/shopping/api";
+import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
+import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 
 const SNAP_MS = 260;
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -93,6 +96,7 @@ export function MapShoppingBottomSheet({
     endShoppingTrip,
     removeTripItem,
     setTripItemQuantity,
+    syncShoppingTrip,
   } = useMapNavigation();
 
   const routeProductIds = useMemo(() => {
@@ -298,14 +302,19 @@ export function MapShoppingBottomSheet({
     setShopLaterModalVisible(false);
   };
 
-  const handleConfirmShopLater = () => {
-    for (const line of tripLineItems) {
-      addToCart(line.product, line.quantity);
+  const handleConfirmShopLater = async () => {
+    try {
+      for (const line of tripLineItems) {
+        await addToCart(line.product, line.quantity);
+      }
+
+      clearPendingBarcodeRewards();
+      endShoppingTrip();
+      setShopLaterModalVisible(false);
+      router.replace("/(tabs)");
+    } catch (error) {
+      console.error(error);
     }
-    clearPendingBarcodeRewards();
-    endShoppingTrip();
-    setShopLaterModalVisible(false);
-    router.replace("/(tabs)");
   };
 
   const handleFinishShopping = () => {
@@ -337,17 +346,31 @@ export function MapShoppingBottomSheet({
   };
 
   const handleBarcodePick = useCallback(
-    (productId: string) => {
+    async (productId: string) => {
       const line = tripLineItems.find((item) => item.productId === productId);
-      const prevPicked = pickedQuantityByProductId[productId] ?? 0;
-      const rewardPoints = pickProductFromBarcode(productId);
+      if (!line) return;
 
-      if (line && prevPicked < line.quantity) {
-        showRelatedProductNotification(line.product);
+      const barcode = line.product.barcode;
+      if (!barcode) {
+        console.warn("barcode가 없는 상품은 스캔 처리할 수 없습니다.");
+        return;
       }
 
-      if (rewardPoints !== null) {
-        setPointRewardModal({ visible: true, points: rewardPoints });
+      try {
+        await scanShoppingListItem(barcode, 1);
+
+        const prevPicked = pickedQuantityByProductId[productId] ?? 0;
+        const rewardPoints = pickProductFromBarcode(productId);
+
+        if (prevPicked < line.quantity) {
+          showRelatedProductNotification(line.product);
+        }
+
+        if (rewardPoints !== null) {
+          setPointRewardModal({ visible: true, points: rewardPoints });
+        }
+      } catch (error) {
+        console.error(error);
       }
     },
     [
@@ -358,8 +381,29 @@ export function MapShoppingBottomSheet({
     ],
   );
 
+  const handleScannerScan = useCallback(
+    async (barcode: string) => {
+      try {
+        console.log("바코드 스캐너 입력:", barcode);
+
+        const shoppingList = await scanShoppingListItem(barcode, 1);
+        const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
+
+        syncShoppingTrip(nextLineItems);
+      } catch (error) {
+        console.error("바코드 스캔 반영 실패:", error);
+      }
+    },
+    [syncShoppingTrip],
+  );
+
+  useBarcodeScanner({
+    enabled: hasActiveTrip,
+    onScan: handleScannerScan,
+  });
+
   const handleRemoveItem = useCallback(
-    (item: CartLineItem) => {
+    async (item: CartLineItem) => {
       const picked = pickedQuantityByProductId[item.productId] ?? 0;
       const isFullyPicked = picked >= item.quantity;
 
@@ -372,22 +416,33 @@ export function MapShoppingBottomSheet({
         return;
       }
 
-      // 쇼핑 리스트에서 제외하면 장바구니로 다시 복귀
-      addToCart(item.product, item.quantity);
-      removeTripItem(item.productId);
+      try {
+        await addToCart(item.product, item.quantity);
+        removeTripItem(item.productId);
+      } catch (error) {
+        console.error(error);
+      }
     },
     [addToCart, pickedQuantityByProductId, removeTripItem],
   );
 
-  const handleCancelBarcodeScanned = useCallback(() => {
+  const handleCancelBarcodeScanned = useCallback(async () => {
     if (!cancelScanModal) return;
-    // 취소 스캔으로 제외되는 상품도 장바구니로 복귀
-    const line = tripLineItems.find((item) => item.productId === cancelScanModal.productId);
-    if (line) {
-      addToCart(line.product, line.quantity);
+
+    const line = tripLineItems.find(
+      (item) => item.productId === cancelScanModal.productId,
+    );
+
+    try {
+      if (line) {
+        await addToCart(line.product, line.quantity);
+      }
+
+      removeTripItem(cancelScanModal.productId);
+      setCancelScanModal(null);
+    } catch (error) {
+      console.error(error);
     }
-    removeTripItem(cancelScanModal.productId);
-    setCancelScanModal(null);
   }, [addToCart, cancelScanModal, removeTripItem, tripLineItems]);
 
   const handleDismissCancelModal = useCallback(() => {
