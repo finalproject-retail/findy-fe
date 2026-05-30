@@ -75,9 +75,15 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          EXPO_PUBLIC_USER_API_URL: ${{ secrets.EXPO_PUBLIC_USER_API_URL || secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SHOPPING_API_URL: ${{ secrets.EXPO_PUBLIC_SHOPPING_API_URL || secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_RECOMMENDATION_API_URL: ${{ secrets.EXPO_PUBLIC_RECOMMENDATION_API_URL || secrets.EXPO_PUBLIC_API_URL }}
         run: |
           docker build \
             --build-arg EXPO_PUBLIC_API_URL="${{ secrets.EXPO_PUBLIC_API_URL }}" \
+            --build-arg EXPO_PUBLIC_USER_API_URL="$EXPO_PUBLIC_USER_API_URL" \
+            --build-arg EXPO_PUBLIC_SHOPPING_API_URL="$EXPO_PUBLIC_SHOPPING_API_URL" \
+            --build-arg EXPO_PUBLIC_RECOMMENDATION_API_URL="$EXPO_PUBLIC_RECOMMENDATION_API_URL" \
             --build-arg EXPO_PUBLIC_MAP_API_URL="${{ secrets.EXPO_PUBLIC_MAP_API_URL }}" \
             --build-arg EXPO_PUBLIC_DEV_ACCESS_TOKEN="${{ secrets.EXPO_PUBLIC_DEV_ACCESS_TOKEN }}" \
             --tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
