@@ -71,7 +71,7 @@ export function CartProvider({ children }: PropsWithChildren) {
     return { availableItems: available, soldOutItems: soldOut };
   }, [items]);
 
-  const addToCart = useCallback((product: Product, quantity = 1) => {
+  const addToCart = useCallback(async (product: Product, quantity = 1) => {
     const cart = await addCartItem(product.id, quantity);
     setItems(mapCartApiToLineItems(cart));
   }, []);
