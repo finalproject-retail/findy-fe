@@ -3,7 +3,6 @@ name: Build and Push Frontend Image
 on:
   push:
     branches:
-      - main
       - dev
   workflow_dispatch:
 
@@ -12,10 +11,10 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: findy-frontend-ecr
   INFRA_REPOSITORY: finalproject-retail/findy-infra
-  INFRA_REPOSITORY_BRANCH: dev
+  INFRA_BRANCH: dev
   INFRA_FRONTEND_IMAGE_FILE: k8s/frontend.yml
 
 jobs:
@@ -23,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout frontend
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -36,44 +35,41 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push Docker image
+      - name: Build and push image
         working-directory: findy-fe
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          IMAGE_TAG: ${{ github.ref_name }}-${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
             --build-arg EXPO_PUBLIC_API_URL="${{ secrets.EXPO_PUBLIC_API_URL }}" \
             --build-arg EXPO_PUBLIC_MAP_API_URL="${{ secrets.EXPO_PUBLIC_MAP_API_URL }}" \
             --build-arg EXPO_PUBLIC_DEV_ACCESS_TOKEN="${{ secrets.EXPO_PUBLIC_DEV_ACCESS_TOKEN }}" \
-            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            --tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            --tag "$ECR_REGISTRY/$ECR_REPOSITORY:latest" \
             .
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
-            docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
-          fi
 
-      - name: Checkout infra repository
-        if: ${{ github.ref_name == 'main' }}
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+      - name: Checkout infra
         uses: actions/checkout@v4
         with:
           repository: ${{ env.INFRA_REPOSITORY }}
-          ref: ${{ env.INFRA_REPOSITORY_BRANCH || 'main' }}
+          ref: ${{ env.INFRA_BRANCH }}
           token: ${{ secrets.INFRA_REPOSITORY_TOKEN }}
           path: infra
 
-      - name: Update frontend image tag in infra repository
-        if: ${{ github.ref_name == 'main' }}
+      - name: Update frontend Kubernetes manifest
         working-directory: infra
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          IMAGE_TAG: ${{ github.ref_name }}-${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          MANIFEST_FILE="${INFRA_FRONTEND_IMAGE_FILE:-k8s/frontend.yml}"
           IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          MANIFEST_FILE="${INFRA_FRONTEND_IMAGE_FILE}"
 
           if [ ! -f "$MANIFEST_FILE" ]; then
             echo "Kubernetes manifest not found: $MANIFEST_FILE"
@@ -82,13 +78,16 @@ jobs:
 
           sed -i -E "s|image: .*${ECR_REPOSITORY}:.*|image: ${IMAGE}|" "$MANIFEST_FILE"
 
+      - name: Commit and push infra changes
+        working-directory: infra
+        run: |
           if git diff --quiet; then
-            echo "No frontend image tag changes."
+            echo "No infra image tag changes."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$MANIFEST_FILE"
-          git commit -m "chore(frontend): update image to $IMAGE_TAG"
-          git push
+          git add "${INFRA_FRONTEND_IMAGE_FILE}"
+          git commit -m "chore(frontend): update image to ${GITHUB_SHA}"
+          git push origin "${INFRA_BRANCH}"
