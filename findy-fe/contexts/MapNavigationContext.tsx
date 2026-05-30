@@ -33,6 +33,7 @@ type MapNavigationContextValue = {
     lineItems: CartLineItem[],
     mapItems: ShoppingMapItem[],
   ) => void;
+  syncShoppingTrip: (lineItems: CartLineItem[]) => void;
   endShoppingTrip: () => void;
   markProductPicked: (productId: string, amount?: number) => void;
   updateShoppingItems: (items: ShoppingMapItem[]) => void;
@@ -128,6 +129,27 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [clearPendingBarcodeRewards],
   );
 
+  const syncShoppingTrip = useCallback((lineItems: CartLineItem[]) => {
+    setTripLineItems(lineItems);
+
+    const pickedQuantityMap = lineItems.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.productId] = item.scannedQuantity ?? 0;
+        return acc;
+      },
+      {},
+    );
+
+    setPickedQuantityByProductId(pickedQuantityMap);
+
+    setNavigationData((prev) => ({
+      ...prev,
+      shoppingItems: tripLineItemsToShoppingMapItems(lineItems),
+    }));
+
+    setNavigationRefreshKey((key) => key + 1);
+  }, []);
+
   const endShoppingTrip = useCallback(() => {
     setTripLineItems([]);
     setPickedQuantityByProductId({});
@@ -220,6 +242,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       refreshNavigationOverlay,
       applyShoppingItems,
       startShoppingTrip,
+      syncShoppingTrip,
       endShoppingTrip,
       markProductPicked,
       updateShoppingItems,
@@ -237,6 +260,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       refreshNavigationOverlay,
       applyShoppingItems,
       startShoppingTrip,
+      syncShoppingTrip,
       endShoppingTrip,
       markProductPicked,
       updateShoppingItems,

@@ -22,6 +22,10 @@ export type CartLineItem = {
   product: Product;
   quantity: number;
   selected: boolean;
+  cartItemId?: string;
+  shoppingListItemId?: string;
+  scannedQuantity?: number;
+  scanStatus?: string;
 };
 
 type CartContextValue = {

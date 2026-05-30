@@ -46,6 +46,8 @@ import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { scanShoppingListItem } from "@/lib/shopping/api";
+import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
+import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 
 const SNAP_MS = 260;
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -377,6 +379,27 @@ export function MapShoppingBottomSheet({
       tripLineItems,
     ],
   );
+
+  const handleScannerScan = useCallback(
+    async (barcode: string) => {
+      try {
+        console.log("바코드 스캐너 입력:", barcode);
+
+        const shoppingList = await scanShoppingListItem(barcode, 1);
+        const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
+
+        syncShoppingTrip(nextLineItems);
+      } catch (error) {
+        console.error("바코드 스캔 반영 실패:", error);
+      }
+    },
+    [syncShoppingTrip],
+  );
+
+  useBarcodeScanner({
+    enabled: hasActiveTrip,
+    onScan: handleScannerScan,
+  });
 
   const handleRemoveItem = useCallback(
     async (item: CartLineItem) => {

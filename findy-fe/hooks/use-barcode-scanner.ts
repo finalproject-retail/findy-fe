@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 
 type UseBarcodeScannerParams = {
   enabled: boolean;
@@ -10,7 +11,7 @@ type UseBarcodeScannerParams = {
 export function useBarcodeScanner({
   enabled,
   minLength = 8,
-  resetDelayMs = 80,
+  resetDelayMs = 100,
   onScan,
 }: UseBarcodeScannerParams) {
   const bufferRef = useRef("");
@@ -23,10 +24,11 @@ export function useBarcodeScanner({
 
   useEffect(() => {
     if (!enabled) return;
+    if (Platform.OS !== "web") return;
+    if (typeof window === "undefined") return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const now = Date.now();
-      const key = event.key;
 
       if (now - lastKeyAtRef.current > resetDelayMs) {
         bufferRef.current = "";
@@ -34,7 +36,7 @@ export function useBarcodeScanner({
 
       lastKeyAtRef.current = now;
 
-      if (key === "Enter") {
+      if (event.key === "Enter" || event.key === "Tab") {
         const barcode = bufferRef.current.trim();
         bufferRef.current = "";
 
@@ -46,8 +48,8 @@ export function useBarcodeScanner({
         return;
       }
 
-      if (key.length === 1 && /^[0-9A-Za-z]$/.test(key)) {
-        bufferRef.current += key;
+      if (event.key.length === 1 && /^[0-9A-Za-z]$/.test(event.key)) {
+        bufferRef.current += event.key;
       }
     };
 
