@@ -44,13 +44,8 @@ jobs:
             missing=1
           fi
 
-          if [ -z "${{ secrets.EXPO_PUBLIC_DEV_ACCESS_TOKEN }}" ]; then
-            echo "Missing secret: EXPO_PUBLIC_DEV_ACCESS_TOKEN"
-            missing=1
-          fi
-
-          if [ -z "${{ secrets.INFRA_REPOSITORY_TOKEN }}" ]; then
-            echo "Missing secret: INFRA_REPOSITORY_TOKEN"
+          if [ -z "${{ secrets.PAT }}" ]; then
+            echo "Missing secret: PAT"
             missing=1
           fi
 
@@ -79,7 +74,6 @@ jobs:
           docker build \
             --build-arg EXPO_PUBLIC_API_URL="${{ secrets.EXPO_PUBLIC_API_URL }}" \
             --build-arg EXPO_PUBLIC_MAP_API_URL="${{ secrets.EXPO_PUBLIC_MAP_API_URL }}" \
-            --build-arg EXPO_PUBLIC_DEV_ACCESS_TOKEN="${{ secrets.EXPO_PUBLIC_DEV_ACCESS_TOKEN }}" \
             --tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
             --tag "$ECR_REGISTRY/$ECR_REPOSITORY:latest" \
             .
