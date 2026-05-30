@@ -9,7 +9,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapOverlayControls } from "./MapOverlayControls";
+import { MapShoppingToast } from "./notifications/MapShoppingToast";
 import { MapShoppingBottomSheet } from "./shopping-sheet";
+import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import {
   getSheetCollapsedBottomLift,
   getSheetCollapsedPeekHeight,
@@ -25,8 +27,10 @@ export function MapScreen() {
     navigationRefreshKey,
     refreshNavigationOverlay,
     tripLineItems,
+    recommendedProductsById,
     pickedQuantityByProductId,
   } = useMapNavigation();
+  const { activeToast, dismissActiveToast } = useMapShoppingNotifications();
 
   const {
     startTracking,
@@ -90,7 +94,7 @@ export function MapScreen() {
     setSelectedMarkerProductId(null);
   }, []);
 
-  const handleShoppingMarkerPress = useCallback((productId: string) => {
+  const handleMarkerPress = useCallback((productId: string) => {
     suppressMapTapDismissRef.current = true;
     setSelectedMarkerProductId((prev) => (prev === productId ? null : productId));
     requestAnimationFrame(() => {
@@ -125,7 +129,9 @@ export function MapScreen() {
             pickedMarkerIds={pickedMarkerIds}
             selectedMarkerProductId={selectedMarkerProductId}
             tripLineItems={tripLineItems}
-            onShoppingMarkerPress={handleShoppingMarkerPress}
+            recommendedProductsById={recommendedProductsById}
+            onShoppingMarkerPress={handleMarkerPress}
+            onRecommendedMarkerPress={handleMarkerPress}
             onMapTapDismiss={handleMapTapDismiss}
             onDismissMarkerCallout={handleDismissMarkerCallout}
             showCongestion={showCongestion}
@@ -153,6 +159,13 @@ export function MapScreen() {
           onDismissProductCallout={handleDismissMarkerCallout}
         />
       </GestureHandlerRootView>
+
+      {activeToast ? (
+        <MapShoppingToast
+          notification={activeToast}
+          onDismiss={dismissActiveToast}
+        />
+      ) : null}
 
       {__DEV__ ? (
         <View

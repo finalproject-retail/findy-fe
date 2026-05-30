@@ -10,7 +10,8 @@ import { UserLocationMarker } from "./layers/UserLocationMarker";
 import { MapProductMarkerCallout } from "./MapProductMarkerCallout";
 import type { StoreMapNavigationMock } from "./types";
 import type { CartLineItem } from "@/contexts/CartContext";
-import { MAP_OVERLAY_MARKER_HEIGHT } from "./constants";
+import type { Product } from "@/components/product";
+import { MAP_OVERLAY_MARKER_HEIGHT, MAP_OVERLAY_RECO_HEIGHT } from "./constants";
 import { scaledMarkerSize } from "./utils/overlayScale";
 import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
 import { buildNavigationPathSegmentsFromAisleLegs } from "./utils/buildNavigationPath";
@@ -34,7 +35,9 @@ type StoreMapOverlaysProps = {
   pickedMarkerIds?: ReadonlySet<string>;
   selectedMarkerProductId?: string | null;
   tripLineItems?: CartLineItem[];
+  recommendedProductsById?: Record<string, Product>;
   onShoppingMarkerPress?: (productId: string) => void;
+  onRecommendedMarkerPress?: (productId: string) => void;
   showCongestion?: boolean;
   showRoute?: boolean;
 };
@@ -49,7 +52,9 @@ export function StoreMapOverlays({
   pickedMarkerIds,
   selectedMarkerProductId = null,
   tripLineItems = [],
+  recommendedProductsById = {},
   onShoppingMarkerPress,
+  onRecommendedMarkerPress,
   showCongestion = true,
   showRoute = true,
 }: StoreMapOverlaysProps) {
@@ -103,6 +108,7 @@ export function StoreMapOverlays({
   );
 
   const pinHeight = scaledMarkerSize(MAP_OVERLAY_MARKER_HEIGHT, cellPx);
+  const recoPinHeight = scaledMarkerSize(MAP_OVERLAY_RECO_HEIGHT, cellPx);
 
   const selectedTripLine = useMemo(
     () =>
@@ -123,6 +129,23 @@ export function StoreMapOverlays({
   const recommendedMarkers = useMemo(
     () => resolveRecommendedMarkers(config, data.recommendedItems, cellPx),
     [cellPx, config, data.recommendedItems]
+  );
+
+  const selectedRecommendedProduct = useMemo(() => {
+    if (!selectedMarkerProductId || selectedTripLine) {
+      return undefined;
+    }
+    return recommendedProductsById[selectedMarkerProductId];
+  }, [recommendedProductsById, selectedMarkerProductId, selectedTripLine]);
+
+  const selectedRecommendedMarker = useMemo(
+    () =>
+      selectedRecommendedProduct
+        ? recommendedMarkers.find(
+            (marker) => marker.id === selectedRecommendedProduct.id,
+          )
+        : undefined,
+    [recommendedMarkers, selectedRecommendedProduct],
   );
 
   useEffect(() => {
@@ -153,7 +176,12 @@ export function StoreMapOverlays({
           cellPx={cellPx}
         />
       ) : null}
-      <RecommendationAdMarkerLayer markers={recommendedMarkers} cellPx={cellPx} />
+      <RecommendationAdMarkerLayer
+        markers={recommendedMarkers}
+        cellPx={cellPx}
+        selectedMarkerId={selectedMarkerProductId}
+        onMarkerPress={onRecommendedMarkerPress}
+      />
       <ShoppingItemMarkerLayer
         markers={shoppingMarkers}
         cellPx={cellPx}
@@ -167,6 +195,14 @@ export function StoreMapOverlays({
           quantity={selectedTripLine.quantity}
           anchor={selectedMarker.center}
           pinHeight={pinHeight}
+        />
+      ) : null}
+      {selectedRecommendedProduct && selectedRecommendedMarker ? (
+        <MapProductMarkerCallout
+          product={selectedRecommendedProduct}
+          quantity={1}
+          anchor={selectedRecommendedMarker.center}
+          pinHeight={recoPinHeight}
         />
       ) : null}
       <UserLocationMarker location={data.currentLocation} cellPx={cellPx} />

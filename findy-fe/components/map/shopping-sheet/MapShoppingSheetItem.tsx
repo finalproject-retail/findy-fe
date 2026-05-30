@@ -29,8 +29,6 @@ type MapShoppingSheetItemProps = {
   pickedQuantity: number;
   onRemove: () => void;
   onQuantityChange: (quantity: number) => void;
-  /** 바코드 연동 전 목업: 길게 눌러 픽 처리 */
-  onSimulatePick?: () => void;
 };
 
 export function MapShoppingSheetItem({
@@ -38,7 +36,6 @@ export function MapShoppingSheetItem({
   pickedQuantity,
   onRemove,
   onQuantityChange,
-  onSimulatePick,
 }: MapShoppingSheetItemProps) {
   const { width: screenWidth } = useWindowDimensions();
   const [showAlternatives, setShowAlternatives] = useState(false);
@@ -224,18 +221,7 @@ export function MapShoppingSheetItem({
   }
 
   return (
-    <Pressable
-      onLongPress={onSimulatePick}
-      delayLongPress={Platform.OS === "web" ? 200 : 400}
-      // 웹 ScrollView에서는 길게 누르기가 잘 안 먹어서 우클릭으로도 시뮬레이션
-      {...(Platform.OS === "web" && onSimulatePick
-        ? {
-            onContextMenu: (event: { preventDefault?: () => void }) => {
-              event.preventDefault?.();
-              onSimulatePick();
-            },
-          }
-        : {})}
+    <View
       className="border-b border-light-gray px-screen"
       style={{ paddingVertical: SPACING.sm }}
     >
@@ -384,6 +370,6 @@ export function MapShoppingSheetItem({
           </View>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }

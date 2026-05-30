@@ -1,5 +1,5 @@
 import RecoMarkerIcon from "@/assets/icons/reco_marker.svg";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import { MAP_OVERLAY_RECO_HEIGHT, MAP_OVERLAY_RECO_WIDTH } from "../constants";
 import type { ResolvedGridMarker } from "../types";
 import { pinTopLeftFromCenter } from "../utils/gridToPixel";
@@ -8,9 +8,16 @@ import { scaledMarkerSize } from "../utils/overlayScale";
 type RecommendationAdMarkerLayerProps = {
   markers: ResolvedGridMarker[];
   cellPx: number;
+  selectedMarkerId?: string | null;
+  onMarkerPress?: (markerId: string) => void;
 };
 
-export function RecommendationAdMarkerLayer({ markers, cellPx }: RecommendationAdMarkerLayerProps) {
+export function RecommendationAdMarkerLayer({
+  markers,
+  cellPx,
+  selectedMarkerId,
+  onMarkerPress,
+}: RecommendationAdMarkerLayerProps) {
   const width = scaledMarkerSize(MAP_OVERLAY_RECO_WIDTH, cellPx);
   const height = scaledMarkerSize(MAP_OVERLAY_RECO_HEIGHT, cellPx);
 
@@ -18,16 +25,23 @@ export function RecommendationAdMarkerLayer({ markers, cellPx }: RecommendationA
     <>
       {markers.map((marker) => {
         const { x, y } = pinTopLeftFromCenter(marker.center, width, height);
+        const isSelected = selectedMarkerId === marker.id;
 
         return (
-          <View
+          <Pressable
             key={marker.id}
-            pointerEvents="none"
-            style={[styles.pinWrap, { left: x, top: y, width, height }]}
-            accessibilityLabel={marker.name}
+            onPress={() => onMarkerPress?.(marker.id)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${marker.name} 추천 위치`}
+            accessibilityState={{ selected: isSelected }}
+            style={[
+              styles.pinWrap,
+              { left: x, top: y, width, height, zIndex: isSelected ? 12 : 11 },
+            ]}
           >
             <RecoMarkerIcon width={width} height={height} />
-          </View>
+          </Pressable>
         );
       })}
     </>

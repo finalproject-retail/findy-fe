@@ -13,10 +13,7 @@ export const MAP_NAVIGATION_MOCK: StoreMapNavigationMock = {
     { id: "s3", name: "우유", gridX: 20, gridY: 12, visitOrder: 3 },
   ],
 
-  recommendedItems: [
-    { id: "r1", name: "1+1 초코에몽 광고", gridX: 17, gridY: 12 },
-    { id: "r2", name: "행사 할인 과자", gridX: 2, gridY: 2 },
-  ],
+  recommendedItems: [],
 
   beaconCongestion: [
     { gridX: 19, gridY: 6, level: "HIGH" },

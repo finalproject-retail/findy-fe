@@ -2,9 +2,11 @@ import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-
 import { resolveShelfGridForProduct } from "@/components/store-map/overlays/shelfGrid";
 import type {
   MapGridPoint,
+  RecommendedMapItem,
   ShoppingMapItem,
 } from "@/components/store-map/overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
+import type { Product } from "@/components/product";
 
 /** 목 데이터 — 상품별 선호 매대 위치 */
 const PRODUCT_GRID_PREFERENCES: Record<string, MapGridPoint> = {
@@ -45,6 +47,25 @@ function getProductGridLocation(
 
 function isPurchasable(item: CartLineItem) {
   return (item.product.stockCount ?? 1) > 0;
+}
+
+/** 추천(광고) 마커 — 알림과 동일 상품을 지도에 표시 */
+export function productToRecommendedMapItem(
+  product: Product,
+  fallbackIndex = 0,
+): RecommendedMapItem {
+  const { gridX, gridY } = getProductGridLocation(
+    product.id,
+    product.category,
+    fallbackIndex,
+  );
+
+  return {
+    id: product.id,
+    name: product.name,
+    gridX,
+    gridY,
+  };
 }
 
 /** 선택된 장바구니 상품 → 지도 쇼핑 마커 (상품당 1개) */

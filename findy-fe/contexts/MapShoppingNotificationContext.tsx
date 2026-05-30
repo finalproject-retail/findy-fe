@@ -36,7 +36,7 @@ export function MapShoppingNotificationProvider({
     useState<MapShoppingNotification | null>(null);
   const toastQueueRef = useRef<MapShoppingNotification[]>([]);
   const shownRelatedByPickedRef = useRef<Record<string, string[]>>({});
-  const { hasActiveTrip } = useMapNavigation();
+  const { hasActiveTrip, addRecommendedMapItem } = useMapNavigation();
 
   useEffect(() => {
     if (!hasActiveTrip) {
@@ -70,6 +70,8 @@ export function MapShoppingNotificationProvider({
         relatedProduct.id,
       ];
 
+      addRecommendedMapItem(relatedProduct);
+
       const notification: MapShoppingNotification = {
         id: `${Date.now()}-${relatedProduct.id}`,
         createdAt: Date.now(),
@@ -86,7 +88,7 @@ export function MapShoppingNotificationProvider({
         return notification;
       });
     },
-    [],
+    [addRecommendedMapItem],
   );
 
   const value = useMemo(

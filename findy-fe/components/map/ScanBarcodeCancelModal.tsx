@@ -1,4 +1,4 @@
-﻿import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useEffect, useRef } from "react";
@@ -21,7 +21,6 @@ type ScanBarcodeCancelModalProps = {
   visible: boolean;
   productName: string;
   quantity: number;
-  onBarcodeScanned: () => void;
   onDismiss: () => void;
 };
 
@@ -29,16 +28,13 @@ export function ScanBarcodeCancelModal({
   visible,
   productName,
   quantity,
-  onBarcodeScanned,
   onDismiss,
 }: ScanBarcodeCancelModalProps) {
   const { width: screenWidth } = useWindowDimensions();
   const lockedCardWidthRef = useRef<number | null>(null);
-  const scanHandledRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
-      scanHandledRef.current = false;
       if (lockedCardWidthRef.current === null) {
         lockedCardWidthRef.current = Math.min(
           screenWidth - SPACING.screen * 2,
@@ -53,12 +49,6 @@ export function ScanBarcodeCancelModal({
   const cardWidth =
     lockedCardWidthRef.current ??
     Math.min(screenWidth - SPACING.screen * 2, CARD_MAX_WIDTH);
-
-  const handleBarcodeScanned = () => {
-    if (scanHandledRef.current) return;
-    scanHandledRef.current = true;
-    onBarcodeScanned();
-  };
 
   return (
     <Modal
@@ -86,18 +76,13 @@ export function ScanBarcodeCancelModal({
               <Text style={styles.messageLine}>스캔해 주세요.</Text>
             </View>
 
-            <Pressable
-              onPress={handleBarcodeScanned}
-              accessibilityRole="button"
-              accessibilityLabel="바코드 스캔"
-              style={styles.barcodeTap}
-            >
+            <View style={styles.barcodeTap}>
               <Image
                 source={BARCODE_IMAGE}
                 style={styles.barcodeImage}
                 contentFit="contain"
               />
-            </Pressable>
+            </View>
 
             <Text style={styles.productLine} numberOfLines={2}>
               취소상품: {productName} X {quantity}개

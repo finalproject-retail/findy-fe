@@ -12,7 +12,7 @@ import {
 import { COLORS, SPACING } from "@/constants/theme";
 import { saveUserPreferences } from "@/lib/api/preferences";
 import { getUserIdFromAccessToken } from "@/lib/auth/jwt";
-import { getAccessToken } from "@/lib/api/client";
+import { getAccessToken, getApiErrorMessage } from "@/lib/api/client";
 import { setOnboardingCompleted } from "@/lib/onboarding/storage";
 import { pretendard } from "@/utils/pretendard";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -78,8 +78,8 @@ export default function OnboardingScreen() {
     if (userId && categoryIds.length > 0 && shoppingStyleIds.length > 0) {
       try {
         await saveUserPreferences(userId, { categoryIds, shoppingStyleIds });
-      } catch {
-        // 게이트웨이/헤더 미연동 시에도 온보딩 UI는 완료 처리
+      } catch (error) {
+        Alert.alert("설정 저장 실패", getApiErrorMessage(error));
       }
     }
 

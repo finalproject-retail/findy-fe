@@ -1,5 +1,6 @@
 import {
   MAP_PAN_BOTTOM_EXTRA_PX,
+  MAP_PAN_HORIZONTAL_EXTRA_PX,
   MAP_PAN_INSET_BOTTOM_RATIO,
   MAP_PAN_INSET_TOP_RATIO,
   MAP_PAN_TOP_EXTRA_PX,
@@ -40,8 +41,8 @@ export function getPanBounds(
   }
 
   return {
-    minX: overflowX > 0 ? -overflowX : (viewportW - scaledW) / 2,
-    maxX: overflowX > 0 ? 0 : (viewportW - scaledW) / 2,
+    minX: overflowX > 0 ? -overflowX - MAP_PAN_HORIZONTAL_EXTRA_PX : (viewportW - scaledW) / 2,
+    maxX: overflowX > 0 ? MAP_PAN_HORIZONTAL_EXTRA_PX : (viewportW - scaledW) / 2,
     minY: overflowY > 0 ? -overflowY - bottomPad : (viewportH - scaledH) / 2,
     maxY: overflowY > 0 ? topPad : (viewportH - scaledH) / 2,
   };
