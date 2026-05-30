@@ -40,6 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen name="payment-complete" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }
