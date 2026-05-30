@@ -31,6 +31,8 @@ export function ProductDetailCartBar({
   const [quantity, setQuantity] = useState(1);
   const soldOut = isOutOfStock(product);
 
+  const actionLabel = isShoppingListMode ? "쇼핑리스트 담기" : "장바구니 담기";
+
   const openSheet = () => {
     setQuantity(1);
     setSheetVisible(true);
@@ -60,11 +62,13 @@ export function ProductDetailCartBar({
 
   const handleBarPress = () => {
     if (soldOut) return;
+
     if (sheetVisible) {
       handleConfirm();
-    } else {
-      openSheet();
+      return;
     }
+
+    openSheet();
   };
 
   return (
@@ -83,6 +87,7 @@ export function ProductDetailCartBar({
             accessibilityRole="button"
             accessibilityLabel="닫기"
           />
+
           <View
             style={[
               styles.sheetAnchor,
