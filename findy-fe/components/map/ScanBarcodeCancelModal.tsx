@@ -34,9 +34,11 @@ export function ScanBarcodeCancelModal({
 }: ScanBarcodeCancelModalProps) {
   const { width: screenWidth } = useWindowDimensions();
   const lockedCardWidthRef = useRef<number | null>(null);
+  const scanHandledRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
+      scanHandledRef.current = false;
       if (lockedCardWidthRef.current === null) {
         lockedCardWidthRef.current = Math.min(
           screenWidth - SPACING.screen * 2,
@@ -51,6 +53,12 @@ export function ScanBarcodeCancelModal({
   const cardWidth =
     lockedCardWidthRef.current ??
     Math.min(screenWidth - SPACING.screen * 2, CARD_MAX_WIDTH);
+
+  const handleBarcodeScanned = () => {
+    if (scanHandledRef.current) return;
+    scanHandledRef.current = true;
+    onBarcodeScanned();
+  };
 
   return (
     <Modal
@@ -79,9 +87,7 @@ export function ScanBarcodeCancelModal({
             </View>
 
             <Pressable
-              onPress={onBarcodeScanned}
-              onLongPress={onBarcodeScanned}
-              delayLongPress={400}
+              onPress={handleBarcodeScanned}
               accessibilityRole="button"
               accessibilityLabel="바코드 스캔"
               style={styles.barcodeTap}

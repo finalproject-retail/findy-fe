@@ -5,15 +5,11 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/contexts/ToastContext";
 import { useRouter } from "expo-router";
 import { formatProductCanceledMessage } from "@/utils/koreanParticle";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  StyleSheet,
-  View,
-  useWindowDimensions,
-  type LayoutChangeEvent,
-} from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import {
   Gesture,
   GestureDetector,
@@ -49,11 +45,9 @@ import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
-import { MapShoppingCancelToastOverlay } from "./MapShoppingCancelToastOverlay";
 
 const SNAP_MS = 260;
 const CANCEL_TOAST_DURATION_MS = 2000;
-const FOOTER_AREA_HEIGHT_FALLBACK = 140;
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 type MapShoppingBottomSheetProps = {
@@ -87,15 +81,11 @@ export function MapShoppingBottomSheet({
     productName: string;
     quantity: number;
   } | null>(null);
-  const [cancelToastMessage, setCancelToastMessage] = useState<string | null>(
-    null,
-  );
   const cancelToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [footerAreaHeight, setFooterAreaHeight] = useState(
-    FOOTER_AREA_HEIGHT_FALLBACK,
-  );
+  const cancelScanHandledRef = useRef(false);
   const cancelScanModalRef = useRef(cancelScanModal);
   cancelScanModalRef.current = cancelScanModal;
+  const { showToast } = useToast();
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
   const { commitPendingBarcodeRewards } = usePoints();
@@ -382,27 +372,18 @@ export function MapShoppingBottomSheet({
     [addToCart, pickedQuantityByProductId, removeTripItem],
   );
 
-  const handleFooterAreaLayout = useCallback((event: LayoutChangeEvent) => {
-    const height = event.nativeEvent.layout.height;
-    if (height > 0) {
-      setFooterAreaHeight(height);
-    }
-  }, []);
-
   const presentCancelToast = useCallback(
     (productName: string) => {
-      if (cancelToastTimerRef.current) {
-        clearTimeout(cancelToastTimerRef.current);
-      }
-      const message = formatProductCanceledMessage(productName);
-      setCancelToastMessage(message);
-      cancelToastTimerRef.current = setTimeout(() => {
-        setCancelToastMessage(null);
-        cancelToastTimerRef.current = null;
-      }, CANCEL_TOAST_DURATION_MS);
+      showToast(formatProductCanceledMessage(productName), CANCEL_TOAST_DURATION_MS);
     },
-    [],
+    [showToast],
   );
+
+  useEffect(() => {
+    if (cancelScanModal) {
+      cancelScanHandledRef.current = false;
+    }
+  }, [cancelScanModal]);
 
   useEffect(() => {
     return () => {
@@ -413,8 +394,11 @@ export function MapShoppingBottomSheet({
   }, []);
 
   const handleCancelBarcodeScanned = useCallback(() => {
+    if (cancelScanHandledRef.current) return;
     const modal = cancelScanModalRef.current;
     if (!modal) return;
+    cancelScanHandledRef.current = true;
+
     const canceledProductName = modal.productName;
     // 취소 스캔으로 제외되는 상품도 장바구니로 복귀
     const line = tripLineItems.find((item) => item.productId === modal.productId);
@@ -423,7 +407,13 @@ export function MapShoppingBottomSheet({
     }
     removeTripItem(modal.productId);
     setCancelScanModal(null);
-    presentCancelToast(canceledProductName);
+    if (cancelToastTimerRef.current) {
+      clearTimeout(cancelToastTimerRef.current);
+    }
+    cancelToastTimerRef.current = setTimeout(() => {
+      presentCancelToast(canceledProductName);
+      cancelToastTimerRef.current = null;
+    }, 250);
   }, [addToCart, presentCancelToast, removeTripItem, tripLineItems]);
 
   const handleDismissCancelModal = useCallback(() => {
@@ -477,10 +467,7 @@ export function MapShoppingBottomSheet({
                 <MapShoppingSheetEmpty />
               )}
 
-              <View
-                style={styles.bottomStack}
-                onLayout={handleFooterAreaLayout}
-              >
+              <View style={styles.bottomStack}>
                 <MapShoppingSheetFooter
                   tripLineItems={tripLineItems}
                   pickedQuantityByProductId={pickedQuantityByProductId}
@@ -492,11 +479,6 @@ export function MapShoppingBottomSheet({
             </View>
           </Animated.View>
         ) : null}
-
-          <MapShoppingCancelToastOverlay
-            message={showBody ? cancelToastMessage : null}
-            bottomOffset={footerAreaHeight}
-          />
         </View>
       </Animated.View>
     </GestureDetector>
