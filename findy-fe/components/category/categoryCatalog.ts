@@ -60,7 +60,6 @@ const RAW_CATEGORIES: { categoryId: number; path: string }[] = [
   { categoryId: 39, path: "라이프 스타일 > 가전/IT > 디지털 기기" },
   { categoryId: 40, path: "라이프 스타일 > 가전/IT > 소형 전자제품" },
   { categoryId: 41, path: "라이프 스타일 > 의류/잡화 > 의류" },
-  { categoryId: 42, path: "라이프 스타일 > 의류/잡화 > 디지털 기기" },
   { categoryId: 43, path: "라이프 스타일 > 의류/잡화 > 신발/가방" },
   { categoryId: 44, path: "라이프 스타일 > 홈케어/캠핑 > 가구/침구" },
   { categoryId: 45, path: "라이프 스타일 > 홈케어/캠핑 > 캠핑/아웃도어 용품" },
