@@ -421,6 +421,10 @@ export function MapShoppingBottomSheet({
     }
   }, [addToCart, cancelScanModal, removeTripItem, tripLineItems]);
 
+  const handleDismissCancelModal = useCallback(() => {
+    setCancelScanModal(null);
+  }, []);
+
   return (
     <>
     <GestureDetector gesture={panGesture}>
