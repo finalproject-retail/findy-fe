@@ -21,7 +21,6 @@
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/splash-logo.png"
       },
-      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.findyfe"
