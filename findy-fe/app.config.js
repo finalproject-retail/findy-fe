@@ -51,6 +51,8 @@ export default ({ config }) => ({
       },
     }),
     mapApiUrl:
-      process.env.EXPO_PUBLIC_MAP_API_URL ?? "http://10.0.2.2:8888",
+      process.env.EXPO_PUBLIC_MAP_API_URL ??
+      process.env.EXPO_PUBLIC_API_URL ??
+      "http://10.0.2.2:8888",
   },
 });

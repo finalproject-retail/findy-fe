@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 
 const ANDROID_EMULATOR_HOST = "10.0.2.2";
-const DEFAULT_USER_API_URL = "http://192.168.0.32:8889";
+const DEFAULT_USER_API_URL = "http://localhost:8889";
 
 /** 웹 개발 서버(Metro) 프록시 경로 — CORS 우회 */
 export const USER_API_WEB_PROXY_PREFIX = "/user-api";
@@ -20,7 +20,9 @@ function rewriteLocalhostForAndroid(url: string) {
 }
 
 function resolveDirectUserApiUrl() {
-  const fromEnv = process.env.EXPO_PUBLIC_USER_API_URL?.trim();
+  const fromEnv =
+    process.env.EXPO_PUBLIC_USER_API_URL?.trim() ||
+    process.env.EXPO_PUBLIC_API_URL?.trim();
   const url = fromEnv ? stripTrailingSlash(fromEnv) : DEFAULT_USER_API_URL;
   return rewriteLocalhostForAndroid(url);
 }
