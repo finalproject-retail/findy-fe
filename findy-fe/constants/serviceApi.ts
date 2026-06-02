@@ -16,8 +16,9 @@ function rewriteLocalhostForAndroid(url: string) {
 }
 
 function resolveServiceUrl(envValue: string | undefined, fallbackPort: number) {
-  const url = envValue?.trim()
-    ? stripTrailingSlash(envValue.trim())
+  const fromEnv = envValue?.trim() || process.env.EXPO_PUBLIC_API_URL?.trim();
+  const url = fromEnv
+    ? stripTrailingSlash(fromEnv)
     : `http://localhost:${fallbackPort}`;
   return rewriteLocalhostForAndroid(url);
 }
