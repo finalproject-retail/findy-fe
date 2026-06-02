@@ -16,15 +16,22 @@ import {
 } from "@/components/point";
 import { SPACING } from "@/constants/theme";
 import { usePoints } from "@/contexts/PointsContext";
-import { useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 
 export default function PointsScreen() {
-  const { balance } = usePoints();
+  const { balance, refreshReward } = usePoints();
   const [period, setPeriod] = useState<PeriodInquiryValue>(
     getDefaultPeriodInquiryValue,
   );
   const [filter, setFilter] = useState<PointHistoryFilterType>("all");
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshReward();
+    }, [refreshReward]),
+  );
 
   const filteredHistory = useMemo(
     () => filterPointHistory(MOCK_POINT_HISTORY, filter, period),
@@ -39,22 +46,12 @@ export default function PointsScreen() {
           balance={balance}
           expiringThisMonth={MOCK_POINT_SUMMARY.expiringThisMonth}
         />
-
-        <View
-          className="bg-white px-screen"
-          style={{
-            paddingVertical: SPACING.md,
-            gap: SPACING.sm,
-          }}
-        >
+        <View style={{ paddingHorizontal: SPACING.screen, gap: SPACING.lg }}>
           <PeriodInquiry value={period} onChange={setPeriod} />
           <PointHistoryFilter value={filter} onChange={setFilter} />
-
-          <View>
-            {filteredHistory.map((item) => (
-              <PointHistoryItem key={item.id} item={item} />
-            ))}
-          </View>
+          {filteredHistory.map((item) => (
+            <PointHistoryItem key={item.id} item={item} />
+          ))}
         </View>
       </ScrollView>
     </SafeView>

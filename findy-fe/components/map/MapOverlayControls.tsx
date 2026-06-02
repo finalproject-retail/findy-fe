@@ -101,6 +101,14 @@ export function MapOverlayControls({
     router.navigate("/(tabs)");
   };
 
+  const handleBellPress = () => {
+    if (onBellPress) {
+      onBellPress();
+      return;
+    }
+    router.push("/notifications");
+  };
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {menuOpen ? (
@@ -189,7 +197,7 @@ export function MapOverlayControls({
           <FloatingIconButton onPress={onSearchPress} accessibilityLabel="검색">
             <MapSearchIcon width={MAP_FLOATING_ICON_SIZE} height={MAP_FLOATING_ICON_SIZE} />
           </FloatingIconButton>
-          <FloatingIconButton onPress={onBellPress} accessibilityLabel="알림">
+          <FloatingIconButton onPress={handleBellPress} accessibilityLabel="알림">
             <MapBellIcon width={MAP_FLOATING_ICON_SIZE} height={MAP_FLOATING_ICON_SIZE} />
           </FloatingIconButton>
           <FloatingIconButton

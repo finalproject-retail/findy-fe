@@ -99,7 +99,8 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [pickedQuantityByProductId, setPickedQuantityByProductId] = useState<
     Record<string, number>
   >({});
-  const hasActiveTrip = tripLineItems.length > 0;
+  const hasActiveTrip =
+    tripLineItems.length > 0 || navigationData.shoppingItems.length > 0;
 
   const refreshNavigationOverlay = useCallback(() => {
     setNavigationData((prev) => ({
@@ -107,7 +108,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       shoppingItems:
         tripLineItems.length > 0
           ? tripLineItemsToShoppingMapItems(tripLineItems)
-          : prev.shoppingItems,
+          : prev.shoppingItems.length > 0
+            ? prev.shoppingItems
+            : [],
       beaconCongestion: fetchCongestionSnapshotOnRefresh(),
     }));
     setNavigationRefreshKey((key) => key + 1);

@@ -159,6 +159,30 @@ export function findSubCategory(categoryId: number): {
   return null;
 }
 
+export type CartZoneItem = {
+  categoryId: number;
+  label: string;
+  path: string;
+  topLabel: string;
+  middleLabel: string;
+  emoji: string;
+};
+
+export function buildCartZoneItem(categoryId: number): CartZoneItem | null {
+  const found = findSubCategory(categoryId);
+  if (!found) {
+    return null;
+  }
+  return {
+    categoryId,
+    label: found.sub.label,
+    path: `${found.top.label} > ${found.middle.label} > ${found.sub.label}`,
+    topLabel: found.top.label,
+    middleLabel: found.middle.label,
+    emoji: found.middle.emoji,
+  };
+}
+
 export function resolveCategoryIdParam(
   value: string | string[] | undefined,
 ): number | null {

@@ -29,6 +29,13 @@ export type ProductApiDto = {
   stockBadgeText?: string | null;
   stock?: number;
   category?: string;
+  /** 상품 상세 — 설명 */
+  description?: string | null;
+  packagingType?: string | null;
+  salesUnit?: string | null;
+  volume?: string | null;
+  allergyInfo?: string | null;
+  barcode?: string | null;
 };
 
 /** 목록 API data 필드 — 배열 직접 또는 페이지 래핑 */

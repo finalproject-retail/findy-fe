@@ -33,6 +33,7 @@ function RootLayoutNav() {
       <Stack.Screen name="category" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
+      <Stack.Screen name="shopping-course" />
       <Stack.Screen name="route-generating" />
       <Stack.Screen name="payment" />
       <Stack.Screen name="payment-coupons" />
@@ -100,23 +101,23 @@ export default function RootLayout() {
       <RecentSearchProvider>
         <CheckoutProvider>
           <PurchaseHistoryProvider>
-            <PointsProvider>
-              <StoreMapConfigProvider>
-                <MapNavigationProvider>
-                  <MapShoppingNotificationProvider>
-                    <BeaconLocationProvider>
-                      <ToastProvider>
-                        <AuthProvider>
+            <AuthProvider>
+              <PointsProvider>
+                <StoreMapConfigProvider>
+                  <MapNavigationProvider>
+                    <MapShoppingNotificationProvider>
+                      <BeaconLocationProvider>
+                        <ToastProvider>
                           <AuthGuard>
                             <RootLayoutNav />
                           </AuthGuard>
-                        </AuthProvider>
-                      </ToastProvider>
-                    </BeaconLocationProvider>
-                  </MapShoppingNotificationProvider>
-                </MapNavigationProvider>
-              </StoreMapConfigProvider>
-            </PointsProvider>
+                        </ToastProvider>
+                      </BeaconLocationProvider>
+                    </MapShoppingNotificationProvider>
+                  </MapNavigationProvider>
+                </StoreMapConfigProvider>
+              </PointsProvider>
+            </AuthProvider>
           </PurchaseHistoryProvider>
         </CheckoutProvider>
       </RecentSearchProvider>

@@ -2,6 +2,7 @@ export { MypageNavigateArrow } from "./MypageNavigateArrow";
 export { MypageGreeting } from "./MypageGreeting";
 export { MypageMembershipCard } from "./MypageMembershipCard";
 export { MypageMenuList } from "./MypageMenuList";
+export { useMypageProfile } from "./useMypageProfile";
 export { MypageMenuRow } from "./MypageMenuRow";
 export { MypageRecentlyViewedSection } from "./MypageRecentlyViewedSection";
 export {

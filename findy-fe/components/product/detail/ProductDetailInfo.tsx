@@ -28,7 +28,7 @@ export function ProductDetailInfo({
   const originalPrice =
     product.originalPrice ??
     Math.round(couponPrice / (1 - product.discountPercent / 100));
-  const stockCount = product.stockCount ?? 0;
+  const stockCount = product.stockCount;
 
   return (
     <View
@@ -77,7 +77,9 @@ export function ProductDetailInfo({
             </Text>
           </View>
 
-          <RemainingStockText stockCount={stockCount} className="shrink-0" />
+          {stockCount != null && stockCount > 0 ? (
+            <RemainingStockText stockCount={stockCount} className="shrink-0" />
+          ) : null}
         </View>
       </View>
 

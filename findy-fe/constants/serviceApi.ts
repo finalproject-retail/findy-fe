@@ -1,5 +1,7 @@
 import { Platform } from "react-native";
 
+import { API_GATEWAY_PORT } from "./api";
+
 const ANDROID_EMULATOR_HOST = "10.0.2.2";
 
 function stripTrailingSlash(url: string) {
@@ -15,35 +17,28 @@ function rewriteLocalhostForAndroid(url: string) {
     .replace(/\/\/127\.0\.0\.1(?=[:/]|$)/i, `//${ANDROID_EMULATOR_HOST}`);
 }
 
-function resolveServiceUrl(envValue: string | undefined, fallbackPort: number) {
-  const url = envValue?.trim()
-    ? stripTrailingSlash(envValue.trim())
-    : `http://localhost:${fallbackPort}`;
+function resolveServiceUrl(envValue: string | undefined) {
+  const fromEnv = envValue?.trim() || process.env.EXPO_PUBLIC_API_URL?.trim();
+  const url = fromEnv
+    ? stripTrailingSlash(fromEnv)
+    : `http://localhost:${API_GATEWAY_PORT}`;
   return rewriteLocalhostForAndroid(url);
 }
 
-/** shopping-service (상품) */
+/** shopping-service (Gateway 경유) */
 export const SHOPPING_API_URL = resolveServiceUrl(
   process.env.EXPO_PUBLIC_SHOPPING_API_URL,
-  8887,
 );
 
-/** recommendation-service (개인 맞춤 추천) */
+/** recommendation-service (Gateway 경유) */
 export const RECOMMENDATION_API_URL = resolveServiceUrl(
   process.env.EXPO_PUBLIC_RECOMMENDATION_API_URL,
-  8886,
 );
 
-/** 웹 개발 서버(Metro) 프록시 — CORS 우회 */
-export const SHOPPING_API_WEB_PROXY_PREFIX = "/shopping-api";
-export const RECOMMENDATION_API_WEB_PROXY_PREFIX = "/recommendation-api";
-
-/** shopping-service base URL (웹 개발 시 Metro 프록시) */
 export function getShoppingApiBaseUrl() {
   return SHOPPING_API_URL;
 }
 
-/** recommendation-service base URL (웹 개발 시 Metro 프록시) */
 export function getRecommendationApiBaseUrl() {
   return RECOMMENDATION_API_URL;
 }

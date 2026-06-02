@@ -6,7 +6,6 @@ import { COLORS } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 export type HeaderRightIcon = "search" | "bell" | "cart";
@@ -37,13 +36,10 @@ export function Header({
   onCartPress,
 }: HeaderProps) {
   const router = useRouter();
-  const { items: cartItems } = useCart();
+  const { cartBadgeCount } = useCart();
   const icons = rightIcons.slice(0, MAX_RIGHT_ICONS);
 
-  const cartCount = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
-    [cartItems],
-  );
+  const cartCount = cartBadgeCount;
   const cartBadgeLabel =
     cartCount > 99 ? "99+" : cartCount > 0 ? String(cartCount) : null;
 
