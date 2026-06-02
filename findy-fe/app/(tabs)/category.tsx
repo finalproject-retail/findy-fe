@@ -21,7 +21,7 @@ function navigateToCategoryDetail(
       middleKey: middle.key,
       categoryId: String(categoryId),
     },
-  } as Href);
+  } as unknown as Href);
 }
 
 export default function CategoryScreen() {
