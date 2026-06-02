@@ -6,7 +6,10 @@ import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/contexts/ToastContext";
-import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
+import {
+  sumTripScannedUnits,
+  useMapShoppingNotifications,
+} from "@/contexts/MapShoppingNotificationContext";
 import { useRouter } from "expo-router";
 import { formatProductCanceledMessage } from "@/utils/koreanParticle";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -90,7 +93,7 @@ export function MapShoppingBottomSheet({
   const cancelScanModalRef = useRef(cancelScanModal);
   cancelScanModalRef.current = cancelScanModal;
   const { showToast } = useToast();
-  const { showRelatedProductNotification } = useMapShoppingNotifications();
+  const { maybeShowPromoNotification } = useMapShoppingNotifications();
   const scrollY = useSharedValue(0);
   const { pickProductFromBarcode } = useMapBarcodePick();
   const { commitPendingBarcodeRewards, clearPendingBarcodeRewards } = usePoints();
@@ -365,26 +368,35 @@ export function MapShoppingBottomSheet({
       }
 
       try {
-        await scanShoppingListItem(barcode, 1);
+        const prevScanned =
+          pickedQuantityByProductId[productId] ?? line.scannedQuantity ?? 0;
 
-        const prevPicked = pickedQuantityByProductId[productId] ?? 0;
-        const rewardPoints = pickProductFromBarcode(productId);
+        const shoppingList = await scanShoppingListItem(barcode, 1);
+        const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
+        syncShoppingTrip(nextLineItems);
 
-        if (prevPicked < line.quantity) {
-          showRelatedProductNotification(line.product);
-        }
+        const matchedAfter = nextLineItems.find(
+          (item) => item.productId === productId,
+        );
+        const nextScanned = matchedAfter?.scannedQuantity ?? prevScanned;
 
-        if (rewardPoints !== null) {
-          setPointRewardModal({ visible: true, points: rewardPoints });
+        if (matchedAfter && nextScanned > prevScanned) {
+          const totalScanned = sumTripScannedUnits(nextLineItems);
+          maybeShowPromoNotification(matchedAfter.product, totalScanned);
+          const rewardPoints = pickProductFromBarcode(productId);
+          if (rewardPoints !== null) {
+            setPointRewardModal({ visible: true, points: rewardPoints });
+          }
         }
       } catch (error) {
         console.error(error);
       }
     },
     [
+      maybeShowPromoNotification,
       pickProductFromBarcode,
       pickedQuantityByProductId,
-      showRelatedProductNotification,
+      syncShoppingTrip,
       tripLineItems,
     ],
   );
@@ -412,7 +424,8 @@ export function MapShoppingBottomSheet({
         const nextScanned = matchedAfter?.scannedQuantity ?? prevScanned;
 
         if (matchedAfter && nextScanned > prevScanned) {
-          showRelatedProductNotification(matchedAfter.product);
+          const totalScanned = sumTripScannedUnits(nextLineItems);
+          maybeShowPromoNotification(matchedAfter.product, totalScanned);
           const rewardPoints = pickProductFromBarcode(matchedAfter.productId);
           if (rewardPoints !== null) {
             setPointRewardModal({ visible: true, points: rewardPoints });
@@ -425,7 +438,7 @@ export function MapShoppingBottomSheet({
     [
       pickProductFromBarcode,
       pickedQuantityByProductId,
-      showRelatedProductNotification,
+      maybeShowPromoNotification,
       syncShoppingTrip,
       tripLineItems,
     ],

@@ -199,8 +199,8 @@ export function MapShoppingToast({
 const styles = StyleSheet.create({
   overlayHost: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 3000,
-    elevation: 30,
+    zIndex: 10000,
+    elevation: 100,
   },
   toastAnchor: {
     position: "absolute",

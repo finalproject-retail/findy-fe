@@ -2,6 +2,8 @@ import {
   buildRelatedProductNotification,
   getRelatedProductForNotification,
 } from "@/components/map/notifications/buildRelatedProductNotification";
+import { getInStockProducts } from "@/components/home/mockProducts";
+import { BARCODE_SCANS_FOR_PROMO_NOTIFICATION } from "@/components/map/constants";
 import type { MapShoppingNotification } from "@/components/map/notifications/types";
 import type { Product } from "@/components/product";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
@@ -19,12 +21,27 @@ import {
 type MapShoppingNotificationContextValue = {
   notifications: MapShoppingNotification[];
   activeToast: MapShoppingNotification | null;
-  showRelatedProductNotification: (pickedProduct: Product) => void;
+  /**
+   * 쇼핑리스트 바코드 스캔 반영 후 호출.
+   * 트립 전체 스캔 수량 합이 5 이상이면 프로모 알림 1회.
+   */
+  maybeShowPromoNotification: (
+    pickedProduct: Product,
+    totalScannedUnits: number,
+  ) => void;
   dismissActiveToast: () => void;
 };
 
 const MapShoppingNotificationContext =
   createContext<MapShoppingNotificationContextValue | null>(null);
+
+function resolveRelatedProduct(pickedProductId: string): Product | null {
+  return (
+    getRelatedProductForNotification(pickedProductId) ??
+    getInStockProducts()[0] ??
+    null
+  );
+}
 
 export function MapShoppingNotificationProvider({
   children,
@@ -35,12 +52,12 @@ export function MapShoppingNotificationProvider({
   const [activeToast, setActiveToast] =
     useState<MapShoppingNotification | null>(null);
   const toastQueueRef = useRef<MapShoppingNotification[]>([]);
-  const shownRelatedByPickedRef = useRef<Record<string, string[]>>({});
+  const promoShownRef = useRef(false);
   const { hasActiveTrip } = useMapNavigation();
 
   useEffect(() => {
     if (!hasActiveTrip) {
-      shownRelatedByPickedRef.current = {};
+      promoShownRef.current = false;
       toastQueueRef.current = [];
       setActiveToast(null);
     }
@@ -54,30 +71,9 @@ export function MapShoppingNotificationProvider({
     }
   }, []);
 
-  const showRelatedProductNotification = useCallback(
-    (pickedProduct: Product) => {
-      const alreadyShown = shownRelatedByPickedRef.current[pickedProduct.id] ?? [];
-      const relatedProduct = getRelatedProductForNotification(
-        pickedProduct.id,
-        alreadyShown,
-      );
-      if (!relatedProduct) {
-        return;
-      }
-
-      shownRelatedByPickedRef.current[pickedProduct.id] = [
-        ...alreadyShown,
-        relatedProduct.id,
-      ];
-
-      const notification: MapShoppingNotification = {
-        id: `${Date.now()}-${relatedProduct.id}`,
-        createdAt: Date.now(),
-        ...buildRelatedProductNotification(pickedProduct, relatedProduct),
-      };
-
+  const enqueueNotification = useCallback(
+    (notification: MapShoppingNotification) => {
       setNotifications((prev) => [notification, ...prev]);
-
       setActiveToast((current) => {
         if (current) {
           toastQueueRef.current.push(notification);
@@ -89,17 +85,42 @@ export function MapShoppingNotificationProvider({
     [],
   );
 
+  const maybeShowPromoNotification = useCallback(
+    (pickedProduct: Product, totalScannedUnits: number) => {
+      if (totalScannedUnits < BARCODE_SCANS_FOR_PROMO_NOTIFICATION) {
+        return;
+      }
+      if (promoShownRef.current) {
+        return;
+      }
+
+      const relatedProduct = resolveRelatedProduct(pickedProduct.id);
+      if (!relatedProduct) {
+        return;
+      }
+
+      promoShownRef.current = true;
+
+      enqueueNotification({
+        id: `${Date.now()}-${relatedProduct.id}`,
+        createdAt: Date.now(),
+        ...buildRelatedProductNotification(pickedProduct, relatedProduct),
+      });
+    },
+    [enqueueNotification],
+  );
+
   const value = useMemo(
     () => ({
       notifications,
       activeToast,
-      showRelatedProductNotification,
+      maybeShowPromoNotification,
       dismissActiveToast,
     }),
     [
       notifications,
       activeToast,
-      showRelatedProductNotification,
+      maybeShowPromoNotification,
       dismissActiveToast,
     ],
   );
@@ -119,4 +140,11 @@ export function useMapShoppingNotifications() {
     );
   }
   return context;
+}
+
+/** 트립 라인 기준 스캔 수량 합 */
+export function sumTripScannedUnits(
+  lines: { scannedQuantity?: number }[],
+): number {
+  return lines.reduce((sum, line) => sum + (line.scannedQuantity ?? 0), 0);
 }
