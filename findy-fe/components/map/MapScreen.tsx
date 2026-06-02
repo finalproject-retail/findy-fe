@@ -160,10 +160,12 @@ export function MapScreen() {
       </GestureHandlerRootView>
 
       {hasActiveTrip && activeToast ? (
-        <MapShoppingToast
-          notification={activeToast}
-          onDismiss={dismissActiveToast}
-        />
+        <View style={styles.toastHost} pointerEvents="box-none">
+          <MapShoppingToast
+            notification={activeToast}
+            onDismiss={dismissActiveToast}
+          />
+        </View>
       ) : null}
 
       {__DEV__ ? (
@@ -219,6 +221,11 @@ const styles = StyleSheet.create({
   },
   sheetHost: {
     ...StyleSheet.absoluteFillObject,
+  },
+  toastHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10000,
+    elevation: 100,
   },
   devBeaconHost: {
     position: "absolute",
