@@ -8,10 +8,19 @@ import {
   MypageMenuList,
   MypageRecentlyViewedSection,
   getRecentlyViewedProducts,
+  useMypageProfile,
 } from "@/components/mypage";
-import { LAYOUT, SPACING } from "@/constants/theme";
-import { usePoints } from "@/contexts/PointsContext";
-import { ScrollView, View } from "react-native";
+import { COLORS, LAYOUT, SPACING } from "@/constants/theme";
+import { pretendard } from "@/utils/pretendard";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CONTENT_GAP = 28;
@@ -19,8 +28,18 @@ const CONTENT_GAP = 28;
 export default function MypageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { balance } = usePoints();
+  const { profile, loading, error, reload } = useMypageProfile();
   const scrollBottomPadding = LAYOUT.tabBarTotalHeight + insets.bottom;
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
+
+  const showFullScreenLoading = loading && !profile;
+  const showFullScreenError = Boolean(error) && !profile;
+
   const recentlyViewed = getRecentlyViewedProducts(
     MOCK_MYPAGE_USER.recentlyViewedProductIds,
   );
@@ -32,34 +51,62 @@ export default function MypageScreen() {
         rightIcons={["search", "bell", "cart"]}
         onSearchPress={() => router.push("/search" as Href)}
       />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: scrollBottomPadding,
-          paddingTop: SPACING.xl,
-          gap: CONTENT_GAP,
-        }}
-      >
-        <View className="px-screen" style={{ gap: CONTENT_GAP }}>
-          <MypageGreeting
-            name={MOCK_MYPAGE_USER.name}
-            email={MOCK_MYPAGE_USER.email}
-          />
-          <MypageMembershipCard
-            user={{ ...MOCK_MYPAGE_USER, points: balance }}
-            onPointsPress={() => router.push("/points")}
-          />
-          <MypageRecentlyViewedSection
-            products={recentlyViewed}
-            onSeeAllPress={() => router.push("/recently-viewed")}
-          />
-          <MypageMenuList
-            onPurchaseHistoryPress={() => router.push("/purchase-history")}
-            onFaqPress={() => router.push("/faq")}
-            onSettingsPress={() => router.push("/settings")}
-          />
+
+      {showFullScreenLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={COLORS.blueText} />
         </View>
-      </ScrollView>
+      ) : showFullScreenError ? (
+        <View
+          className="flex-1 items-center justify-center px-screen"
+          style={{ gap: SPACING.md }}
+        >
+          <Text
+            className="text-center text-md text-text-sub"
+            style={pretendard(400)}
+          >
+            {error}
+          </Text>
+          <Pressable
+            onPress={() => void reload()}
+            accessibilityRole="button"
+            accessibilityLabel="다시 시도"
+          >
+            <Text className="text-md text-text-blue" style={pretendard(600)}>
+              다시 시도
+            </Text>
+          </Pressable>
+        </View>
+      ) : profile ? (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: scrollBottomPadding,
+            paddingTop: SPACING.xl,
+            gap: CONTENT_GAP,
+          }}
+        >
+          <View className="px-screen" style={{ gap: CONTENT_GAP }}>
+            <MypageGreeting name={profile.name} email={profile.email} />
+            <MypageMembershipCard
+              user={{
+                grade: profile.grade,
+                points: profile.reward,
+              }}
+              onPointsPress={() => router.push("/points")}
+            />
+            <MypageRecentlyViewedSection
+              products={recentlyViewed}
+              onSeeAllPress={() => router.push("/recently-viewed")}
+            />
+            <MypageMenuList
+              onPurchaseHistoryPress={() => router.push("/purchase-history")}
+              onFaqPress={() => router.push("/faq")}
+              onSettingsPress={() => router.push("/settings")}
+            />
+          </View>
+        </ScrollView>
+      ) : null}
     </SafeView>
   );
 }

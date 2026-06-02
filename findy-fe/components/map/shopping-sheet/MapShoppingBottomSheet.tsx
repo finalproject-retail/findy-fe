@@ -340,7 +340,7 @@ export function MapShoppingBottomSheet({
       setFinishShoppingModalVisible(true);
       return;
     }
-    commitPendingBarcodeRewards();
+    void commitPendingBarcodeRewards();
     endShoppingTrip();
     router.replace("/(tabs)");
   };
@@ -350,7 +350,7 @@ export function MapShoppingBottomSheet({
   };
 
   const handleConfirmFinishShopping = () => {
-    commitPendingBarcodeRewards();
+    void commitPendingBarcodeRewards();
     endShoppingTrip();
     setFinishShoppingModalVisible(false);
     router.replace("/(tabs)");
