@@ -37,7 +37,7 @@ export default function PaymentCompleteScreen() {
     purchaseRecordedRef.current = true;
 
     addPurchaseFromCheckout(checkoutItems);
-    commitPendingBarcodeRewards();
+    void commitPendingBarcodeRewards();
     endShoppingTrip();
   }, [
     addPurchaseFromCheckout,

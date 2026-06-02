@@ -101,23 +101,23 @@ export default function RootLayout() {
       <RecentSearchProvider>
         <CheckoutProvider>
           <PurchaseHistoryProvider>
-            <PointsProvider>
-              <StoreMapConfigProvider>
-                <MapNavigationProvider>
-                  <MapShoppingNotificationProvider>
-                    <BeaconLocationProvider>
-                      <ToastProvider>
-                        <AuthProvider>
+            <AuthProvider>
+              <PointsProvider>
+                <StoreMapConfigProvider>
+                  <MapNavigationProvider>
+                    <MapShoppingNotificationProvider>
+                      <BeaconLocationProvider>
+                        <ToastProvider>
                           <AuthGuard>
                             <RootLayoutNav />
                           </AuthGuard>
-                        </AuthProvider>
-                      </ToastProvider>
-                    </BeaconLocationProvider>
-                  </MapShoppingNotificationProvider>
-                </MapNavigationProvider>
-              </StoreMapConfigProvider>
-            </PointsProvider>
+                        </ToastProvider>
+                      </BeaconLocationProvider>
+                    </MapShoppingNotificationProvider>
+                  </MapNavigationProvider>
+                </StoreMapConfigProvider>
+              </PointsProvider>
+            </AuthProvider>
           </PurchaseHistoryProvider>
         </CheckoutProvider>
       </RecentSearchProvider>
