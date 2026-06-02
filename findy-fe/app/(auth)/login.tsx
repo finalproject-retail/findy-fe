@@ -6,7 +6,7 @@ import { getApiErrorMessage } from "@/lib/api/client";
 import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import axios from "axios";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -214,7 +214,7 @@ export default function LoginScreen() {
         router.replace({
           pathname: "/onboarding",
           params: { email: userEmail, name: userName },
-        });
+        } as unknown as Href);
       }
     } catch (error: unknown) {
       let errorMsg = getApiErrorMessage(error);

@@ -1,4 +1,5 @@
 import type { Product } from "@/components/product";
+import type { CartZoneItem } from "@/components/category";
 import {
   createContext,
   useCallback,
@@ -32,10 +33,13 @@ export type CartContextValue = {
   items: CartLineItem[];
   availableItems: CartLineItem[];
   soldOutItems: CartLineItem[];
+  zoneItems: CartZoneItem[];
+  cartBadgeCount: number;
   addToCart: (product: Product, quantity?: number) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   removeFromCartMany: (productIds: string[]) => void;
   refreshCart: () => Promise<void>;
+  setZoneItems: (items: CartZoneItem[]) => void;
   setQuantity: (productId: string, quantity: number) => Promise<void>;
   toggleSelect: (productId: string) => Promise<void>;
   toggleSelectAll: () => Promise<void>;
@@ -54,6 +58,7 @@ function maxQuantityFor(product: Product) {
 
 export function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartLineItem[]>([]);
+  const [zoneItems, setZoneItems] = useState<CartZoneItem[]>([]);
 
   useEffect(() => {
     getCart()
@@ -154,10 +159,13 @@ export function CartProvider({ children }: PropsWithChildren) {
       items,
       availableItems,
       soldOutItems,
+      zoneItems,
+      cartBadgeCount: availableItems.length + zoneItems.length,
       addToCart,
       removeFromCart,
       removeFromCartMany,
       refreshCart,
+      setZoneItems,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
@@ -166,6 +174,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       items,
       availableItems,
       soldOutItems,
+      zoneItems,
       addToCart,
       removeFromCart,
       removeFromCartMany,
