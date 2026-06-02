@@ -10,6 +10,8 @@ on:
     branches:
       - main
       - dev
+      - feat/PR7-859-CICD
+  workflow_dispatch:
 
 jobs:
   validate:
