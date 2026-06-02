@@ -13,7 +13,7 @@ import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useState } from "react";
-import { Platform, Pressable, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, Text, View, useWindowDimensions } from "react-native";
 
 const THUMB_SIZE = 60;
 const DELETE_SIZE = 26;

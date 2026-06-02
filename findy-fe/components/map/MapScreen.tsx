@@ -140,6 +140,7 @@ export function MapScreen() {
         ) : null}
         <MapOverlayControls
           onSearchPress={() => router.push("/search" as Href)}
+          onBellPress={() => router.push("/notifications" as Href)}
           showCongestion={showCongestion}
           showRoute={showRoute}
           onToggleCongestion={() => setShowCongestion((v) => !v)}

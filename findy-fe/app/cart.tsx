@@ -16,7 +16,7 @@ import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useRouter } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
 import { pretendard } from "@/utils/pretendard";
-import { createShoppingList } from "@/lib/shopping/api";
+import { createShoppingList, removeCartItem } from "@/lib/shopping/api";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 
 export default function CartScreen() {
@@ -26,7 +26,7 @@ export default function CartScreen() {
     availableItems,
     soldOutItems,
     removeFromCart,
-    removeFromCartMany,
+    refreshCart,
     setQuantity,
     toggleSelect,
     toggleSelectAll,
@@ -45,6 +45,14 @@ export default function CartScreen() {
       const shoppingItems = cartToShoppingMapItems(shoppingListLines);
 
       startShoppingTrip(shoppingListLines, shoppingItems);
+
+      await Promise.all(
+        selectedLines
+          .filter((line) => line.cartItemId)
+          .map((line) => removeCartItem(line.cartItemId!)),
+      );
+      await refreshCart();
+
       router.push("/route-generating");
     } catch (error) {
       console.error(error);

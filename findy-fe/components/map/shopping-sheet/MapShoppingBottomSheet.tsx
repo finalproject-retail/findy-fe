@@ -5,9 +5,10 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
+import { useCheckout } from "@/contexts/CheckoutContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
-import { useRouter } from "expo-router";
+import { type Href, useRouter } from "expo-router";
 import { formatProductCanceledMessage } from "@/utils/koreanParticle";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
@@ -72,6 +73,7 @@ export function MapShoppingBottomSheet({
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
   const { addToCart } = useCart();
+  const { setCheckoutFromTrip } = useCheckout();
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
   const [shopLaterModalVisible, setShopLaterModalVisible] = useState(false);
@@ -93,8 +95,7 @@ export function MapShoppingBottomSheet({
   const { showToast } = useToast();
   const { showRelatedProductNotification } = useMapShoppingNotifications();
   const scrollY = useSharedValue(0);
-  const { addPendingBarcodeReward, commitPendingBarcodeRewards, clearPendingBarcodeRewards } =
-    usePoints();
+  const { addPendingBarcodeReward, clearPendingBarcodeRewards } = usePoints();
   const {
     navigationData,
     tripLineItems,
@@ -330,6 +331,16 @@ export function MapShoppingBottomSheet({
       setScanBarcodeModalVisible(true);
       return;
     }
+
+    const totalPicked = tripLineItems.reduce(
+      (sum, line) => sum + (pickedQuantityByProductId[line.productId] ?? 0),
+      0,
+    );
+    if (totalPicked === 0) {
+      setScanBarcodeModalVisible(true);
+      return;
+    }
+
     const hasUnpicked = tripLineItems.some((line) => {
       const picked = pickedQuantityByProductId[line.productId] ?? 0;
       return picked < line.quantity;
@@ -338,9 +349,8 @@ export function MapShoppingBottomSheet({
       setFinishShoppingModalVisible(true);
       return;
     }
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
-    router.replace("/(tabs)");
+    setCheckoutFromTrip(tripLineItems, pickedQuantityByProductId);
+    router.push("/payment" as Href);
   };
 
   const handleCancelFinishShopping = () => {
@@ -348,10 +358,9 @@ export function MapShoppingBottomSheet({
   };
 
   const handleConfirmFinishShopping = () => {
-    commitPendingBarcodeRewards();
-    endShoppingTrip();
+    setCheckoutFromTrip(tripLineItems, pickedQuantityByProductId);
     setFinishShoppingModalVisible(false);
-    router.replace("/(tabs)");
+    router.push("/payment" as Href);
   };
 
   const presentCancelToast = useCallback(

@@ -35,9 +35,10 @@ type CartContextValue = {
   addToCart: (product: Product, quantity?: number) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   removeFromCartMany: (productIds: string[]) => void;
+  refreshCart: () => Promise<void>;
   setQuantity: (productId: string, quantity: number) => Promise<void>;
   toggleSelect: (productId: string) => Promise<void>;
-  toggleSelectAll: () => void;
+  toggleSelectAll: () => Promise<void>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -94,6 +95,11 @@ export function CartProvider({ children }: PropsWithChildren) {
     setItems((prev) => prev.filter((item) => !idSet.has(item.productId)));
   }, []);
 
+  const refreshCart = useCallback(async () => {
+    const cart = await getCart();
+    setItems(mapCartApiToLineItems(cart));
+  }, []);
+
   const setQuantity = useCallback(async (productId: string, quantity: number) => {
     const target = items.find((item) => item.productId === productId);
     if (!target?.cartItemId) return;
@@ -113,19 +119,35 @@ export function CartProvider({ children }: PropsWithChildren) {
     setItems(mapCartApiToLineItems(cart));
   }, [items]);
 
-  const toggleSelectAll = useCallback(() => {
-    setItems((prev) => {
-      const selectable = prev.filter((item) => isAvailable(item.product));
-      if (selectable.length === 0) return prev;
+  const toggleSelectAll = useCallback(async () => {
+    const selectable = items.filter(
+      (item) => isAvailable(item.product) && item.cartItemId,
+    );
+    if (selectable.length === 0) return;
 
-      const allSelected = selectable.every((item) => item.selected);
-      return prev.map((item) =>
-        isAvailable(item.product)
-          ? { ...item, selected: !allSelected }
-          : item,
-      );
-    });
-  }, []);
+    const allSelected = selectable.every((item) => item.selected);
+    const nextChecked = !allSelected;
+
+    try {
+      let latestCart = null;
+      for (const item of selectable) {
+        if (item.selected === nextChecked) continue;
+        latestCart = await changeCartItemChecked(item.cartItemId!, nextChecked);
+      }
+
+      if (latestCart) {
+        setItems(mapCartApiToLineItems(latestCart));
+        return;
+      }
+
+      const cart = await getCart();
+      setItems(mapCartApiToLineItems(cart));
+    } catch (error) {
+      console.error(error);
+      const cart = await getCart();
+      setItems(mapCartApiToLineItems(cart));
+    }
+  }, [items]);
 
   const value = useMemo(
     () => ({
@@ -135,6 +157,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       addToCart,
       removeFromCart,
       removeFromCartMany,
+      refreshCart,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
@@ -146,6 +169,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       addToCart,
       removeFromCart,
       removeFromCartMany,
+      refreshCart,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
