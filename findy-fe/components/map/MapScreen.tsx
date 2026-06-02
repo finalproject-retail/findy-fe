@@ -8,6 +8,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MapShoppingToast } from "@/components/map/notifications";
+import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import { MapOverlayControls } from "./MapOverlayControls";
 import { MapShoppingBottomSheet } from "./shopping-sheet";
 import {
@@ -26,7 +28,9 @@ export function MapScreen() {
     refreshNavigationOverlay,
     tripLineItems,
     pickedQuantityByProductId,
+    hasActiveTrip,
   } = useMapNavigation();
+  const { activeToast, dismissActiveToast } = useMapShoppingNotifications();
 
   const {
     startTracking,
@@ -134,6 +138,7 @@ export function MapScreen() {
         ) : null}
         <MapOverlayControls
           onSearchPress={() => router.push("/search" as Href)}
+          onBellPress={() => router.push("/notifications" as Href)}
           showCongestion={showCongestion}
           showRoute={showRoute}
           onToggleCongestion={() => setShowCongestion((v) => !v)}
@@ -153,6 +158,13 @@ export function MapScreen() {
           onDismissProductCallout={handleDismissMarkerCallout}
         />
       </GestureHandlerRootView>
+
+      {hasActiveTrip && activeToast ? (
+        <MapShoppingToast
+          notification={activeToast}
+          onDismiss={dismissActiveToast}
+        />
+      ) : null}
 
       {__DEV__ ? (
         <View
