@@ -28,6 +28,22 @@ export function CartCheckbox({
       : CheckOffIcon;
   const isDisabled = disabled || picked;
 
+  // onPress가 없는 경우(부모 Pressable이 토글을 담당) 터치 이벤트를 먹지 않도록 View로 렌더링
+  if (!onPress) {
+    return (
+      <View
+        pointerEvents="none"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: checked || picked, disabled: isDisabled }}
+        accessibilityLabel={accessibilityLabel}
+        className="items-center justify-center"
+        style={{ opacity: isDisabled && !picked ? 0.4 : 1 }}
+      >
+        <Icon width={CHECKBOX_SIZE} height={CHECKBOX_SIZE} />
+      </View>
+    );
+  }
+
   return (
     <Pressable
       onPress={onPress}
