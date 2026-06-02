@@ -20,7 +20,6 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "axios": "^1.16.1",
-    "babel-preset-expo": "~54.0.10",
     "buffer": "^6.0.3",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
@@ -53,7 +52,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "babel-preset-expo": "^56.0.14",
+    "babel-preset-expo": "~54.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "react-native-svg-transformer": "^1.5.3",
