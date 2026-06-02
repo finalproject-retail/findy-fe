@@ -1,3 +1,4 @@
+import type { CartZoneItem } from "@/components/category";
 import type { Product } from "@/components/product";
 import {
   createContext,
@@ -32,12 +33,16 @@ type CartContextValue = {
   items: CartLineItem[];
   availableItems: CartLineItem[];
   soldOutItems: CartLineItem[];
+  zoneItems: CartZoneItem[];
+  cartBadgeCount: number;
   addToCart: (product: Product, quantity?: number) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   removeFromCartMany: (productIds: string[]) => void;
   setQuantity: (productId: string, quantity: number) => Promise<void>;
   toggleSelect: (productId: string) => Promise<void>;
-  toggleSelectAll: () => void;
+  toggleSelectAll: () => Promise<void>;
+  setZoneItems: (zones: CartZoneItem[]) => void;
+  removeZone: (categoryId: number) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -53,6 +58,7 @@ function maxQuantityFor(product: Product) {
 
 export function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartLineItem[]>([]);
+  const [zoneItems, setZoneItemsState] = useState<CartZoneItem[]>([]);
 
   useEffect(() => {
     getCart()
@@ -113,42 +119,85 @@ export function CartProvider({ children }: PropsWithChildren) {
     setItems(mapCartApiToLineItems(cart));
   }, [items]);
 
-  const toggleSelectAll = useCallback(() => {
-    setItems((prev) => {
-      const selectable = prev.filter((item) => isAvailable(item.product));
-      if (selectable.length === 0) return prev;
+  const toggleSelectAll = useCallback(async () => {
+    const selectable = items.filter(
+      (item) => isAvailable(item.product) && item.cartItemId,
+    );
+    if (selectable.length === 0) {
+      return;
+    }
 
-      const allSelected = selectable.every((item) => item.selected);
-      return prev.map((item) =>
-        isAvailable(item.product)
-          ? { ...item, selected: !allSelected }
-          : item,
-      );
-    });
+    const allSelected = selectable.every((item) => item.selected);
+    const nextChecked = !allSelected;
+
+    setItems((prev) =>
+      prev.map((item) =>
+        isAvailable(item.product) ? { ...item, selected: nextChecked } : item,
+      ),
+    );
+
+    try {
+      let latest = await getCart();
+      for (const item of selectable) {
+        if (item.selected !== nextChecked) {
+          latest = await changeCartItemChecked(item.cartItemId!, nextChecked);
+        }
+      }
+      setItems(mapCartApiToLineItems(latest));
+    } catch (error) {
+      console.error(error);
+      const cart = await getCart();
+      setItems(mapCartApiToLineItems(cart));
+    }
+  }, [items]);
+
+  const setZoneItems = useCallback((zones: CartZoneItem[]) => {
+    setZoneItemsState(zones);
   }, []);
+
+  const removeZone = useCallback((categoryId: number) => {
+    setZoneItemsState((prev) =>
+      prev.filter((zone) => zone.categoryId !== categoryId),
+    );
+  }, []);
+
+  const productQuantity = useMemo(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items],
+  );
+
+  const cartBadgeCount = productQuantity + zoneItems.length;
 
   const value = useMemo(
     () => ({
       items,
       availableItems,
       soldOutItems,
+      zoneItems,
+      cartBadgeCount,
       addToCart,
       removeFromCart,
       removeFromCartMany,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
+      setZoneItems,
+      removeZone,
     }),
     [
       items,
       availableItems,
       soldOutItems,
+      zoneItems,
+      cartBadgeCount,
       addToCart,
       removeFromCart,
       removeFromCartMany,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
+      setZoneItems,
+      removeZone,
     ],
   );
 

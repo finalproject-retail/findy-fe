@@ -1,7 +1,10 @@
 import { getProductById } from "@/components/home/mockProducts";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
-import { useIsShoppingListMode, useMapNavigation } from "@/contexts/MapNavigationContext";
+import {
+  useIsShoppingListMode,
+  useMapNavigation,
+} from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
@@ -58,8 +61,8 @@ export function ProductListRow({
       return;
     }
     addToCart(catalogProduct)
-    .then(() => showToast(TOAST_MESSAGES.addedToCart))
-    .catch(console.error);
+      .then(() => showToast(TOAST_MESSAGES.addedToCart))
+      .catch(console.error);
   };
 
   return (

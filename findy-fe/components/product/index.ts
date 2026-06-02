@@ -12,4 +12,5 @@ export { ProductRecommendSection } from "./ProductRecommendSection";
 export { RemainingStockText } from "./RemainingStockText";
 export { isLowStock, isOutOfStock, LOW_STOCK_THRESHOLD } from "./isOutOfStock";
 export { formatPrice } from "./formatPrice";
+export { useProductDetail } from "./useProductDetail";
 export type { Product, ProductCoupon } from "./types";

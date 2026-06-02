@@ -1,8 +1,9 @@
+import { setAccessToken } from "@/lib/api/client";
 import {
-  getAccessToken,
-  setAccessToken,
-} from "@/lib/api/client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+  clearStoredSession,
+  loadStoredSession,
+  saveStoredSession,
+} from "@/lib/auth/session";
 import {
   createContext,
   useCallback,
@@ -12,8 +13,6 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-
-const ACCESS_TOKEN_KEY = "findy_access_token";
 
 type AuthContextValue = {
   isLoggedIn: boolean;
@@ -35,7 +34,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     async function restoreSession() {
       try {
-        const stored = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+        const stored = await loadStoredSession();
         if (cancelled) {
           return;
         }
@@ -59,14 +58,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signIn = useCallback(async (token: string) => {
-    await AsyncStorage.setItem(ACCESS_TOKEN_KEY, token);
+    await saveStoredSession(token);
     setAccessToken(token);
     setAccessTokenState(token);
     setIsLoggedIn(true);
   }, []);
 
   const signOut = useCallback(async () => {
-    await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);
+    await clearStoredSession();
     setAccessToken(null);
     setAccessTokenState(null);
     setIsLoggedIn(false);
@@ -94,9 +93,4 @@ export function useAuth() {
     throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
-}
-
-/** 앱 기동 시 저장된 토큰 (메모리) */
-export function hasAccessToken() {
-  return Boolean(getAccessToken());
 }

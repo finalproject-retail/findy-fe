@@ -33,6 +33,7 @@ function RootLayoutNav() {
       <Stack.Screen name="category" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="cart" />
+      <Stack.Screen name="shopping-course" />
       <Stack.Screen name="route-generating" />
       <Stack.Screen name="payment" />
       <Stack.Screen name="payment-coupons" />

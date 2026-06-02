@@ -1,8 +1,10 @@
 export {
   CATEGORY_TREE,
+  buildCartZoneItem,
   findMiddleByKey,
   findSubCategory,
   resolveCategoryIdParam,
+  type CartZoneItem,
   type CategoryMiddle,
   type CategorySub,
   type CategoryTop,

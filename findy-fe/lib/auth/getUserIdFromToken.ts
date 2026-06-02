@@ -1,6 +1,6 @@
 import { Buffer } from "buffer";
 
-function decodeJwtPayload(part: string): Record<string, unknown> {
+export function decodeJwtPayload(part: string): Record<string, unknown> {
   const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
   const json =

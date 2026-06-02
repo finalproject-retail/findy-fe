@@ -3,7 +3,11 @@ import type { Product } from "./types";
 export const LOW_STOCK_THRESHOLD = 5;
 
 export function isOutOfStock(product: Product) {
-  return (product.stockCount ?? 0) <= 0;
+  const count = product.stockCount;
+  if (count == null) {
+    return false;
+  }
+  return count <= 0;
 }
 
 export function isLowStock(stockCount: number) {

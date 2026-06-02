@@ -392,17 +392,43 @@ export function MapShoppingBottomSheet({
   const handleScannerScan = useCallback(
     async (barcode: string) => {
       try {
-        console.log("바코드 스캐너 입력:", barcode);
+        const matchedBefore = tripLineItems.find(
+          (line) => line.product.barcode === barcode,
+        );
+        const prevScanned = matchedBefore
+          ? (pickedQuantityByProductId[matchedBefore.productId] ??
+            matchedBefore.scannedQuantity ??
+            0)
+          : 0;
 
         const shoppingList = await scanShoppingListItem(barcode, 1);
         const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
 
         syncShoppingTrip(nextLineItems);
+
+        const matchedAfter = nextLineItems.find(
+          (line) => line.product.barcode === barcode,
+        );
+        const nextScanned = matchedAfter?.scannedQuantity ?? prevScanned;
+
+        if (matchedAfter && nextScanned > prevScanned) {
+          showRelatedProductNotification(matchedAfter.product);
+          const rewardPoints = pickProductFromBarcode(matchedAfter.productId);
+          if (rewardPoints !== null) {
+            setPointRewardModal({ visible: true, points: rewardPoints });
+          }
+        }
       } catch (error) {
         console.error("바코드 스캔 반영 실패:", error);
       }
     },
-    [syncShoppingTrip],
+    [
+      pickProductFromBarcode,
+      pickedQuantityByProductId,
+      showRelatedProductNotification,
+      syncShoppingTrip,
+      tripLineItems,
+    ],
   );
 
   useBarcodeScanner({
