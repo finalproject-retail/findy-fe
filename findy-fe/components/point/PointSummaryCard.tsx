@@ -19,6 +19,7 @@ export function PointSummaryCard({
       style={{
         backgroundColor: COLORS.text,
         padding: SPACING.screen,
+        marginBottom: SPACING.lg,
       }}
     >
       <View

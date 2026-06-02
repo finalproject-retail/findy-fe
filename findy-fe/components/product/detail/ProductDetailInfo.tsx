@@ -40,7 +40,7 @@ export function ProductDetailInfo({
       }}
     >
       <Text className="text-sm text-text-sub" style={pretendard(400)}>
-        {category} &gt;
+        {category}
       </Text>
 
       <Text className="text-xl text-text-main" style={pretendard(700)}>
