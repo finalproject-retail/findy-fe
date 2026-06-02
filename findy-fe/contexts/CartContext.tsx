@@ -28,7 +28,7 @@ export type CartLineItem = {
   scanStatus?: string;
 };
 
-type CartContextValue = {
+export type CartContextValue = {
   items: CartLineItem[];
   availableItems: CartLineItem[];
   soldOutItems: CartLineItem[];
@@ -186,5 +186,5 @@ export function useCart() {
   if (!context) {
     throw new Error("useCart must be used within CartProvider");
   }
-  return context;
+  return context as CartContextValue;
 }

@@ -16,6 +16,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { type Href, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
+import type { CartZoneItem } from "@/components/category";
 
 export default function PickZonesScreen() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function PickZonesScreen() {
 
   const [activeTopKey, setActiveTopKey] = useState(CATEGORY_TREE[0]?.key ?? "");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(
-    () => new Set(zoneItems.map((zone) => zone.categoryId)),
+    () => new Set(zoneItems.map((zone: CartZoneItem) => zone.categoryId)),
   );
 
   const activeTop = useMemo(
