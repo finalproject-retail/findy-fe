@@ -1,5 +1,6 @@
 import {
   cartToShoppingMapItems,
+  productToRecommendedMapItem,
   tripLineItemsToShoppingMapItems,
 } from "@/components/cart/cartToShoppingMapItems";
 import type { Product } from "@/components/product";
@@ -25,6 +26,7 @@ type MapNavigationContextValue = {
   navigationData: StoreMapNavigationMock;
   navigationRefreshKey: number;
   tripLineItems: CartLineItem[];
+  recommendedProductsById: Record<string, Product>;
   pickedQuantityByProductId: Record<string, number>;
   hasActiveTrip: boolean;
   refreshNavigationOverlay: () => void;
@@ -38,6 +40,7 @@ type MapNavigationContextValue = {
   markProductPicked: (productId: string, amount?: number) => void;
   updateShoppingItems: (items: ShoppingMapItem[]) => void;
   patchNavigationData: (patch: Partial<StoreMapNavigationMock>) => void;
+  addRecommendedMapItem: (product: Product) => void;
   removeTripItem: (productId: string) => void;
   setTripItemQuantity: (productId: string, quantity: number) => void;
   addProductToShoppingTrip: (product: Product, quantity?: number) => void;
@@ -90,6 +93,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
   const [tripLineItems, setTripLineItems] = useState<CartLineItem[]>([]);
+  const [recommendedProductsById, setRecommendedProductsById] = useState<
+    Record<string, Product>
+  >({});
   const [pickedQuantityByProductId, setPickedQuantityByProductId] = useState<
     Record<string, number>
   >({});
@@ -123,9 +129,11 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       clearPendingBarcodeRewards();
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
+      setRecommendedProductsById({});
       setNavigationData((prev) => ({
         ...prev,
         shoppingItems: mapItems,
+        recommendedItems: [],
       }));
       setNavigationRefreshKey((key) => key + 1);
     },
@@ -156,9 +164,11 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const endShoppingTrip = useCallback(() => {
     setTripLineItems([]);
     setPickedQuantityByProductId({});
+    setRecommendedProductsById({});
     setNavigationData((prev) => ({
       ...prev,
       shoppingItems: [],
+      recommendedItems: [],
     }));
     setNavigationRefreshKey((key) => key + 1);
   }, []);
@@ -222,6 +232,26 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [],
   );
 
+  const addRecommendedMapItem = useCallback((product: Product) => {
+    const item = productToRecommendedMapItem(product);
+    setNavigationData((prev) => {
+      if (prev.recommendedItems.some((existing) => existing.id === item.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        recommendedItems: [...prev.recommendedItems, item],
+      };
+    });
+    setRecommendedProductsById((prev) => {
+      if (prev[product.id]) {
+        return prev;
+      }
+      return { ...prev, [product.id]: product };
+    });
+    setNavigationRefreshKey((key) => key + 1);
+  }, []);
+
   const addProductToShoppingTrip = useCallback(
     (product: Product, quantity = 1) => {
       setTripLineItems((prev) => {
@@ -240,6 +270,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       navigationData,
       navigationRefreshKey,
       tripLineItems,
+      recommendedProductsById,
       pickedQuantityByProductId,
       hasActiveTrip,
       refreshNavigationOverlay,
@@ -250,6 +281,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       markProductPicked,
       updateShoppingItems,
       patchNavigationData,
+      addRecommendedMapItem,
       removeTripItem,
       setTripItemQuantity,
       addProductToShoppingTrip,
@@ -258,6 +290,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       navigationData,
       navigationRefreshKey,
       tripLineItems,
+      recommendedProductsById,
       pickedQuantityByProductId,
       hasActiveTrip,
       refreshNavigationOverlay,
@@ -268,6 +301,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       markProductPicked,
       updateShoppingItems,
       patchNavigationData,
+      addRecommendedMapItem,
       removeTripItem,
       setTripItemQuantity,
       addProductToShoppingTrip,

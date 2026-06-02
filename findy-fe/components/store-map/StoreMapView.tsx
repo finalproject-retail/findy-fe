@@ -16,6 +16,7 @@ import {
   BASE_CELL_PX,
   MAP_FLOOR_COLOR,
   MAP_PAN_BOTTOM_EXTRA_PX,
+  MAP_PAN_HORIZONTAL_EXTRA_PX,
   MAP_PAN_INSET_BOTTOM_RATIO,
   MAP_PAN_INSET_TOP_RATIO,
   MAP_PAN_TOP_EXTRA_PX,
@@ -30,6 +31,7 @@ import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
 import type { StoreMapConfig } from "./types";
 import type { StoreMapNavigationMock } from "./overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
+import type { Product } from "@/components/product";
 import { StoreMapShelfLayer } from "./StoreMapShelfLayer";
 import { StoreMapZoneLayer } from "./StoreMapZoneLayer";
 import { getDetailBlend } from "./utils/zoomLevel";
@@ -57,7 +59,9 @@ type StoreMapViewProps = {
   pickedMarkerIds?: ReadonlySet<string>;
   selectedMarkerProductId?: string | null;
   tripLineItems?: CartLineItem[];
+  recommendedProductsById?: Record<string, Product>;
   onShoppingMarkerPress?: (productId: string) => void;
+  onRecommendedMarkerPress?: (productId: string) => void;
   /** 지도 빈 곳 탭 */
   onMapTapDismiss?: () => void;
   /** 지도 드래그 등 — 항상 닫기 */
@@ -80,7 +84,9 @@ export function StoreMapView({
   pickedMarkerIds,
   selectedMarkerProductId = null,
   tripLineItems = [],
+  recommendedProductsById = {},
   onShoppingMarkerPress,
+  onRecommendedMarkerPress,
   onMapTapDismiss,
   onDismissMarkerCallout,
   showCongestion = true,
@@ -210,8 +216,8 @@ export function StoreMapView({
       const bottomPad =
         MAP_PAN_BOTTOM_EXTRA_PX + inset * MAP_PAN_INSET_BOTTOM_RATIO;
       const topPad = MAP_PAN_TOP_EXTRA_PX + inset * MAP_PAN_INSET_TOP_RATIO;
-      minX = overflowX > 0 ? -overflowX : (vw - scaledW) / 2;
-      maxX = overflowX > 0 ? 0 : (vw - scaledW) / 2;
+      minX = overflowX > 0 ? -overflowX - MAP_PAN_HORIZONTAL_EXTRA_PX : (vw - scaledW) / 2;
+      maxX = overflowX > 0 ? MAP_PAN_HORIZONTAL_EXTRA_PX : (vw - scaledW) / 2;
       minY = overflowY > 0 ? -overflowY - bottomPad : (vh - scaledH) / 2;
       maxY = overflowY > 0 ? topPad : (vh - scaledH) / 2;
     }
@@ -547,7 +553,9 @@ export function StoreMapView({
                   pickedMarkerIds={pickedMarkerIds}
                   selectedMarkerProductId={selectedMarkerProductId}
                   tripLineItems={tripLineItems}
+                  recommendedProductsById={recommendedProductsById}
                   onShoppingMarkerPress={onShoppingMarkerPress}
+                  onRecommendedMarkerPress={onRecommendedMarkerPress}
                   showCongestion={showCongestion}
                   showRoute={showRoute}
                 />

@@ -1,9 +1,10 @@
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
+import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
+import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -205,10 +206,16 @@ export default function LoginScreen() {
 
       const userEmail = id.trim();
       const userName = typeof signupName === "string" ? signupName : "";
-      router.replace({
-        pathname: "/onboarding",
-        params: { email: userEmail, name: userName },
-      });
+      const completed = await isOnboardingCompleted(userEmail);
+
+      if (completed) {
+        router.replace("/(tabs)");
+      } else {
+        router.replace({
+          pathname: "/onboarding",
+          params: { email: userEmail, name: userName },
+        });
+      }
     } catch (error: unknown) {
       let errorMsg = getApiErrorMessage(error);
       if (axios.isAxiosError(error) && error.response?.data) {

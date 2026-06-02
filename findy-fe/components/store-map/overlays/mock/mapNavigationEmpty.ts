@@ -5,4 +5,5 @@ import type { StoreMapNavigationMock } from "../types";
 export const MAP_NAVIGATION_EMPTY: StoreMapNavigationMock = {
   ...MAP_NAVIGATION_MOCK,
   shoppingItems: [],
+  recommendedItems: [],
 };
