@@ -195,13 +195,19 @@ export default function SignupScreen() {
       setIsLoading(false);
       const successMessage =
         body?.message?.trim() || "회원가입이 완료되었습니다. 로그인해 주세요.";
+      const goToLogin = () =>
+        router.replace({
+          pathname: "/login",
+          params: { name: name.trim() },
+        });
+
       if (Platform.OS === "web") {
         setSuccessModal({ visible: true, message: successMessage });
       } else {
         Alert.alert("성공", successMessage, [
           {
             text: "확인",
-            onPress: () => router.replace("/login"),
+            onPress: goToLogin,
           },
         ]);
       }
@@ -387,7 +393,10 @@ export default function SignupScreen() {
         message={successModal.message}
         onConfirm={() => {
           setSuccessModal({ visible: false, message: "" });
-          router.replace("/login");
+          router.replace({
+            pathname: "/login",
+            params: { name: name.trim() },
+          });
         }}
       />
     </SafeAreaView>

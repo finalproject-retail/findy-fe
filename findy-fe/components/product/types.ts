@@ -19,6 +19,7 @@ export type ProductSpec = {
 
 export type Product = {
   id: string;
+  barcode?: string | null;
   name: string;
   image: ImageSourcePropType;
   discountPercent: number;

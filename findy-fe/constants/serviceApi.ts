@@ -41,16 +41,10 @@ export const RECOMMENDATION_API_WEB_PROXY_PREFIX = "/recommendation-api";
 
 /** shopping-service base URL (웹 개발 시 Metro 프록시) */
 export function getShoppingApiBaseUrl() {
-  if (Platform.OS === "web" && __DEV__) {
-    return SHOPPING_API_WEB_PROXY_PREFIX;
-  }
   return SHOPPING_API_URL;
 }
 
 /** recommendation-service base URL (웹 개발 시 Metro 프록시) */
 export function getRecommendationApiBaseUrl() {
-  if (Platform.OS === "web" && __DEV__) {
-    return RECOMMENDATION_API_WEB_PROXY_PREFIX;
-  }
   return RECOMMENDATION_API_URL;
 }
