@@ -57,8 +57,9 @@ export function ProductListRow({
       showToast(TOAST_MESSAGES.addedToShoppingList);
       return;
     }
-    addToCart(catalogProduct);
-    showToast(TOAST_MESSAGES.addedToCart);
+    addToCart(catalogProduct)
+    .then(() => showToast(TOAST_MESSAGES.addedToCart))
+    .catch(console.error);
   };
 
   return (

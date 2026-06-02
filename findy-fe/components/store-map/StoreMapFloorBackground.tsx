@@ -6,27 +6,33 @@ type Props = {
   width: number;
   height: number;
   mapImageUrl?: string | null;
+  showImage?: boolean;
 };
 
-export function StoreMapFloorBackground({ width, height, mapImageUrl }: Props) {
+export function StoreMapFloorBackground({
+  width,
+  height,
+  mapImageUrl,
+  showImage = false,
+}: Props) {
   const remote = mapImageUrl?.trim();
 
   return (
     <View style={[styles.host, { width, height }]} pointerEvents="none">
-      {remote ? (
+      {showImage && remote ? (
         <Image
           source={{ uri: remote }}
           style={StyleSheet.absoluteFill}
           contentFit="fill"
           cachePolicy="memory-disk"
         />
-      ) : (
+      ) : showImage ? (
         <Image
           source={FLOOR_PLAN_REFERENCE.image}
           style={StyleSheet.absoluteFill}
           contentFit="fill"
         />
-      )}
+      ) : null}
     </View>
   );
 }

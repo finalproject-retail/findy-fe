@@ -14,6 +14,7 @@ export function Toast({ message }: ToastProps) {
         borderRadius: RADIUS.lg,
         paddingHorizontal: SPACING.xl,
         paddingVertical: SPACING.sm,
+        zIndex: 1000,
       }}
     >
       <Text

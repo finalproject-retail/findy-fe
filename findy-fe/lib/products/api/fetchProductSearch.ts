@@ -57,7 +57,7 @@ export async function fetchProductSearch({
   const { sortBy, direction } = mapSearchSortParams(sort);
 
   const response = await shoppingApiClient.get<ApiEnvelope<ProductSearchApiData>>(
-    "/api/v1/products/search",
+    "/api/v1/products",
     {
       params: {
         keyword: trimmed,

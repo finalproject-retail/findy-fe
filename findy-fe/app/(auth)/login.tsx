@@ -5,7 +5,7 @@ import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
 import axios from "axios";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { name: signupName } = useLocalSearchParams<{ name?: string }>();
   const { signIn, signOut } = useAuth();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
@@ -201,7 +202,13 @@ export default function LoginScreen() {
       }
 
       await signIn(accessToken);
-      router.replace("/(tabs)");
+
+      const userEmail = id.trim();
+      const userName = typeof signupName === "string" ? signupName : "";
+      router.replace({
+        pathname: "/onboarding",
+        params: { email: userEmail, name: userName },
+      });
     } catch (error: unknown) {
       let errorMsg = getApiErrorMessage(error);
       if (axios.isAxiosError(error) && error.response?.data) {
