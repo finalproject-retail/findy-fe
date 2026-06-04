@@ -1,6 +1,7 @@
 import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
 import type { StoreMapConfig } from "@/components/store-map/types";
 import { MINOR_TO_GRID_ID } from "@/constants/beacon";
+import { useAuth } from "@/contexts/AuthContext";
 import { fetchStoreMapConfig } from "@/lib/map/api/fetchStoreMapConfig";
 import {
   buildMinorToGridIdFromBeacons,
@@ -33,6 +34,7 @@ const StoreMapConfigContext = createContext<StoreMapConfigContextValue | null>(
 
 export function StoreMapConfigProvider({ children }: PropsWithChildren) {
   const localFallback = useMemo(() => getEmartStoreMapConfig(), []);
+  const { isLoggedIn, isLoading: isAuthLoading } = useAuth();
 
   const [storeMapConfig, setStoreMapConfig] =
     useState<StoreMapConfig>(localFallback);
@@ -42,6 +44,14 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
+    if (isAuthLoading || !isLoggedIn) {
+      setError(null);
+      setStoreMapConfig(localFallback);
+      setMinorToGridId(MINOR_TO_GRID_ID);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -60,7 +70,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
     } finally {
       setIsLoading(false);
     }
-  }, [localFallback]);
+  }, [isAuthLoading, isLoggedIn, localFallback]);
 
   useEffect(() => {
     void reload();
