@@ -61,6 +61,7 @@ export default function CartScreen() {
 
     try {
       let shoppingListLines: CartLineItem[] = [];
+      let activeShoppingListId: number | null = null;
 
       if (hasSelectedProducts) {
         const shoppingList = await createShoppingListFromCart(
@@ -68,6 +69,7 @@ export default function CartScreen() {
           selectedLines,
         );
         shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
+        activeShoppingListId = shoppingList.shoppingListId;
 
         await Promise.all(
           selectedLines
@@ -90,7 +92,7 @@ export default function CartScreen() {
         }),
       );
 
-      startShoppingTrip(shoppingListLines, mapItems);
+      startShoppingTrip(shoppingListLines, mapItems, activeShoppingListId);
 
       if (hasSelectedZones) {
         setZoneItems([]);

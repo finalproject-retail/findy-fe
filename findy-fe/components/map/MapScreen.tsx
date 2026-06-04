@@ -5,10 +5,11 @@ import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
 import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { type Href, useRouter, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SHOPPING_NOTIFICATION_MIN_INTERVAL_MS } from "./constants";
 import { MapOverlayControls } from "./MapOverlayControls";
 import { MapShoppingToast } from "./notifications/MapShoppingToast";
 import { MapShoppingBottomSheet } from "./shopping-sheet";
@@ -31,8 +32,14 @@ export function MapScreen() {
     tripLineItems,
     recommendedProductsById,
     pickedQuantityByProductId,
+    hasActiveTrip,
   } = useMapNavigation();
-  const { activeToast, dismissActiveToast } = useMapShoppingNotifications();
+  const {
+    activeToast,
+    dismissActiveToast,
+    pollShoppingRecommendationNotification,
+    handleNotificationPress,
+  } = useMapShoppingNotifications();
 
   const {
     startTracking,
@@ -109,6 +116,37 @@ export function MapScreen() {
     handleDismissMarkerCallout();
   }, [handleDismissMarkerCallout]);
 
+  useEffect(() => {
+    if (!hasActiveTrip) {
+      return;
+    }
+
+    void pollShoppingRecommendationNotification();
+
+    const intervalId = setInterval(() => {
+      void pollShoppingRecommendationNotification();
+    }, SHOPPING_NOTIFICATION_MIN_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [hasActiveTrip, pollShoppingRecommendationNotification]);
+
+  const handleToastPress = useCallback(async () => {
+    if (!activeToast) {
+      return;
+    }
+
+    const productId = await handleNotificationPress(activeToast);
+    dismissActiveToast();
+    if (productId) {
+      router.push(`/product/${productId}` as Href);
+    }
+  }, [
+    activeToast,
+    dismissActiveToast,
+    handleNotificationPress,
+    router,
+  ]);
+
   return (
     <View style={styles.root}>
       <View
@@ -173,6 +211,7 @@ export function MapScreen() {
         <MapShoppingToast
           notification={activeToast}
           onDismiss={dismissActiveToast}
+          onPress={() => void handleToastPress()}
         />
       ) : null}
 

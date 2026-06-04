@@ -39,6 +39,9 @@ export type RecentViewApiDto = {
   price: number;
   thumbnailUrl: string | null;
   viewedAt: string;
+  stockCount?: number;
+  saleStatus?: string | null;
+  stockStatus?: string | null;
 };
 
 /** POST /api/v1/users/me/recent-views */

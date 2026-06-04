@@ -4,12 +4,49 @@ import { SafeView } from "@/components/layout";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import { pretendard } from "@/utils/pretendard";
-import { type Href, useRouter } from "expo-router";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { type Href, useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { notifications } = useMapShoppingNotifications();
+  const {
+    notifications,
+    listLoading,
+    listError,
+    reloadNotifications,
+    handleNotificationPress,
+  } = useMapShoppingNotifications();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadNotifications();
+    }, [reloadNotifications]),
+  );
+
+  const handleItemPress = useCallback(
+    async (notificationId: number, fallbackProductId: string) => {
+      const item = notifications.find(
+        (entry) => entry.notificationId === notificationId,
+      );
+      if (!item) {
+        return;
+      }
+
+      const productId =
+        (await handleNotificationPress(item)) ?? fallbackProductId;
+      if (productId) {
+        router.push(`/product/${productId}` as Href);
+      }
+    },
+    [handleNotificationPress, notifications, router],
+  );
 
   return (
     <SafeView>
@@ -21,7 +58,25 @@ export default function NotificationsScreen() {
           paddingBottom: SPACING.xl,
         }}
       >
-        {notifications.length === 0 ? (
+        {listLoading ? (
+          <View style={{ paddingTop: SPACING.xl * 2, alignItems: "center" }}>
+            <ActivityIndicator color={COLORS.main} />
+          </View>
+        ) : listError ? (
+          <View style={{ paddingTop: SPACING.xl * 2, alignItems: "center" }}>
+            <Text
+              style={{
+                ...pretendard(400),
+                fontSize: 15,
+                color: COLORS.subText,
+                textAlign: "center",
+                ...(Platform.OS === "android" && { includeFontPadding: false }),
+              }}
+            >
+              {listError}
+            </Text>
+          </View>
+        ) : notifications.length === 0 ? (
           <View style={{ paddingTop: SPACING.xl * 2, alignItems: "center" }}>
             <Text
               style={{
@@ -40,7 +95,10 @@ export default function NotificationsScreen() {
               key={item.id}
               item={item}
               onPress={() =>
-                router.push(`/product/${item.relatedProduct.id}` as Href)
+                void handleItemPress(
+                  item.notificationId,
+                  item.relatedProduct.id,
+                )
               }
             />
           ))

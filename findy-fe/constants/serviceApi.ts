@@ -25,8 +25,16 @@ function resolveServiceUrl() {
   return rewriteLocalhostForAndroid(url);
 }
 
+function resolveRecommendationUrl() {
+  const dedicated = process.env.EXPO_PUBLIC_RECOMMENDATION_API_URL?.trim();
+  if (dedicated) {
+    return rewriteLocalhostForAndroid(stripTrailingSlash(dedicated));
+  }
+  return resolveServiceUrl();
+}
+
 export const SHOPPING_API_URL = resolveServiceUrl();
-export const RECOMMENDATION_API_URL = resolveServiceUrl();
+export const RECOMMENDATION_API_URL = resolveRecommendationUrl();
 
 export function getShoppingApiBaseUrl() {
   return SHOPPING_API_URL;

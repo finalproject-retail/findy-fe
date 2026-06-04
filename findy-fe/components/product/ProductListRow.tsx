@@ -40,8 +40,11 @@ export function ProductListRow({
     const catalogId = resolveCatalogProductId(product.id);
     return getProductById(catalogId) ?? product;
   }, [product]);
-  const soldOut = isOutOfStock(catalogProduct);
-  const stockCount = catalogProduct.stockCount ?? 0;
+  const stockCount = product.stockCount ?? catalogProduct.stockCount;
+  const soldOut = isOutOfStock({
+    ...catalogProduct,
+    stockCount: stockCount ?? 0,
+  });
   const actionLabel = isShoppingListMode ? "쇼핑리스트 담기" : "장바구니 담기";
 
   const openProductDetail = () => {
@@ -147,7 +150,11 @@ export function ProductListRow({
 
         {!soldOut ? (
           <View className="flex-row items-end justify-between">
-            <RemainingStockText stockCount={stockCount} />
+            {stockCount != null ? (
+              <RemainingStockText stockCount={stockCount} />
+            ) : (
+              <View />
+            )}
             <Pressable
               onPress={handleAddPress}
               accessibilityRole="button"
