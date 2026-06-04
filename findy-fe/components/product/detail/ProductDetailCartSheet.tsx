@@ -3,6 +3,7 @@ import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { Pressable, Text, View } from "react-native";
 import { formatPrice } from "../formatPrice";
+import { ProductDiscountPriceRow } from "../ProductDiscountPriceRow";
 import { RemainingStockText } from "../RemainingStockText";
 import type { Product } from "../types";
 
@@ -172,14 +173,11 @@ export function ProductDetailCartSheet({
             {product.name}
           </Text>
 
-          <View className="flex-row items-center gap-1">
-            <Text className="text-md text-text-red" style={pretendard(700)}>
-              {product.discountPercent}%
-            </Text>
-            <Text className="text-md text-text-main" style={pretendard(700)}>
-              {formatPrice(unitPrice)}
-            </Text>
-          </View>
+          <ProductDiscountPriceRow
+            product={product}
+            salePrice={unitPrice}
+            size="md"
+          />
 
           <RemainingStockText stockCount={stockCount} size="sm" />
         </View>

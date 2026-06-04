@@ -1,18 +1,24 @@
 import type { Product } from "@/components/product";
+import {
+  getDisplayOriginalPrice,
+  getSalePrice,
+  hasProductDiscount,
+} from "@/components/product/productPricing";
 
 export const LOW_STOCK_THRESHOLD = 5;
 
 export function getUnitPrice(product: Product) {
-  return product.couponPrice ?? product.price;
+  return getSalePrice(product);
 }
 
 export function getOriginalPrice(product: Product) {
-  const unitPrice = getUnitPrice(product);
-  return (
-    product.originalPrice ??
-    Math.round(unitPrice / (1 - product.discountPercent / 100))
-  );
+  if (!hasProductDiscount(product)) {
+    return getUnitPrice(product);
+  }
+  return getDisplayOriginalPrice(product);
 }
+
+export { hasProductDiscount };
 
 export function getStockCount(product: Product) {
   return product.stockCount ?? 0;

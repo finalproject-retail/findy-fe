@@ -1,4 +1,4 @@
-import { formatPrice } from "@/components/product";
+import { ProductDiscountPriceRow } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
@@ -7,7 +7,6 @@ import { Pressable, Text, View } from "react-native";
 import { CartCheckbox } from "./CartCheckbox";
 import { CartQuantityStepper } from "./CartQuantityStepper";
 import {
-  getOriginalPrice,
   getStockCount,
   getUnitPrice,
   isLowStock,
@@ -31,7 +30,6 @@ export function CartItemRow({
 }: CartItemRowProps) {
   const { product, quantity, selected } = item;
   const unitPrice = getUnitPrice(product);
-  const originalPrice = getOriginalPrice(product);
   const stockCount = getStockCount(product);
   const maxQuantity = Math.max(stockCount, 1);
   const lowStock = isLowStock(product);
@@ -87,23 +85,11 @@ export function CartItemRow({
             </Pressable>
           </View>
 
-          <View className="flex-row flex-wrap items-center gap-1">
-            <Text className="text-lg text-text-red" style={pretendard(700)}>
-              {product.discountPercent}%
-            </Text>
-            <Text className="text-lg text-text-main" style={pretendard(700)}>
-              {formatPrice(unitPrice)}
-            </Text>
-            <Text
-              className="text-sm text-text-sub"
-              style={{
-                ...pretendard(400),
-                textDecorationLine: "line-through",
-              }}
-            >
-              {formatPrice(originalPrice)}
-            </Text>
-          </View>
+          <ProductDiscountPriceRow
+            product={product}
+            salePrice={unitPrice}
+            size="lg"
+          />
 
           {lowStock ? (
             <Text className="text-sm text-text-red" style={pretendard(400)}>

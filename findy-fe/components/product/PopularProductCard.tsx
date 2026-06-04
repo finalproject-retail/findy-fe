@@ -1,9 +1,10 @@
 import { pretendard } from "@/utils/pretendard";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { AddToCartButton } from "./AddToCartButton";
-import { formatPrice } from "./formatPrice";
+import { ProductDiscountPriceRow } from "./ProductDiscountPriceRow";
+import { isOutOfStock } from "./isOutOfStock";
+import { ProductThumbnail } from "./ProductThumbnail";
 import type { Product } from "./types";
 
 const IMAGE_SIZE = 100;
@@ -20,13 +21,14 @@ export function PopularProductCard({
   onAddToCart,
 }: PopularProductCardProps) {
   const router = useRouter();
+  const soldOut = isOutOfStock(product);
 
   const openProductDetail = () => {
     router.push(`/product/${product.id}`);
   };
 
   return (
-    <View className="flex-row items-stretch` gap-3">
+    <View className="flex-row items-stretch gap-3">
       <Pressable
         onPress={openProductDetail}
         accessibilityRole="button"
@@ -43,15 +45,7 @@ export function PopularProductCard({
         accessibilityRole="button"
         accessibilityLabel={`${product.name} 상세 보기`}
       >
-        <Image
-          source={product.image}
-          style={{
-            width: IMAGE_SIZE,
-            height: IMAGE_SIZE,
-            borderRadius: 3,
-          }}
-          contentFit="cover"
-        />
+        <ProductThumbnail product={product} width={IMAGE_SIZE} />
       </Pressable>
 
       <View className="min-w-0 flex-1 justify-between gap-2">
@@ -69,21 +63,16 @@ export function PopularProductCard({
               {product.name}
             </Text>
 
-            <View className="flex-row items-center gap-1">
-              <Text className="text-md text-text-red" style={pretendard(700)}>
-                {product.discountPercent}%
-              </Text>
-              <Text className="text-md text-text-main" style={pretendard(700)}>
-                {formatPrice(product.price)}
-              </Text>
-            </View>
+            <ProductDiscountPriceRow product={product} size="md" />
           </View>
         </Pressable>
 
-        <AddToCartButton
-          product={product}
-          onPress={() => onAddToCart?.(product.id)}
-        />
+        {!soldOut ? (
+          <AddToCartButton
+            product={product}
+            onPress={() => onAddToCart?.(product.id)}
+          />
+        ) : null}
       </View>
     </View>
   );

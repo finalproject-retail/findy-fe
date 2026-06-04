@@ -2,7 +2,7 @@ import { Header } from "@/components/common";
 import { SquareButton } from "@/components/common/SquareButton";
 import { getUnitPrice } from "@/components/cart";
 import { MOCK_COUPONS } from "@/components/coupon";
-import { formatPrice } from "@/components/product";
+import { formatPrice, hasProductDiscount } from "@/components/product";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { usePoints } from "@/contexts/PointsContext";
@@ -157,9 +157,11 @@ export default function PaymentScreen() {
                       {line.product.name}
                     </Text>
                     <View style={styles.priceRow}>
-                      <Text style={styles.discountText}>
-                        {line.product.discountPercent}%
-                      </Text>
+                      {hasProductDiscount(line.product) ? (
+                        <Text style={styles.discountText}>
+                          {line.product.discountPercent}%
+                        </Text>
+                      ) : null}
                       <Text style={styles.priceText}>
                         {formatPrice(getUnitPrice(line.product))}
                       </Text>

@@ -9,7 +9,7 @@ import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
-import { formatPrice } from "../formatPrice";
+import { ProductDiscountPriceRow } from "../ProductDiscountPriceRow";
 import type { Product } from "../types";
 
 const PRODUCT_NAME_LINE_HEIGHT = 20;
@@ -111,14 +111,7 @@ export function RecommendedProductCard({
           {product.name}
         </Text>
 
-        <View className="flex-row items-center gap-1">
-          <Text className="text-md text-text-red" style={pretendard(700)}>
-            {product.discountPercent}%
-          </Text>
-          <Text className="text-md text-text-main" style={pretendard(700)}>
-            {formatPrice(product.price)}
-          </Text>
-        </View>
+        <ProductDiscountPriceRow product={product} size="md" />
       </Pressable>
     </View>
   );
