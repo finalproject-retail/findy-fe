@@ -45,8 +45,9 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
     return null;
   }
 
-  const price = dto.salePrice ?? dto.price ?? 0;
-  const originalPrice = dto.originalPrice ?? price;
+  // shopping-service: originalPrice only (sale_price column removed in V6).
+  const originalPrice = dto.originalPrice ?? dto.salePrice ?? 0;
+  const price = originalPrice;
   const stockCount =
     dto.saleStatus === "OUT_OF_STOCK"
       ? 0
@@ -119,8 +120,8 @@ export function mapProductDetailFromApi(dto: ProductApiDto): Product | null {
     barcode: dto.barcode?.trim() || undefined,
     category: resolveCategoryLabel(dto.categoryId, dto.brandName) ?? base.category,
     originalPrice: dto.originalPrice ?? base.originalPrice,
-    couponPrice: dto.salePrice ?? base.couponPrice,
-    price: dto.salePrice ?? base.price,
+    couponPrice: dto.originalPrice ?? base.couponPrice,
+    price: dto.originalPrice ?? base.price,
     stockCount: resolveDetailStockCount(dto),
     spec,
     detailImages: [image],
