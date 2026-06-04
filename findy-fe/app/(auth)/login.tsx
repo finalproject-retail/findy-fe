@@ -3,8 +3,8 @@ import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
+import { saveUserPreferences } from "@/lib/api/preferences";
 import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
-import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import axios from "axios";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -202,19 +202,18 @@ export default function LoginScreen() {
         );
       }
 
-      await signIn(accessToken);
+      const profile = await signIn(accessToken);
 
-      const userEmail = id.trim();
-      const userName = typeof signupName === "string" ? signupName : "";
-      const completed = await isOnboardingCompleted(userEmail);
-
-      if (completed) {
-        router.replace("/(tabs)");
-      } else {
+      if (profile.isFirstLogin) {
         router.replace({
           pathname: "/onboarding",
-          params: { email: userEmail, name: userName },
+          params: {
+            email: profile.email,
+            name: profile.name || (typeof signupName === "string" ? signupName : ""),
+          },
         } as unknown as Href);
+      } else {
+        router.replace("/(tabs)");
       }
     } catch (error: unknown) {
       let errorMsg = getApiErrorMessage(error);

@@ -10,10 +10,10 @@ import {
   type OnboardingChipOption,
 } from "@/constants/onboarding";
 import { COLORS, SPACING } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
 import { saveUserPreferences } from "@/lib/api/preferences";
-import { getUserIdFromAccessToken } from "@/lib/auth/jwt";
-import { getAccessToken, getApiErrorMessage } from "@/lib/api/client";
-import { setOnboardingCompleted } from "@/lib/onboarding/storage";
+import { getApiErrorMessage } from "@/lib/api/client";
+import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { pretendard } from "@/utils/pretendard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,19 +49,43 @@ function toggleSelection(current: string[], id: string): string[] {
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { markOnboardingComplete } = useAuth();
   const params = useLocalSearchParams<{ name?: string; email?: string }>();
 
-  const displayName = useMemo(() => {
-    const raw = typeof params.name === "string" ? params.name.trim() : "";
-    return raw || "회원";
-  }, [params.name]);
+  const [profileName, setProfileName] = useState(
+    typeof params.name === "string" ? params.name.trim() : "",
+  );
 
-  const email = typeof params.email === "string" ? params.email.trim() : "";
+  useEffect(() => {
+    if (profileName) {
+      return;
+    }
+
+    let cancelled = false;
+    void fetchMyProfile()
+      .then((profile) => {
+        if (!cancelled && profile.name.trim()) {
+          setProfileName(profile.name.trim());
+        }
+      })
+      .catch(() => {
+        // params 또는 기본값 사용
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profileName]);
+
+  const displayName = useMemo(() => profileName || "회원", [profileName]);
+
   const logoBounce = useRef(new Animated.Value(0)).current;
 
   const [step, setStep] = useState<OnboardingStep>("welcome");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
   const finishOnboarding = useCallback(async () => {
     const categoryIds = collectValueIds(
       ONBOARDING_CATEGORY_OPTIONS,
@@ -72,38 +96,41 @@ export default function OnboardingScreen() {
       selectedStyles,
     );
 
-    const token = getAccessToken();
-    const userId = token ? getUserIdFromAccessToken(token) : null;
-
-    if (userId && categoryIds.length > 0 && shoppingStyleIds.length > 0) {
-      try {
-        await saveUserPreferences(userId, { categoryIds, shoppingStyleIds });
-      } catch (error) {
-        Alert.alert("설정 저장 실패", getApiErrorMessage(error));
-      }
+    if (categoryIds.length === 0 || shoppingStyleIds.length === 0) {
+      setStep("styles");
+      Alert.alert("안내", "선택 정보가 올바르지 않습니다. 다시 선택해 주세요.");
+      return;
     }
 
-    if (email) {
-      await setOnboardingCompleted(email);
+    setIsSaving(true);
+    try {
+      await saveUserPreferences({ categoryIds, shoppingStyleIds });
+      markOnboardingComplete();
+      router.replace("/(tabs)");
+    } catch (error) {
+      setStep("styles");
+      Alert.alert("설정 저장 실패", getApiErrorMessage(error));
+    } finally {
+      setIsSaving(false);
     }
-
-    router.replace("/(tabs)");
   }, [
-    email,
+    markOnboardingComplete,
     router,
     selectedCategories,
     selectedStyles,
   ]);
 
   useEffect(() => {
-    if (step !== "loading") return;
+    if (step !== "loading" || isSaving) {
+      return;
+    }
 
     const timer = setTimeout(() => {
       void finishOnboarding();
     }, ONBOARDING_LOADING_DURATION_MS);
 
     return () => clearTimeout(timer);
-  }, [step, finishOnboarding]);
+  }, [step, finishOnboarding, isSaving]);
 
   useEffect(() => {
     if (step !== "welcome") return;
