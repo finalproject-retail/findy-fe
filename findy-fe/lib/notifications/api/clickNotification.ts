@@ -14,7 +14,7 @@ export async function clickNotification(
   try {
     const response = await notificationApiClient.patch<
       ApiEnvelope<NotificationClickApiData>
-    >(`/api/v1/notifications/${notificationId}/click`, null, {
+    >(`/api/v1/recommendations/notifications/${notificationId}/click`, null, {
       params: { userId },
     });
 
