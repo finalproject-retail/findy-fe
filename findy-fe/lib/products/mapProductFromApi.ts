@@ -18,41 +18,58 @@ function resolveImageSource(dto: ProductApiDto): Product["image"] {
   );
 }
 
-/** 목록 API(ProductResponse)는 originalPrice만 오는 경우가 있어 장바구니 매핑과 동일 규칙 적용 */
+/**
+ * shopping-service(ProductResponse·상세)는 originalPrice만 판매가로 씀.
+ * 추천 스냅샷의 salePrice·discountRate는 쇼핑과 불일치할 수 있어 UI에서는 제외.
+ */
+export function alignProductDtoWithShoppingPrice(
+  dto: ProductApiDto,
+): ProductApiDto {
+  if (dto.originalPrice == null || dto.originalPrice <= 0) {
+    return dto;
+  }
+
+  return {
+    ...dto,
+    salePrice: undefined,
+    price: undefined,
+    discountRate: undefined,
+    discountPercent: undefined,
+  };
+}
+
+/** 목록·상세·장바구니 — 실제 판매가 < 정가일 때만 할인 */
 function resolveProductPrices(dto: ProductApiDto): {
   salePrice: number;
   originalPrice: number;
 } {
-  const originalPrice = dto.originalPrice ?? dto.salePrice ?? dto.price ?? 0;
-  const salePrice =
-    dto.salePrice ?? dto.price ?? (originalPrice > 0 ? originalPrice : 0);
+  const originalPrice = dto.originalPrice ?? dto.price ?? 0;
+  const candidateSale = dto.salePrice ?? dto.price;
 
+  const hasPromotion =
+    originalPrice > 0 &&
+    candidateSale != null &&
+    candidateSale > 0 &&
+    candidateSale < originalPrice;
+
+  if (hasPromotion) {
+    return { salePrice: candidateSale, originalPrice };
+  }
+
+  if (originalPrice > 0) {
+    return { salePrice: originalPrice, originalPrice };
+  }
+
+  const fallbackSale = candidateSale != null && candidateSale > 0 ? candidateSale : 0;
   return {
-    salePrice: salePrice > 0 ? salePrice : originalPrice,
-    originalPrice: Math.max(
-      originalPrice,
-      salePrice > 0 ? salePrice : originalPrice,
-    ),
+    salePrice: fallbackSale,
+    originalPrice: Math.max(originalPrice, fallbackSale),
   };
 }
 
-function resolveDiscountPercent(
-  dto: ProductApiDto,
-  salePrice: number,
-  originalPrice: number,
-) {
+function resolveDiscountPercent(salePrice: number, originalPrice: number) {
   if (salePrice >= originalPrice || originalPrice <= 0) {
     return 0;
-  }
-
-  if (dto.discountPercent != null) {
-    return Math.max(0, Math.round(dto.discountPercent));
-  }
-  if (dto.discountRate != null) {
-    const rate = Number(dto.discountRate);
-    if (Number.isFinite(rate)) {
-      return Math.max(0, Math.round(rate));
-    }
   }
 
   return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
@@ -75,7 +92,7 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
     id,
     name,
     image: resolveImageSource(dto),
-    discountPercent: resolveDiscountPercent(dto, salePrice, originalPrice),
+    discountPercent: resolveDiscountPercent(salePrice, originalPrice),
     price: salePrice,
     originalPrice,
     couponPrice: salePrice,
@@ -143,7 +160,7 @@ export function mapProductDetailFromApi(dto: ProductApiDto): Product | null {
     originalPrice,
     couponPrice: salePrice,
     price: salePrice,
-    discountPercent: resolveDiscountPercent(dto, salePrice, originalPrice),
+    discountPercent: resolveDiscountPercent(salePrice, originalPrice),
     stockCount: resolveDetailStockCount(dto),
     spec,
     detailImages: [image],

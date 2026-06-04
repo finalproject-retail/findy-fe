@@ -2,7 +2,10 @@ import type { Product } from "@/components/product";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import { getAccessToken } from "@/lib/api/client";
 import type { ApiEnvelope } from "@/lib/map/types";
-import { mapProductsFromApi } from "@/lib/products/mapProductFromApi";
+import {
+  alignProductDtoWithShoppingPrice,
+  mapProductsFromApi,
+} from "@/lib/products/mapProductFromApi";
 import type { PersonalizedRecommendationsApiData } from "@/lib/recommendations/types";
 import { recommendationApiClient } from "./recommendationClient";
 
@@ -35,5 +38,8 @@ export async function fetchPersonalizedRecommendations(
     throw new Error(body?.message ?? "맞춤 추천을 불러오지 못했습니다.");
   }
 
-  return mapProductsFromApi(body.data?.recommendations ?? []);
+  const items = (body.data?.recommendations ?? []).map(
+    alignProductDtoWithShoppingPrice,
+  );
+  return mapProductsFromApi(items);
 }
