@@ -1,9 +1,7 @@
-import type { Product, ProductSpec } from "@/components/product/types";
 import { findSubCategory } from "@/components/category/categoryCatalog";
-import { SHOPPING_API_URL } from "@/constants/serviceApi";
+import type { Product, ProductSpec } from "@/components/product/types";
+import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
 import type { ProductApiDto } from "./types";
-
-const PLACEHOLDER_IMAGE = require("@/assets/images/product/green-tea.png");
 
 function resolveId(dto: ProductApiDto): string {
   const raw = dto.productId ?? dto.id;
@@ -14,15 +12,10 @@ function resolveId(dto: ProductApiDto): string {
 }
 
 function resolveImageSource(dto: ProductApiDto): Product["image"] {
-  const url = dto.imageUrl ?? dto.thumbnailUrl ?? dto.image;
-  if (typeof url === "string" && url.trim().length > 0) {
-    const trimmed = url.trim();
-    if (trimmed.startsWith("/")) {
-      return { uri: `${SHOPPING_API_URL}${trimmed}` };
-    }
-    return { uri: trimmed };
-  }
-  return PLACEHOLDER_IMAGE;
+  return resolveProductImageSource(
+    dto.imageUrl ?? (typeof dto.image === "string" ? dto.image : null),
+    dto.thumbnailUrl,
+  );
 }
 
 /** 목록 API(ProductResponse)는 originalPrice만 오는 경우가 있어 장바구니 매핑과 동일 규칙 적용 */
@@ -30,14 +23,16 @@ function resolveProductPrices(dto: ProductApiDto): {
   salePrice: number;
   originalPrice: number;
 } {
-  const originalPrice =
-    dto.originalPrice ?? dto.salePrice ?? dto.price ?? 0;
+  const originalPrice = dto.originalPrice ?? dto.salePrice ?? dto.price ?? 0;
   const salePrice =
     dto.salePrice ?? dto.price ?? (originalPrice > 0 ? originalPrice : 0);
 
   return {
     salePrice: salePrice > 0 ? salePrice : originalPrice,
-    originalPrice: Math.max(originalPrice, salePrice > 0 ? salePrice : originalPrice),
+    originalPrice: Math.max(
+      originalPrice,
+      salePrice > 0 ? salePrice : originalPrice,
+    ),
   };
 }
 
@@ -74,7 +69,7 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
   const stockCount =
     dto.saleStatus === "OUT_OF_STOCK"
       ? 0
-      : dto.stockCount ?? dto.stockQuantity ?? dto.stock;
+      : (dto.stockCount ?? dto.stockQuantity ?? dto.stock);
 
   return {
     id,
@@ -143,7 +138,8 @@ export function mapProductDetailFromApi(dto: ProductApiDto): Product | null {
   return {
     ...base,
     barcode: dto.barcode?.trim() || undefined,
-    category: resolveCategoryLabel(dto.categoryId, dto.brandName) ?? base.category,
+    category:
+      resolveCategoryLabel(dto.categoryId, dto.brandName) ?? base.category,
     originalPrice,
     couponPrice: salePrice,
     price: salePrice,
