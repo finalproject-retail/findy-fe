@@ -1,7 +1,8 @@
 import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Text, View, useWindowDimensions } from "react-native";
-import { formatPrice } from "../formatPrice";
+import { ProductDiscountPriceRow } from "../ProductDiscountPriceRow";
+import { hasProductDiscount } from "../productPricing";
 import { RemainingStockText } from "../RemainingStockText";
 import type { Product } from "../types";
 import { ProductDetailCouponButton } from "./ProductDetailCouponButton";
@@ -25,9 +26,7 @@ export function ProductDetailInfo({
 
   const category = product.category ?? "카테고리";
   const couponPrice = product.couponPrice ?? product.price;
-  const originalPrice =
-    product.originalPrice ??
-    Math.round(couponPrice / (1 - product.discountPercent / 100));
+  const showDiscount = hasProductDiscount(product);
   const stockCount = product.stockCount;
 
   return (
@@ -48,34 +47,22 @@ export function ProductDetailInfo({
       </Text>
 
       <View style={{ gap: SPACING.xs }}>
-        <Text
-          className="text-lg"
-          style={{ ...pretendard(700), color: COLORS.redText }}
-        >
-          쿠폰 적용시
-        </Text>
+        {showDiscount ? (
+          <Text
+            className="text-lg"
+            style={{ ...pretendard(700), color: COLORS.redText }}
+          >
+            쿠폰 적용시
+          </Text>
+        ) : null}
 
         <View className="flex-row items-center justify-between gap-2">
-          <View className="shrink flex-row flex-wrap items-center gap-1">
-            <Text
-              className="text-xl"
-              style={{ ...pretendard(700), color: COLORS.redText }}
-            >
-              {product.discountPercent}%
-            </Text>
-            <Text className="text-xl text-text-main" style={pretendard(700)}>
-              {formatPrice(couponPrice)}
-            </Text>
-            <Text
-              className="text-md text-text-sub"
-              style={{
-                ...pretendard(400),
-                textDecorationLine: "line-through",
-              }}
-            >
-              {formatPrice(originalPrice)}
-            </Text>
-          </View>
+          <ProductDiscountPriceRow
+            product={product}
+            salePrice={couponPrice}
+            size="xl"
+            style={{ flexShrink: 1 }}
+          />
 
           {stockCount != null && stockCount > 0 ? (
             <RemainingStockText stockCount={stockCount} className="shrink-0" />

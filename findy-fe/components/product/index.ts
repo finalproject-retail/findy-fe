@@ -18,5 +18,11 @@ export {
 } from "./isOutOfStock";
 export { ProductThumbnail } from "./ProductThumbnail";
 export { formatPrice } from "./formatPrice";
+export { ProductDiscountPriceRow } from "./ProductDiscountPriceRow";
+export {
+  getDisplayOriginalPrice,
+  getSalePrice,
+  hasProductDiscount,
+} from "./productPricing";
 export { useProductDetail } from "./useProductDetail";
 export type { Product, ProductCoupon } from "./types";

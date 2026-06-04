@@ -2,7 +2,7 @@ import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { AddToCartButton } from "./AddToCartButton";
-import { formatPrice } from "./formatPrice";
+import { ProductDiscountPriceRow } from "./ProductDiscountPriceRow";
 import { isOutOfStock } from "./isOutOfStock";
 import { ProductThumbnail } from "./ProductThumbnail";
 import type { Product } from "./types";
@@ -63,14 +63,7 @@ export function PopularProductCard({
               {product.name}
             </Text>
 
-            <View className="flex-row items-center gap-1">
-              <Text className="text-md text-text-red" style={pretendard(700)}>
-                {product.discountPercent}%
-              </Text>
-              <Text className="text-md text-text-main" style={pretendard(700)}>
-                {formatPrice(product.price)}
-              </Text>
-            </View>
+            <ProductDiscountPriceRow product={product} size="md" />
           </View>
         </Pressable>
 

@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
-import { formatPrice } from "./formatPrice";
+import { ProductDiscountPriceRow } from "./ProductDiscountPriceRow";
 import { isOutOfStock } from "./isOutOfStock";
 import { RemainingStockText } from "./RemainingStockText";
 import { resolveCatalogProductId } from "./resolveCatalogProductId";
@@ -43,11 +43,6 @@ export function ProductListRow({
   const soldOut = isOutOfStock(catalogProduct);
   const stockCount = catalogProduct.stockCount ?? 0;
   const actionLabel = isShoppingListMode ? "쇼핑리스트 담기" : "장바구니 담기";
-  const originalPrice =
-    catalogProduct.originalPrice ??
-    Math.round(
-      catalogProduct.price / (1 - catalogProduct.discountPercent / 100),
-    );
 
   const openProductDetail = () => {
     const productId = resolveCatalogProductId(product.id);
@@ -143,20 +138,7 @@ export function ProductListRow({
             {catalogProduct.name}
           </Text>
 
-          <View className="flex-row flex-wrap items-center gap-1">
-            <Text className="text-md text-text-red" style={pretendard(700)}>
-              {catalogProduct.discountPercent}%
-            </Text>
-            <Text className="text-md text-text-main" style={pretendard(700)}>
-              {formatPrice(catalogProduct.price)}
-            </Text>
-            <Text
-              className="text-sm text-text-sub2"
-              style={{ ...pretendard(400), textDecorationLine: "line-through" }}
-            >
-              {formatPrice(originalPrice)}
-            </Text>
-          </View>
+          <ProductDiscountPriceRow product={catalogProduct} size="md" />
         </Pressable>
 
         {!soldOut ? (

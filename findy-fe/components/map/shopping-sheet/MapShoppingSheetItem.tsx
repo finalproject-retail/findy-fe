@@ -1,12 +1,17 @@
 import { CartCheckbox } from "@/components/cart/CartCheckbox";
 import { CartQuantityStepper } from "@/components/cart/CartQuantityStepper";
 import {
-  getOriginalPrice,
   getStockCount,
   getUnitPrice,
   isLowStock,
 } from "@/components/cart/cartItemUtils";
-import { formatPrice, isOutOfStock, ProductRecommendSection } from "@/components/product";
+import {
+  formatPrice,
+  hasProductDiscount,
+  isOutOfStock,
+  ProductRecommendSection,
+} from "@/components/product";
+import { getDisplayOriginalPrice } from "@/components/product/productPricing";
 import { RemainingStockText } from "@/components/product/RemainingStockText";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
@@ -43,7 +48,8 @@ export function MapShoppingSheetItem({
   const soldOut = isOutOfStock(product);
   const isFullyPicked = pickedQuantity >= quantity;
   const unitPrice = getUnitPrice(product);
-  const originalPrice = getOriginalPrice(product);
+  const showDiscount = hasProductDiscount(product);
+  const originalPrice = getDisplayOriginalPrice(product);
   const stockCount = getStockCount(product);
   const maxQuantity = Math.max(stockCount, 1);
   const lowStock = isLowStock(product);
@@ -145,17 +151,19 @@ export function MapShoppingSheetItem({
                 gap: SPACING.xs,
               }}
             >
-              <Text
-                numberOfLines={1}
-                style={{
-                  ...pretendard(700),
-                  fontSize: TYPOGRAPHY.size.md,
-                  color: COLORS.redText,
-                  flexShrink: 0,
-                }}
-              >
-                {product.discountPercent}%
-              </Text>
+              {showDiscount ? (
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    ...pretendard(700),
+                    fontSize: TYPOGRAPHY.size.md,
+                    color: COLORS.redText,
+                    flexShrink: 0,
+                  }}
+                >
+                  {product.discountPercent}%
+                </Text>
+              ) : null}
               <Text
                 numberOfLines={1}
                 style={{
@@ -315,18 +323,20 @@ export function MapShoppingSheetItem({
               gap: SPACING.xs,
             }}
           >
-            <Text
-              numberOfLines={1}
-              style={{
-                ...pretendard(700),
-                fontSize: TYPOGRAPHY.size.md,
-                color: COLORS.redText,
-                flexShrink: 0,
-                ...struckStyle,
-              }}
-            >
-              {product.discountPercent}%
-            </Text>
+            {showDiscount ? (
+              <Text
+                numberOfLines={1}
+                style={{
+                  ...pretendard(700),
+                  fontSize: TYPOGRAPHY.size.md,
+                  color: COLORS.redText,
+                  flexShrink: 0,
+                  ...struckStyle,
+                }}
+              >
+                {product.discountPercent}%
+              </Text>
+            ) : null}
             <Text
               numberOfLines={1}
               style={{
@@ -339,19 +349,21 @@ export function MapShoppingSheetItem({
             >
               {formatPrice(unitPrice)}
             </Text>
-            <Text
-              numberOfLines={1}
-              style={{
-                ...pretendard(400),
-                fontSize: TYPOGRAPHY.size.sm,
-                color: COLORS.subText,
-                textDecorationLine: "line-through",
-                opacity: isFullyPicked ? 0.7 : 1,
-                flexShrink: 1,
-              }}
-            >
-              {formatPrice(originalPrice)}
-            </Text>
+            {showDiscount ? (
+              <Text
+                numberOfLines={1}
+                style={{
+                  ...pretendard(400),
+                  fontSize: TYPOGRAPHY.size.sm,
+                  color: COLORS.subText,
+                  textDecorationLine: "line-through",
+                  opacity: isFullyPicked ? 0.7 : 1,
+                  flexShrink: 1,
+                }}
+              >
+                {formatPrice(originalPrice)}
+              </Text>
+            ) : null}
           </View>
 
           <View
