@@ -11,10 +11,12 @@ const RECOMMEND_CARD_GAP = 12;
 
 type SearchResultProductItemProps = {
   product: Product;
+  shoppingListAddMode?: boolean;
 };
 
 export function SearchResultProductItem({
   product,
+  shoppingListAddMode = false,
 }: SearchResultProductItemProps) {
   const { width: screenWidth } = useWindowDimensions();
   const soldOut = isOutOfStock(product);
@@ -29,11 +31,16 @@ export function SearchResultProductItem({
         borderBottomColor: COLORS.lightGray,
       }}
     >
-      <ProductListRow product={product} showBorder={false} />
+      <ProductListRow
+        product={product}
+        showBorder={false}
+        shoppingListAddMode={shoppingListAddMode}
+      />
       {soldOut ? (
         <ProductRecommendSection
           productId={baseProductId}
           cardWidth={recommendCardWidth}
+          shoppingListAddMode={shoppingListAddMode}
         />
       ) : null}
     </View>

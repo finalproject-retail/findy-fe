@@ -1,6 +1,9 @@
 import CartIcon from "@/assets/icons/cart-icon.svg";
 import { COLORS, RADIUS, TYPOGRAPHY } from "@/constants/theme";
+import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
+import { useProductAddMode } from "@/components/product/useProductAddMode";
 import { useCart } from "@/contexts/CartContext";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
@@ -16,23 +19,41 @@ const CART_BUTTON_SIZE = 32;
 type RecommendedProductCardProps = {
   product: Product;
   width: number;
+  shoppingListAddMode?: boolean;
 };
 
 export function RecommendedProductCard({
   product,
   width,
+  shoppingListAddMode = false,
 }: RecommendedProductCardProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const { addToCart } = useCart();
+  const isShoppingListMode = useProductAddMode(shoppingListAddMode);
+  const { addProductToShoppingTrip } = useMapNavigation();
 
   const openProductDetail = () => {
-    router.push(`/product/${product.id}`);
+    router.push(
+      isShoppingListMode
+        ? {
+            pathname: "/product/[id]",
+            params: { id: product.id, addMode: SEARCH_ADD_MODE_SHOPPING_LIST },
+          }
+        : `/product/${product.id}`,
+    );
   };
 
-  const handleAddToCart = () => {
-    addToCart(product, 1);
-    showToast(TOAST_MESSAGES.addedToCart);
+  const handleAddPress = () => {
+    if (isShoppingListMode) {
+      void addProductToShoppingTrip(product, 1)
+        .then(() => showToast(TOAST_MESSAGES.addedToShoppingList))
+        .catch(console.error);
+      return;
+    }
+    addToCart(product, 1)
+      .then(() => showToast(TOAST_MESSAGES.addedToCart))
+      .catch(console.error);
   };
 
   return (
@@ -50,9 +71,11 @@ export function RecommendedProductCard({
           />
         </Pressable>
         <Pressable
-          onPress={handleAddToCart}
+          onPress={handleAddPress}
           accessibilityRole="button"
-          accessibilityLabel="장바구니에 담기"
+          accessibilityLabel={
+            isShoppingListMode ? "쇼핑리스트 담기" : "장바구니에 담기"
+          }
           style={{
             position: "absolute",
             right: 6,

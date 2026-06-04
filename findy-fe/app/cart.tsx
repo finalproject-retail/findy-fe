@@ -12,10 +12,11 @@ import {
 } from "@/components/cart";
 import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
-import { SPACING } from "@/constants/theme";
+import { COLORS, SPACING } from "@/constants/theme";
 import { useCart, type CartLineItem } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
-import { createShoppingList, removeCartItem } from "@/lib/shopping/api";
+import { removeCartItem } from "@/lib/shopping/api";
+import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 import { pretendard } from "@/utils/pretendard";
 import { type Href, useRouter } from "expo-router";
@@ -62,7 +63,10 @@ export default function CartScreen() {
       let shoppingListLines: CartLineItem[] = [];
 
       if (hasSelectedProducts) {
-        const shoppingList = await createShoppingList();
+        const shoppingList = await createShoppingListFromCart(
+          availableItems,
+          selectedLines,
+        );
         shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
 
         await Promise.all(
@@ -162,7 +166,10 @@ export default function CartScreen() {
                       paddingVertical: SPACING.xs,
                     }}
                   >
-                    <Text className="text-md text-text-sub" style={pretendard(500)}>
+                    <Text
+                      className="text-md"
+                      style={{ ...pretendard(600), color: COLORS.main }}
+                    >
                       수정
                     </Text>
                   </Pressable>
@@ -177,7 +184,10 @@ export default function CartScreen() {
                       paddingVertical: SPACING.xs,
                     }}
                   >
-                    <Text className="text-md text-text-sub" style={pretendard(500)}>
+                    <Text
+                      className="text-md"
+                      style={{ ...pretendard(600), color: COLORS.main }}
+                    >
                       추가
                     </Text>
                   </Pressable>

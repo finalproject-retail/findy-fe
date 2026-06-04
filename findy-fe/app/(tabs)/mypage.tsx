@@ -2,14 +2,13 @@ import { Header } from "@/components/common";
 import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
 import { type Href, useRouter } from "expo-router";
 import {
-  MOCK_MYPAGE_USER,
   MypageGreeting,
   MypageMembershipCard,
   MypageMenuList,
   MypageRecentlyViewedSection,
-  getRecentlyViewedProducts,
   useMypageProfile,
 } from "@/components/mypage";
+import { useRecentViews } from "@/components/recently-viewed";
 import { COLORS, LAYOUT, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { useFocusEffect } from "expo-router";
@@ -29,20 +28,21 @@ export default function MypageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { profile, loading, error, reload } = useMypageProfile();
+  const {
+    products: recentViews,
+    reload: reloadRecentViews,
+  } = useRecentViews();
   const scrollBottomPadding = LAYOUT.tabBarTotalHeight + insets.bottom;
 
   useFocusEffect(
     useCallback(() => {
       void reload();
-    }, [reload]),
+      void reloadRecentViews();
+    }, [reload, reloadRecentViews]),
   );
 
   const showFullScreenLoading = loading && !profile;
   const showFullScreenError = Boolean(error) && !profile;
-
-  const recentlyViewed = getRecentlyViewedProducts(
-    MOCK_MYPAGE_USER.recentlyViewedProductIds,
-  );
 
   return (
     <SafeView edges={TAB_SCREEN_EDGES}>
@@ -96,7 +96,7 @@ export default function MypageScreen() {
               onPointsPress={() => router.push("/points")}
             />
             <MypageRecentlyViewedSection
-              products={recentlyViewed}
+              products={recentViews}
               onSeeAllPress={() => router.push("/recently-viewed")}
             />
             <MypageMenuList

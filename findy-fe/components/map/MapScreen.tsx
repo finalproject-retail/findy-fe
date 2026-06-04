@@ -3,6 +3,7 @@ import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
 import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
+import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { type Href, useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -141,7 +142,12 @@ export function MapScreen() {
           />
         ) : null}
         <MapOverlayControls
-          onSearchPress={() => router.push("/search" as Href)}
+          onSearchPress={() =>
+            router.push({
+              pathname: "/search",
+              params: { addMode: SEARCH_ADD_MODE_SHOPPING_LIST },
+            } as Href)
+          }
           onBellPress={() => router.push("/notifications" as Href)}
           showCongestion={showCongestion}
           showRoute={showRoute}
