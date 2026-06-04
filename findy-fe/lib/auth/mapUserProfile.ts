@@ -16,6 +16,16 @@ export function mapMembershipGrade(raw: string | null | undefined): MembershipGr
   return "bronze";
 }
 
+function resolveIsFirstLogin(dto: UserMeApiDto): boolean {
+  if (typeof dto.isFirstLogin === "boolean") {
+    return dto.isFirstLogin;
+  }
+  if (typeof dto.firstLogin === "boolean") {
+    return dto.firstLogin;
+  }
+  return true;
+}
+
 export function mapUserProfileFromApi(dto: UserMeApiDto): UserProfile {
   return {
     userId: String(dto.userId),
@@ -23,6 +33,6 @@ export function mapUserProfileFromApi(dto: UserMeApiDto): UserProfile {
     name: dto.name,
     grade: mapMembershipGrade(dto.grade),
     reward: dto.reward ?? 0,
-    isFirstLogin: dto.isFirstLogin ?? true,
+    isFirstLogin: resolveIsFirstLogin(dto),
   };
 }

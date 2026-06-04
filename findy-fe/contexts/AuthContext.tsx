@@ -1,5 +1,10 @@
 import { setAccessToken } from "@/lib/api/client";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
+import { isInvalidStoredSessionError } from "@/lib/auth/isInvalidStoredSessionError";
+import {
+  resolveNeedsOnboarding,
+  withOnboardingFlag,
+} from "@/lib/auth/resolveNeedsOnboarding";
 import {
   clearStoredSession,
   loadStoredSession,
@@ -41,8 +46,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setIsProfileLoading(true);
     try {
       const profile = await fetchMyProfile();
-      setNeedsOnboarding(profile.isFirstLogin);
-      return profile;
+      const needsOnboarding = await resolveNeedsOnboarding(profile);
+      setNeedsOnboarding(needsOnboarding);
+      return withOnboardingFlag(profile, needsOnboarding);
     } catch {
       setNeedsOnboarding(false);
       throw new Error("회원 정보를 불러오지 못했습니다.");
@@ -68,11 +74,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
           try {
             const profile = await fetchMyProfile();
             if (!cancelled) {
-              setNeedsOnboarding(profile.isFirstLogin);
+              const needsOnboarding = await resolveNeedsOnboarding(profile);
+              setNeedsOnboarding(needsOnboarding);
             }
-          } catch {
+          } catch (error) {
             if (!cancelled) {
-              setNeedsOnboarding(false);
+              if (isInvalidStoredSessionError(error)) {
+                await clearStoredSession();
+                setAccessToken(null);
+                setAccessTokenState(null);
+                setIsLoggedIn(false);
+                setNeedsOnboarding(false);
+              } else {
+                setNeedsOnboarding(false);
+              }
             }
           } finally {
             if (!cancelled) {

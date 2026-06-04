@@ -6,6 +6,13 @@ import { mapProductsFromApi } from "@/lib/products/mapProductFromApi";
 import type { PersonalizedRecommendationsApiData } from "@/lib/recommendations/types";
 import { recommendationApiClient } from "./recommendationClient";
 
+export type PersonalizedRecommendationsResult = {
+  products: Product[];
+  shoppingStyles: string[];
+  preferredCategories: string[];
+  baseType?: string;
+};
+
 function resolvePersonalizedUserId(): string {
   const fromToken = getUserIdFromAccessToken(getAccessToken());
   if (fromToken) {
@@ -20,7 +27,7 @@ function resolvePersonalizedUserId(): string {
 
 export async function fetchPersonalizedRecommendations(
   size: number,
-): Promise<Product[]> {
+): Promise<PersonalizedRecommendationsResult> {
   const response = await recommendationApiClient.get<
     ApiEnvelope<PersonalizedRecommendationsApiData>
   >("/api/v1/recommendations/personalized", {
@@ -35,5 +42,12 @@ export async function fetchPersonalizedRecommendations(
     throw new Error(body?.message ?? "맞춤 추천을 불러오지 못했습니다.");
   }
 
-  return mapProductsFromApi(body.data?.recommendations ?? []);
+  const data = body.data;
+
+  return {
+    products: mapProductsFromApi(data?.recommendations ?? []),
+    shoppingStyles: data?.shoppingStyles ?? [],
+    preferredCategories: data?.preferredCategories ?? [],
+    baseType: data?.baseType,
+  };
 }
