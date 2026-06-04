@@ -36,10 +36,10 @@ export function Header({
   onCartPress,
 }: HeaderProps) {
   const router = useRouter();
-  const { cartBadgeCount } = useCart();
+  const { items } = useCart();
   const icons = rightIcons.slice(0, MAX_RIGHT_ICONS);
 
-  const cartCount = cartBadgeCount;
+  const cartCount = items.length;
   const cartBadgeLabel =
     cartCount > 99 ? "99+" : cartCount > 0 ? String(cartCount) : null;
 

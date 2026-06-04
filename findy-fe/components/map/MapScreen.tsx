@@ -24,6 +24,7 @@ export function MapScreen() {
 
   const {
     navigationData,
+    routeSnapshot,
     navigationRefreshKey,
     refreshNavigationOverlay,
     tripLineItems,
@@ -125,6 +126,7 @@ export function MapScreen() {
             fitHeight={mapLayout.height}
             contentBottomInset={mapContentBottomInset}
             navigationData={navigationData}
+            routeSnapshot={routeSnapshot}
             navigationRefreshKey={navigationRefreshKey}
             pickedMarkerIds={pickedMarkerIds}
             selectedMarkerProductId={selectedMarkerProductId}

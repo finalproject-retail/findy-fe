@@ -32,6 +32,12 @@ export type StoreMapNavigationMock = {
   beaconCongestion: BeaconCongestionPoint[];
 };
 
+/** 새로고침 시점의 현위치·방문 목록 — 경로 선은 이 스냅샷으로만 계산 */
+export type NavigationRouteSnapshot = {
+  currentLocation: CurrentLocationMock;
+  shoppingItems: ShoppingMapItem[];
+};
+
 export type MapPixelPoint = {
   x: number;
   y: number;
