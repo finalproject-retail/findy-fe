@@ -6,6 +6,9 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.insp1re12131.shop"
+      },
       "android": {
         "buildType": "apk"
       }
