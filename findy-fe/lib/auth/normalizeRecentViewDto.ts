@@ -21,10 +21,31 @@ export function normalizeRecentViewDto(raw: unknown): RecentViewApiDto | null {
   }
 
   const item = raw as Record<string, unknown>;
+  const nested =
+    item.product && typeof item.product === "object"
+      ? (item.product as Record<string, unknown>)
+      : null;
+
   const productId = readNumber(item.productId ?? item.product_id);
-  const productName = readString(item.productName ?? item.product_name);
-  const price = readNumber(item.price ?? item.salePrice ?? item.sale_price) ?? 0;
-  const thumbnailUrl = readString(item.thumbnailUrl ?? item.thumbnail_url);
+  const productName =
+    readString(item.productName ?? item.product_name) ??
+    (nested
+      ? readString(nested.productName ?? nested.product_name)
+      : null);
+  const price =
+    readNumber(item.price ?? item.salePrice ?? item.sale_price) ??
+    (nested
+      ? readNumber(
+          nested.salePrice ??
+            nested.sale_price ??
+            nested.originalPrice ??
+            nested.original_price,
+        )
+      : null) ??
+    0;
+  const thumbnailUrl =
+    readString(item.thumbnailUrl ?? item.thumbnail_url) ??
+    (nested ? readString(nested.imageUrl ?? nested.image_url) : null);
   const viewedAt = readString(item.viewedAt ?? item.viewed_at);
 
   if (productId == null || !productName) {
