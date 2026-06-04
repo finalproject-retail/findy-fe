@@ -6,8 +6,9 @@ import {
 import type { Product } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { MAP_NAVIGATION_EMPTY } from "@/components/store-map/overlays/mock/mapNavigationEmpty";
-import { fetchCongestionSnapshotOnRefresh } from "@/components/store-map/overlays/mock/congestionSnapshots";
+import { fetchCongestionOnRefresh } from "@/components/store-map/overlays/fetchCongestionOnRefresh";
 import type {
+  NavigationRouteSnapshot,
   ShoppingMapItem,
   StoreMapNavigationMock,
 } from "@/components/store-map/overlays/types";
@@ -24,6 +25,8 @@ import {
 
 type MapNavigationContextValue = {
   navigationData: StoreMapNavigationMock;
+  /** null이면 경로 미표시 — 새로고침 후에만 갱신 */
+  routeSnapshot: NavigationRouteSnapshot | null;
   navigationRefreshKey: number;
   tripLineItems: CartLineItem[];
   recommendedProductsById: Record<string, Product>;
@@ -91,6 +94,8 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const { clearPendingBarcodeRewards } = usePoints();
   const [navigationData, setNavigationData] =
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
+  const [routeSnapshot, setRouteSnapshot] =
+    useState<NavigationRouteSnapshot | null>(null);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
   const [tripLineItems, setTripLineItems] = useState<CartLineItem[]>([]);
   const [recommendedProductsById, setRecommendedProductsById] = useState<
@@ -103,16 +108,25 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     tripLineItems.length > 0 || navigationData.shoppingItems.length > 0;
 
   const refreshNavigationOverlay = useCallback(() => {
-    setNavigationData((prev) => ({
-      ...prev,
-      shoppingItems:
+    setNavigationData((prev) => {
+      const shoppingItems =
         tripLineItems.length > 0
           ? tripLineItemsToShoppingMapItems(tripLineItems)
           : prev.shoppingItems.length > 0
             ? prev.shoppingItems
-            : [],
-      beaconCongestion: fetchCongestionSnapshotOnRefresh(),
-    }));
+            : [];
+
+      setRouteSnapshot({
+        currentLocation: { ...prev.currentLocation },
+        shoppingItems: shoppingItems.map((item) => ({ ...item })),
+      });
+
+      return {
+        ...prev,
+        shoppingItems,
+        beaconCongestion: fetchCongestionOnRefresh(),
+      };
+    });
     setNavigationRefreshKey((key) => key + 1);
   }, [tripLineItems]);
 
@@ -121,7 +135,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       ...prev,
       shoppingItems: items,
     }));
-    setNavigationRefreshKey((key) => key + 1);
   }, []);
 
   const startShoppingTrip = useCallback(
@@ -135,7 +148,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         shoppingItems: mapItems,
         recommendedItems: [],
       }));
-      setNavigationRefreshKey((key) => key + 1);
     },
     [clearPendingBarcodeRewards],
   );
@@ -157,20 +169,18 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       ...prev,
       shoppingItems: tripLineItemsToShoppingMapItems(lineItems),
     }));
-
-    setNavigationRefreshKey((key) => key + 1);
   }, []);
 
   const endShoppingTrip = useCallback(() => {
     setTripLineItems([]);
     setPickedQuantityByProductId({});
     setRecommendedProductsById({});
+    setRouteSnapshot(null);
     setNavigationData((prev) => ({
       ...prev,
       shoppingItems: [],
       recommendedItems: [],
     }));
-    setNavigationRefreshKey((key) => key + 1);
   }, []);
 
   const markProductPicked = useCallback(
@@ -194,7 +204,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         ...nav,
         shoppingItems: tripLineItemsToShoppingMapItems(next),
       }));
-      setNavigationRefreshKey((key) => key + 1);
       return next;
     });
     setPickedQuantityByProductId((prev) => {
@@ -249,7 +258,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       }
       return { ...prev, [product.id]: product };
     });
-    setNavigationRefreshKey((key) => key + 1);
   }, []);
 
   const addProductToShoppingTrip = useCallback(
@@ -258,7 +266,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         const next = mergeTripLineItems(prev, product, quantity);
         const mapItems = tripLineItemsToShoppingMapItems(next);
         setNavigationData((nav) => ({ ...nav, shoppingItems: mapItems }));
-        setNavigationRefreshKey((key) => key + 1);
         return next;
       });
     },
@@ -268,6 +275,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const value = useMemo(
     () => ({
       navigationData,
+      routeSnapshot,
       navigationRefreshKey,
       tripLineItems,
       recommendedProductsById,
@@ -288,6 +296,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     }),
     [
       navigationData,
+      routeSnapshot,
       navigationRefreshKey,
       tripLineItems,
       recommendedProductsById,

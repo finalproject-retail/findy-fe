@@ -29,7 +29,10 @@ import { getEmartStoreMapConfig } from "./data/emart-floor-plan";
 import { StoreMapFloorBackground } from "./StoreMapFloorBackground";
 import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
 import type { StoreMapConfig } from "./types";
-import type { StoreMapNavigationMock } from "./overlays/types";
+import type {
+  NavigationRouteSnapshot,
+  StoreMapNavigationMock,
+} from "./overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
 import { StoreMapShelfLayer } from "./StoreMapShelfLayer";
@@ -53,7 +56,8 @@ type StoreMapViewProps = {
   /** 탭바 등 하단에 가려지는 영역 — pan·fit 높이에서 제외 */
   contentBottomInset?: number;
   navigationData?: StoreMapNavigationMock;
-  /** 새로고침·장바구니 변경 시 경로 재탐색 트리거 */
+  /** 새로고침 시에만 설정 — 경로 계산용 스냅샷 */
+  routeSnapshot?: NavigationRouteSnapshot | null;
   navigationRefreshKey?: number;
   /** 바코드 수령 완료된 쇼핑 마커 id */
   pickedMarkerIds?: ReadonlySet<string>;
@@ -80,6 +84,7 @@ export function StoreMapView({
   fitHeight = SCREEN_HEIGHT * 0.55,
   contentBottomInset = 0,
   navigationData,
+  routeSnapshot = null,
   navigationRefreshKey = 0,
   pickedMarkerIds,
   selectedMarkerProductId = null,
@@ -549,6 +554,7 @@ export function StoreMapView({
                   mapWidth={config.cols * cellPx}
                   mapHeight={config.rows * cellPx}
                   data={navigationData}
+                  routeSnapshot={routeSnapshot}
                   navigationRefreshKey={navigationRefreshKey}
                   pickedMarkerIds={pickedMarkerIds}
                   selectedMarkerProductId={selectedMarkerProductId}

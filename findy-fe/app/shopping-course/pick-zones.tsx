@@ -1,4 +1,5 @@
 import { Header } from "@/components/common";
+import { zonesToShoppingMapItems } from "@/components/cart";
 import {
   CATEGORY_TREE,
   buildCartZoneItem,
@@ -11,22 +12,63 @@ import {
   ZonePickSubList,
 } from "@/components/shopping-course";
 import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
+import type { CartLineItem } from "@/contexts/CartContext";
 import { useCart } from "@/contexts/CartContext";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useToast } from "@/contexts/ToastContext";
-import { type Href, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
-import type { CartZoneItem } from "@/components/category";
+
+const CART_CATEGORY_ID_PATTERN = /^카테고리 (\d+)$/;
+
+function categoryIdsFromLineItems(items: CartLineItem[]): number[] {
+  const ids = new Set<number>();
+  for (const item of items) {
+    const category = item.product.category;
+    if (!category) continue;
+
+    const match = category.match(CART_CATEGORY_ID_PATTERN);
+    if (match) {
+      ids.add(Number(match[1]));
+      continue;
+    }
+
+    for (const top of CATEGORY_TREE) {
+      for (const middle of top.middles) {
+        for (const sub of middle.subs) {
+          if (category.endsWith(sub.label)) {
+            ids.add(sub.categoryId);
+          }
+        }
+      }
+    }
+  }
+  return Array.from(ids);
+}
 
 export default function PickZonesScreen() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { zoneItems, setZoneItems } = useCart();
+  const { availableItems } = useCart();
+  const { startShoppingTrip } = useMapNavigation();
+
+  const cartZoneCategoryIds = useMemo(
+    () => categoryIdsFromLineItems(availableItems),
+    [availableItems],
+  );
 
   const [activeTopKey, setActiveTopKey] = useState(CATEGORY_TREE[0]?.key ?? "");
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(
-    () => new Set(zoneItems.map((zone: CartZoneItem) => zone.categoryId)),
-  );
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
+  const hasSeededSelection = useRef(false);
+
+  useEffect(() => {
+    if (hasSeededSelection.current || cartZoneCategoryIds.length === 0) {
+      return;
+    }
+    setSelectedIds(new Set(cartZoneCategoryIds));
+    hasSeededSelection.current = true;
+  }, [cartZoneCategoryIds]);
 
   const activeTop = useMemo(
     () => CATEGORY_TREE.find((top) => top.key === activeTopKey) ?? CATEGORY_TREE[0],
@@ -54,13 +96,14 @@ export default function PickZonesScreen() {
       .map((id) => buildCartZoneItem(id))
       .filter((zone): zone is NonNullable<typeof zone> => zone != null);
 
-    setZoneItems(zones);
-    showToast(`${zones.length}개 구역을 담았어요`);
+    if (zones.length === 0) {
+      return;
+    }
 
-    router.replace({
-      pathname: "/cart",
-      params: { tab: "zones" },
-    } as Href);
+    const mapItems = zonesToShoppingMapItems(zones);
+    startShoppingTrip([], mapItems);
+    showToast(`${zones.length}개 구역을 담았어요`);
+    router.push("/route-generating");
   };
 
   return (

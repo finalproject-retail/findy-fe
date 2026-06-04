@@ -8,7 +8,10 @@ import { RecommendationAdMarkerLayer } from "./layers/RecommendationAdMarkerLaye
 import { ShoppingItemMarkerLayer } from "./layers/ShoppingItemMarkerLayer";
 import { UserLocationMarker } from "./layers/UserLocationMarker";
 import { MapProductMarkerCallout } from "./MapProductMarkerCallout";
-import type { StoreMapNavigationMock } from "./types";
+import type {
+  NavigationRouteSnapshot,
+  StoreMapNavigationMock,
+} from "./types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
 import { MAP_OVERLAY_MARKER_HEIGHT, MAP_OVERLAY_RECO_HEIGHT } from "./constants";
@@ -29,7 +32,9 @@ type StoreMapOverlaysProps = {
   mapWidth: number;
   mapHeight: number;
   data?: StoreMapNavigationMock;
-  /** 새로고침·살 상품 목록 변경 시 0으로 리셋 → 경로 재탐색 */
+  /** 새로고침 시에만 채워짐 — null이면 경로 미표시 */
+  routeSnapshot?: NavigationRouteSnapshot | null;
+  /** 새로고침 시 경로 진행(leg) 0으로 리셋 */
   navigationRefreshKey?: number;
   /** 바코드 수령 완료된 쇼핑 마커 id (상품 id) */
   pickedMarkerIds?: ReadonlySet<string>;
@@ -48,6 +53,7 @@ export function StoreMapOverlays({
   mapWidth,
   mapHeight,
   data = MAP_NAVIGATION_MOCK,
+  routeSnapshot = null,
   navigationRefreshKey = 0,
   pickedMarkerIds,
   selectedMarkerProductId = null,
@@ -58,20 +64,27 @@ export function StoreMapOverlays({
   showCongestion = true,
   showRoute = true,
 }: StoreMapOverlaysProps) {
-  const routeOrder = useMemo(
-    () =>
-      orderShoppingMinimumRoute(
-        config,
-        data.currentLocation,
-        data.shoppingItems
-      ),
-    [config, data.currentLocation, data.shoppingItems]
-  );
+  const routeOrder = useMemo(() => {
+    if (!routeSnapshot || routeSnapshot.shoppingItems.length === 0) {
+      return [];
+    }
+    return orderShoppingMinimumRoute(
+      config,
+      routeSnapshot.currentLocation,
+      routeSnapshot.shoppingItems,
+    );
+  }, [config, routeSnapshot]);
 
-  const aisleLegs = useMemo(
-    () => splitRouteAtShoppingGoals(config, data.currentLocation, routeOrder),
-    [config, data.currentLocation, routeOrder]
-  );
+  const aisleLegs = useMemo(() => {
+    if (!routeSnapshot || routeOrder.length === 0) {
+      return [];
+    }
+    return splitRouteAtShoppingGoals(
+      config,
+      routeSnapshot.currentLocation,
+      routeOrder,
+    );
+  }, [config, routeSnapshot, routeOrder]);
 
   const [activeLegIndex, setActiveLegIndex] = useState(0);
 
@@ -83,7 +96,7 @@ export function StoreMapOverlays({
 
   useEffect(() => {
     setActiveLegIndex(0);
-  }, [navigationRefreshKey, data.shoppingItems, data.currentLocation]);
+  }, [navigationRefreshKey]);
 
   useEffect(() => {
     if (activeLegIndex >= routeOrder.length) return;
@@ -168,7 +181,7 @@ export function StoreMapOverlays({
           mapHeight={mapHeight}
         />
       ) : null}
-      {showRoute ? (
+      {showRoute && routeSnapshot ? (
         <NavigationPathLayer
           segments={pathSegments}
           mapWidth={mapWidth}

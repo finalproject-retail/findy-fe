@@ -23,6 +23,6 @@ export const BEACON_HEAT_SIZE_PX = {
 } as const;
 
 export const BEACON_HEAT_OPACITY = {
-  HIGH: 0.16,
-  MEDIUM: 0.09,
+  HIGH: 0.18,
+  MEDIUM: 0.1,
 } as const;
