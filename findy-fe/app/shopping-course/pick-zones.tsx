@@ -16,9 +16,10 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useToast } from "@/contexts/ToastContext";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
+import type { CartZoneItem } from "@/components/category";
 
 const CART_CATEGORY_ID_PATTERN = /^카테고리 (\d+)$/;
 
@@ -49,8 +50,10 @@ function categoryIdsFromLineItems(items: CartLineItem[]): number[] {
 
 export default function PickZonesScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
+  const fromCart = params.from === "cart";
   const { showToast } = useToast();
-  const { availableItems } = useCart();
+  const { availableItems, zoneItems, setZoneItems } = useCart();
   const { startShoppingTrip } = useMapNavigation();
 
   const cartZoneCategoryIds = useMemo(
@@ -63,12 +66,25 @@ export default function PickZonesScreen() {
   const hasSeededSelection = useRef(false);
 
   useEffect(() => {
-    if (hasSeededSelection.current || cartZoneCategoryIds.length === 0) {
+    if (hasSeededSelection.current) {
       return;
     }
+
+    if (fromCart && zoneItems.length > 0) {
+      setSelectedIds(
+        new Set(zoneItems.map((zone: CartZoneItem) => zone.categoryId)),
+      );
+      hasSeededSelection.current = true;
+      return;
+    }
+
+    if (cartZoneCategoryIds.length === 0) {
+      return;
+    }
+
     setSelectedIds(new Set(cartZoneCategoryIds));
     hasSeededSelection.current = true;
-  }, [cartZoneCategoryIds]);
+  }, [fromCart, zoneItems, cartZoneCategoryIds]);
 
   const activeTop = useMemo(
     () => CATEGORY_TREE.find((top) => top.key === activeTopKey) ?? CATEGORY_TREE[0],
@@ -95,6 +111,17 @@ export default function PickZonesScreen() {
     const zones = Array.from(selectedIds)
       .map((id) => buildCartZoneItem(id))
       .filter((zone): zone is NonNullable<typeof zone> => zone != null);
+
+    if (fromCart) {
+      setZoneItems(zones);
+      showToast(
+        zones.length > 0
+          ? `${zones.length}개 구역을 담았어요`
+          : "선택한 구역을 비웠어요",
+      );
+      router.back();
+      return;
+    }
 
     if (zones.length === 0) {
       return;

@@ -93,7 +93,7 @@ export function MapShoppingBottomSheet({
   const cancelScanModalRef = useRef(cancelScanModal);
   cancelScanModalRef.current = cancelScanModal;
   const { showToast } = useToast();
-  const { showRelatedProductNotification } = useMapShoppingNotifications();
+  const { notifyBarcodeScanPromoIfNeeded } = useMapShoppingNotifications();
   const scrollY = useSharedValue(0);
   const { addPendingBarcodeReward, clearPendingBarcodeRewards } = usePoints();
   const {
@@ -430,7 +430,11 @@ export function MapShoppingBottomSheet({
 
         const newPicked = lineAfter.scannedQuantity ?? 0;
         if (newPicked > prevPicked) {
-          showRelatedProductNotification(lineAfter.product);
+          const totalScanCount = nextLineItems.reduce(
+            (sum, item) => sum + (item.scannedQuantity ?? 0),
+            0,
+          );
+          notifyBarcodeScanPromoIfNeeded(totalScanCount, lineAfter.product);
           const rewardPoints = rollBarcodePointReward();
           if (rewardPoints !== null) {
             addPendingBarcodeReward(rewardPoints);
@@ -446,7 +450,7 @@ export function MapShoppingBottomSheet({
       hasActiveTrip,
       pickedQuantityByProductId,
       presentCancelToast,
-      showRelatedProductNotification,
+      notifyBarcodeScanPromoIfNeeded,
       syncShoppingTrip,
       tripLineItems,
     ],

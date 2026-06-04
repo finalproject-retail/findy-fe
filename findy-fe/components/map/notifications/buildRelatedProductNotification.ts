@@ -46,3 +46,19 @@ export function buildRelatedProductNotification(
     relatedProduct,
   };
 }
+
+export function buildPromoScanMilestoneNotification(
+  relatedProduct: Product,
+  totalScanCount: number,
+  lastPickedProduct?: Product,
+): Omit<MapShoppingNotification, "id" | "createdAt"> {
+  const shortRelated = getShortProductName(relatedProduct.name);
+
+  return {
+    pickedProductId: lastPickedProduct?.id ?? "",
+    pickedProductName: lastPickedProduct?.name ?? "",
+    headline: `🎁 ${totalScanCount}개 수령 완료! 추천 상품이에요`,
+    description: `이번 주말 한정! 쟁여두면 든든한 [${shortRelated}] 지금 구매하면 ${relatedProduct.discountPercent}% 할인`,
+    relatedProduct,
+  };
+}

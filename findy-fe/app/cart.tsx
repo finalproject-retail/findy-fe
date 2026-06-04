@@ -1,23 +1,25 @@
-import { Header } from "@/components/common";
 import {
   CART_FOOTER_HEIGHT,
-  cartToShoppingMapItems,
   CartEmptyState,
   CartFooter,
   CartItemRow,
   CartRecommendationSection,
   CartSelectAllRow,
   CartSoldOutItemRow,
+  CartZoneItemRow,
+  cartToShoppingMapItems,
+  zonesToShoppingMapItems,
 } from "@/components/cart";
+import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
 import { SPACING } from "@/constants/theme";
-import { useCart } from "@/contexts/CartContext";
+import { useCart, type CartLineItem } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
-import { useRouter } from "expo-router";
-import { ScrollView, Text, View } from "react-native";
-import { pretendard } from "@/utils/pretendard";
 import { createShoppingList, removeCartItem } from "@/lib/shopping/api";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import { pretendard } from "@/utils/pretendard";
+import { type Href, useRouter } from "expo-router";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function CartScreen() {
   const router = useRouter();
@@ -25,33 +27,70 @@ export default function CartScreen() {
   const {
     availableItems,
     soldOutItems,
+    zoneItems,
     removeFromCart,
     refreshCart,
     setQuantity,
+    setZoneItems,
     toggleSelect,
     toggleSelectAll,
   } = useCart();
 
   const hasSoldOut = soldOutItems.length > 0;
-  const isEmpty = availableItems.length === 0 && soldOutItems.length === 0;
+  const hasZones = zoneItems.length > 0;
+  const isEmpty =
+    availableItems.length === 0 && soldOutItems.length === 0 && !hasZones;
+
+  const handleAddZonePress = () => {
+    router.push("/shopping-course/pick-zones?from=cart" as Href);
+  };
+
+  const handleRemoveZone = (categoryId: number) => {
+    setZoneItems(zoneItems.filter((zone) => zone.categoryId !== categoryId));
+  };
 
   const handleStartShoppingWithRoute = async () => {
     const selectedLines = availableItems.filter((item) => item.selected);
-    if (selectedLines.length === 0) return;
+    const hasSelectedProducts = selectedLines.length > 0;
+    const hasSelectedZones = zoneItems.length > 0;
+
+    if (!hasSelectedProducts && !hasSelectedZones) {
+      return;
+    }
 
     try {
-      const shoppingList = await createShoppingList();
-      const shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
-      const shoppingItems = cartToShoppingMapItems(shoppingListLines);
+      let shoppingListLines: CartLineItem[] = [];
 
-      startShoppingTrip(shoppingListLines, shoppingItems);
+      if (hasSelectedProducts) {
+        const shoppingList = await createShoppingList();
+        shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
 
-      await Promise.all(
-        selectedLines
-          .filter((line) => line.cartItemId)
-          .map((line) => removeCartItem(line.cartItemId!)),
+        await Promise.all(
+          selectedLines
+            .filter((line) => line.cartItemId)
+            .map((line) => removeCartItem(line.cartItemId!)),
+        );
+        await refreshCart();
+      }
+
+      const productMapItems = hasSelectedProducts
+        ? cartToShoppingMapItems(shoppingListLines)
+        : [];
+      const zoneMapItems = hasSelectedZones
+        ? zonesToShoppingMapItems(zoneItems)
+        : [];
+      const mapItems = [...productMapItems, ...zoneMapItems].map(
+        (item, index) => ({
+          ...item,
+          visitOrder: index + 1,
+        }),
       );
-      await refreshCart();
+
+      startShoppingTrip(shoppingListLines, mapItems);
+
+      if (hasSelectedZones) {
+        setZoneItems([]);
+      }
 
       router.push("/route-generating");
     } catch (error) {
@@ -62,12 +101,14 @@ export default function CartScreen() {
   return (
     <SafeView>
       <Header title="장바구니" showBack />
-      <View className="h-px bg-light-gray" />
 
       <View className="flex-1">
         {isEmpty ? (
-          <View className="flex-1" style={{ paddingBottom: CART_FOOTER_HEIGHT }}>
-            <CartEmptyState />
+          <View
+            className="flex-1"
+            style={{ paddingBottom: CART_FOOTER_HEIGHT }}
+          >
+            <CartEmptyState onAddZone={handleAddZonePress} />
           </View>
         ) : (
           <ScrollView
@@ -78,6 +119,12 @@ export default function CartScreen() {
           >
             {availableItems.length > 0 ? (
               <>
+                <Text
+                  className="px-screen text-lg text-text-main"
+                  style={[pretendard(700), { paddingBottom: SPACING.xs }]}
+                >
+                  상품
+                </Text>
                 <CartSelectAllRow
                   items={availableItems}
                   onToggleAll={toggleSelectAll}
@@ -95,6 +142,65 @@ export default function CartScreen() {
                 ))}
               </>
             ) : null}
+
+            <View style={{ paddingTop: SPACING.lg }}>
+              <View
+                className="flex-row items-center justify-between px-screen"
+                style={{ paddingBottom: SPACING.xs }}
+              >
+                <Text className="text-lg text-text-main" style={pretendard(700)}>
+                  구역
+                </Text>
+                {hasZones ? (
+                  <Pressable
+                    onPress={handleAddZonePress}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="구역 수정"
+                    style={{
+                      paddingHorizontal: SPACING.sm,
+                      paddingVertical: SPACING.xs,
+                    }}
+                  >
+                    <Text className="text-md text-text-sub" style={pretendard(500)}>
+                      수정
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={handleAddZonePress}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="구역 추가"
+                    style={{
+                      paddingHorizontal: SPACING.sm,
+                      paddingVertical: SPACING.xs,
+                    }}
+                  >
+                    <Text className="text-md text-text-sub" style={pretendard(500)}>
+                      추가
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {hasZones ? (
+                zoneItems.map((zone) => (
+                  <CartZoneItemRow
+                    key={zone.categoryId}
+                    zone={zone}
+                    onRemove={() => handleRemoveZone(zone.categoryId)}
+                  />
+                ))
+              ) : (
+                <Text
+                  className="px-screen text-md text-text-sub2"
+                  style={pretendard(400)}
+                >
+                  담은 구역이 없어요. 추가를 눌러 매장 구역을 골라보세요.
+                </Text>
+              )}
+            </View>
 
             {hasSoldOut ? (
               <View style={{ paddingTop: SPACING.lg }}>
@@ -120,6 +226,7 @@ export default function CartScreen() {
         <View className="absolute bottom-0 left-0 right-0">
           <CartFooter
             availableItems={availableItems}
+            zoneCount={zoneItems.length}
             onCheckout={handleStartShoppingWithRoute}
           />
         </View>
