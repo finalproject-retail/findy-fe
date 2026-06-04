@@ -18,13 +18,9 @@ function rewriteLocalhostForAndroid(url: string) {
     .replace(/\/\/127\.0\.0\.1(?=[:/]|$)/i, `//${ANDROID_EMULATOR_HOST}`);
 }
 
-/**
- * user-service API base URL (Gateway 경유, EXPO_PUBLIC_USER_API_URL 또는 EXPO_PUBLIC_API_URL)
- */
+/** user-service API base URL routed by ALB Ingress */
 export function getUserApiBaseUrl() {
-  const fromEnv =
-    process.env.EXPO_PUBLIC_USER_API_URL?.trim() ||
-    process.env.EXPO_PUBLIC_API_URL?.trim();
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
   const url = fromEnv ? stripTrailingSlash(fromEnv) : DEFAULT_USER_API_URL;
   return rewriteLocalhostForAndroid(url);
 }
