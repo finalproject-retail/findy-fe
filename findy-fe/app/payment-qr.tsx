@@ -2,6 +2,8 @@ import { Header } from "@/components/common";
 import { PaymentQrPlaceholder } from "@/components/payment/PaymentQrPlaceholder";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY, BORDER } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { useToast } from "@/contexts/ToastContext";
+import { getApiErrorMessage } from "@/lib/api";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -42,6 +44,7 @@ export default function PaymentQrScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { checkoutItems } = useCheckout();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (checkoutItems.length === 0) {
@@ -58,7 +61,13 @@ export default function PaymentQrScreen() {
       await createOrder();
       router.replace("/payment-complete");
     } catch (error) {
-      console.error(error);
+      const message =
+        getApiErrorMessage(error) ||
+        "주문 생성에 실패했습니다. 바코드 스캔 후 다시 시도해 주세요.";
+      showToast(message);
+      if (__DEV__) {
+        console.warn("[payment-qr] createOrder", error);
+      }
     }
   };
 
