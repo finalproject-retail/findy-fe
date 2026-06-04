@@ -1,5 +1,8 @@
 import { getApiErrorMessage } from "@/lib/api";
+import { getAccessToken } from "@/lib/api/client";
+import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import { shoppingApiClient } from "@/lib/products/api/productClient";
+import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
 import type {
   ApiEnvelope,
   CartApi,
@@ -12,7 +15,17 @@ export const DEFAULT_USER_ID = Number(
   process.env.EXPO_PUBLIC_DEV_USER_ID?.trim() || 1,
 );
 
-function userHeaders(userId = DEFAULT_USER_ID) {
+function resolveShoppingUserId(): number {
+  const fromToken = getUserIdFromAccessToken(getAccessToken());
+  const raw = fromToken ?? process.env.EXPO_PUBLIC_DEV_USER_ID?.trim() ?? "1";
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_USER_ID;
+  }
+  return parsed;
+}
+
+function userHeaders(userId = resolveShoppingUserId()) {
   return { "X-User-Id": String(userId) };
 }
 
@@ -23,7 +36,7 @@ function unwrap<T>(envelope: ApiEnvelope<T>): T {
   return envelope.data;
 }
 
-export async function getCart(userId = DEFAULT_USER_ID): Promise<CartApi> {
+export async function getCart(userId = resolveShoppingUserId()): Promise<CartApi> {
   try {
     const response = await shoppingApiClient.get<ApiEnvelope<CartApi>>("/api/v1/carts", {
       headers: userHeaders(userId),
@@ -37,12 +50,12 @@ export async function getCart(userId = DEFAULT_USER_ID): Promise<CartApi> {
 export async function addCartItem(
   productId: string | number,
   quantity = 1,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<CartApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<CartApi>>(
       "/api/v1/carts/items",
-      { productId: Number(productId), quantity },
+      { productId: parseShoppingProductId(productId), quantity },
       { headers: userHeaders(userId) },
     );
     return unwrap(response.data);
@@ -53,7 +66,7 @@ export async function addCartItem(
 
 export async function removeCartItem(
   cartItemId: string | number,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<CartApi> {
   try {
     const response = await shoppingApiClient.delete<ApiEnvelope<CartApi>>(
@@ -69,7 +82,7 @@ export async function removeCartItem(
 export async function changeCartItemQuantity(
   cartItemId: string | number,
   quantity: number,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<CartApi> {
   try {
     const response = await shoppingApiClient.patch<ApiEnvelope<CartApi>>(
@@ -86,7 +99,7 @@ export async function changeCartItemQuantity(
 export async function changeCartItemChecked(
   cartItemId: string | number,
   checked: boolean,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<CartApi> {
   try {
     const response = await shoppingApiClient.patch<ApiEnvelope<CartApi>>(
@@ -101,7 +114,7 @@ export async function changeCartItemChecked(
 }
 
 export async function createShoppingList(
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
@@ -116,7 +129,7 @@ export async function createShoppingList(
 }
 
 export async function getShoppingList(
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.get<ApiEnvelope<ShoppingListApi>>(
@@ -132,12 +145,12 @@ export async function getShoppingList(
 export async function addShoppingListItem(
   productId: string | number,
   quantity = 1,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
       "/api/v1/shopping-lists/items",
-      { productId: Number(productId), quantity },
+      { productId: parseShoppingProductId(productId), quantity },
       { headers: userHeaders(userId) },
     );
     return unwrap(response.data);
@@ -149,7 +162,7 @@ export async function addShoppingListItem(
 export async function changeShoppingListItemQuantity(
   shoppingListItemId: string | number,
   quantity: number,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.patch<ApiEnvelope<ShoppingListApi>>(
@@ -165,7 +178,7 @@ export async function changeShoppingListItemQuantity(
 
 export async function removeShoppingListItem(
   shoppingListItemId: string | number,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.delete<ApiEnvelope<ShoppingListApi>>(
@@ -181,7 +194,7 @@ export async function removeShoppingListItem(
 export async function scanShoppingListItem(
   barcode: string,
   quantity = 1,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
@@ -199,7 +212,7 @@ export async function scanShoppingListItem(
 export async function decreaseShoppingListItemByScan(
   barcode: string,
   quantity = 1,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
@@ -214,7 +227,7 @@ export async function decreaseShoppingListItemByScan(
 }
 
 export async function cancelShopping(
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<void> {
   try {
     await shoppingApiClient.delete<ApiEnvelope<null>>("/api/v1/shopping-lists", {
@@ -301,7 +314,7 @@ export type OrderCreateApi = {
 
 export async function createOrder(
   userCouponId?: number | null,
-  userId = DEFAULT_USER_ID,
+  userId = resolveShoppingUserId(),
 ): Promise<OrderCreateApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<OrderCreateApi>>(
