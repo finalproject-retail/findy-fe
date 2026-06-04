@@ -27,3 +27,18 @@ export type UserProfile = {
   reward: number;
   isFirstLogin: boolean;
 };
+
+/** GET /api/v1/users/me/recent-views */
+export type RecentViewApiDto = {
+  productId: number;
+  productName: string;
+  price: number;
+  thumbnailUrl: string | null;
+  viewedAt: string;
+};
+
+/** POST /api/v1/users/me/recent-views */
+export type RecentViewAddApiDto = {
+  productId: number;
+  viewedAt: string;
+};

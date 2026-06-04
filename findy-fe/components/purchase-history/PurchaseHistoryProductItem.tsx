@@ -1,6 +1,6 @@
 import CartIcon from "@/assets/icons/cart-icon.svg";
 import type { Product } from "@/components/product";
-import { formatPrice } from "@/components/product/formatPrice";
+import { ProductDiscountPriceRow } from "@/components/product/ProductDiscountPriceRow";
 import { isOutOfStock } from "@/components/product/isOutOfStock";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
@@ -93,12 +93,11 @@ export function PurchaseHistoryProductItem({
           </Text>
 
           <View className="flex-row flex-wrap items-center gap-2">
-            <Text className="text-md text-text-red" style={pretendard(700)}>
-              {product.discountPercent}%
-            </Text>
-            <Text className="text-md text-text-main" style={pretendard(700)}>
-              {formatPrice(unitPrice)}
-            </Text>
+            <ProductDiscountPriceRow
+              product={product}
+              salePrice={unitPrice}
+              size="md"
+            />
             <Text className="text-sm text-text-sub2" style={pretendard(400)}>
               |
             </Text>

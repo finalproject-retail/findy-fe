@@ -1,7 +1,10 @@
+import { useAuth } from "@/contexts/AuthContext";
+import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -22,6 +25,7 @@ const RecentSearchContext = createContext<RecentSearchContextValue | null>(
 );
 
 export function RecentSearchProvider({ children }: { children: ReactNode }) {
+  const { isLoggedIn, isLoading } = useAuth();
   const [recentSearches, setRecentSearches] = useState<string[]>(
     DEFAULT_RECENT_SEARCHES,
   );
@@ -42,6 +46,18 @@ export function RecentSearchProvider({ children }: { children: ReactNode }) {
   const clearRecentSearches = useCallback(() => {
     setRecentSearches([]);
   }, []);
+
+  useEffect(
+    () => registerAccountCacheClearListener(clearRecentSearches),
+    [clearRecentSearches],
+  );
+
+  useEffect(() => {
+    if (isLoading || isLoggedIn) {
+      return;
+    }
+    clearRecentSearches();
+  }, [clearRecentSearches, isLoading, isLoggedIn]);
 
   const value = useMemo(
     () => ({

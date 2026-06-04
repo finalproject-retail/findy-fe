@@ -1,5 +1,6 @@
 import { setAccessToken } from "@/lib/api/client";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
+import { clearAccountCache } from "@/lib/auth/clearAccountCache";
 import { isInvalidStoredSessionError } from "@/lib/auth/isInvalidStoredSessionError";
 import {
   resolveNeedsOnboarding,
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   const signOut = useCallback(async () => {
-    await clearStoredSession();
+    await clearAccountCache();
     setAccessToken(null);
     setAccessTokenState(null);
     setIsLoggedIn(false);

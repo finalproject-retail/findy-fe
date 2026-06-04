@@ -8,7 +8,7 @@ import type {
   ShoppingProductSummaryApi,
 } from "@/lib/shopping/types";
 
-const FALLBACK_PRODUCT_IMAGE = require("@/assets/images/product/noodle2.png");
+import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
 
 function toNumber(value: number | string | null | undefined, fallback = 0) {
   if (value == null) return fallback;
@@ -43,19 +43,18 @@ function buildSpec(product: Partial<ShoppingProductApi>): ProductSpec | undefine
 export function mapShoppingProductToProduct(
   product: ShoppingProductSummaryApi | ShoppingProductApi,
 ): Product {
-  const originalPrice = product.originalPrice ?? product.salePrice ?? 0;
-  const salePrice = product.salePrice ?? originalPrice;
+  const originalPrice = product.originalPrice ?? 0;
   const discountPercent = Math.round(toNumber(product.discountRate));
 
   return {
     id: String(product.productId),
     barcode: "barcode" in product ? product.barcode ?? null : null,
     name: buildProductName(product),
-    image: product.imageUrl ? { uri: product.imageUrl } : FALLBACK_PRODUCT_IMAGE,
+    image: resolveProductImageSource(product.imageUrl),
     discountPercent,
-    price: salePrice,
+    price: originalPrice,
     originalPrice,
-    couponPrice: salePrice,
+    couponPrice: originalPrice,
     stockCount: product.stockQuantity ?? 0,
     category:
       "categoryId" in product && product.categoryId != null

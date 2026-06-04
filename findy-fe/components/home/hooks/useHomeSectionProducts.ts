@@ -7,6 +7,7 @@ import {
   MOCK_POPULAR_PRODUCTS,
 } from "@/components/home/mockProducts";
 import type { Product } from "@/components/product";
+import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import {
   fetchFindyRecommendProducts,
   fetchNewProducts,
@@ -95,13 +96,15 @@ export function useHomeSectionProducts({
           return;
         }
 
-        if (fetched.length === 0) {
+        const inStock = filterInStockProducts(fetched);
+
+        if (inStock.length === 0) {
           setProducts(getMockFallback(kind, resolvedLimit));
           setUsingFallback(true);
           return;
         }
 
-        setProducts(fetched.slice(0, resolvedLimit));
+        setProducts(inStock.slice(0, resolvedLimit));
       } catch (error) {
         if (cancelled) {
           return;

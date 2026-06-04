@@ -97,11 +97,11 @@ export default function RootLayout() {
   }
 
   return (
-    <CartProvider>
-      <RecentSearchProvider>
-        <CheckoutProvider>
-          <PurchaseHistoryProvider>
-            <AuthProvider>
+    <AuthProvider>
+      <CartProvider>
+        <RecentSearchProvider>
+          <CheckoutProvider>
+            <PurchaseHistoryProvider>
               <PointsProvider>
                 <StoreMapConfigProvider>
                   <MapNavigationProvider>
@@ -117,10 +117,10 @@ export default function RootLayout() {
                   </MapNavigationProvider>
                 </StoreMapConfigProvider>
               </PointsProvider>
-            </AuthProvider>
-          </PurchaseHistoryProvider>
-        </CheckoutProvider>
-      </RecentSearchProvider>
-    </CartProvider>
+            </PurchaseHistoryProvider>
+          </CheckoutProvider>
+        </RecentSearchProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }

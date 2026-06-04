@@ -38,4 +38,6 @@ export type Product = {
   detailImages?: ImageSourcePropType[];
   /** 상품 상세 — 이 상품에 사용 가능한 쿠폰 목록 */
   availableCoupons?: ProductCoupon[];
+  /** 최근 본 상품 API — 조회 시각 */
+  viewedAt?: string;
 };

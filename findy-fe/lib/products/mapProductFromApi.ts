@@ -1,9 +1,7 @@
-import type { Product, ProductSpec } from "@/components/product/types";
 import { findSubCategory } from "@/components/category/categoryCatalog";
-import { SHOPPING_API_URL } from "@/constants/serviceApi";
+import type { Product, ProductSpec } from "@/components/product/types";
+import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
 import type { ProductApiDto } from "./types";
-
-const PLACEHOLDER_IMAGE = require("@/assets/images/product/green-tea.png");
 
 function resolveId(dto: ProductApiDto): string {
   const raw = dto.productId ?? dto.id;
@@ -14,28 +12,50 @@ function resolveId(dto: ProductApiDto): string {
 }
 
 function resolveImageSource(dto: ProductApiDto): Product["image"] {
-  const url = dto.imageUrl ?? dto.thumbnailUrl ?? dto.image;
-  if (typeof url === "string" && url.trim().length > 0) {
-    const trimmed = url.trim();
-    if (trimmed.startsWith("/")) {
-      return { uri: `${SHOPPING_API_URL}${trimmed}` };
-    }
-    return { uri: trimmed };
-  }
-  return PLACEHOLDER_IMAGE;
+  return resolveProductImageSource(
+    dto.imageUrl ?? (typeof dto.image === "string" ? dto.image : null),
+    dto.thumbnailUrl,
+  );
 }
 
-function resolveDiscountPercent(dto: ProductApiDto, price: number, originalPrice: number) {
+/** 목록 API(ProductResponse)는 originalPrice만 오는 경우가 있어 장바구니 매핑과 동일 규칙 적용 */
+function resolveProductPrices(dto: ProductApiDto): {
+  salePrice: number;
+  originalPrice: number;
+} {
+  const originalPrice = dto.originalPrice ?? dto.salePrice ?? dto.price ?? 0;
+  const salePrice =
+    dto.salePrice ?? dto.price ?? (originalPrice > 0 ? originalPrice : 0);
+
+  return {
+    salePrice: salePrice > 0 ? salePrice : originalPrice,
+    originalPrice: Math.max(
+      originalPrice,
+      salePrice > 0 ? salePrice : originalPrice,
+    ),
+  };
+}
+
+function resolveDiscountPercent(
+  dto: ProductApiDto,
+  salePrice: number,
+  originalPrice: number,
+) {
+  if (salePrice >= originalPrice || originalPrice <= 0) {
+    return 0;
+  }
+
   if (dto.discountPercent != null) {
     return Math.max(0, Math.round(dto.discountPercent));
   }
   if (dto.discountRate != null) {
-    return Math.max(0, Math.round(dto.discountRate));
+    const rate = Number(dto.discountRate);
+    if (Number.isFinite(rate)) {
+      return Math.max(0, Math.round(rate));
+    }
   }
-  if (originalPrice > price && originalPrice > 0) {
-    return Math.round(((originalPrice - price) / originalPrice) * 100);
-  }
-  return 0;
+
+  return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
 }
 
 export function mapProductFromApi(dto: ProductApiDto): Product | null {
@@ -45,21 +65,20 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
     return null;
   }
 
-  const price = dto.salePrice ?? dto.price ?? 0;
-  const originalPrice = dto.originalPrice ?? price;
+  const { salePrice, originalPrice } = resolveProductPrices(dto);
   const stockCount =
     dto.saleStatus === "OUT_OF_STOCK"
       ? 0
-      : dto.stockCount ?? dto.stockQuantity ?? dto.stock;
+      : (dto.stockCount ?? dto.stockQuantity ?? dto.stock);
 
   return {
     id,
     name,
     image: resolveImageSource(dto),
-    discountPercent: resolveDiscountPercent(dto, price, originalPrice),
-    price,
+    discountPercent: resolveDiscountPercent(dto, salePrice, originalPrice),
+    price: salePrice,
     originalPrice,
-    couponPrice: price,
+    couponPrice: salePrice,
     stockCount: stockCount ?? undefined,
     category: dto.category,
   };
@@ -114,13 +133,17 @@ export function mapProductDetailFromApi(dto: ProductApiDto): Product | null {
     allergyInfo: dto.allergyInfo?.trim() || "정보 없음",
   };
 
+  const { salePrice, originalPrice } = resolveProductPrices(dto);
+
   return {
     ...base,
     barcode: dto.barcode?.trim() || undefined,
-    category: resolveCategoryLabel(dto.categoryId, dto.brandName) ?? base.category,
-    originalPrice: dto.originalPrice ?? base.originalPrice,
-    couponPrice: dto.salePrice ?? base.couponPrice,
-    price: dto.salePrice ?? base.price,
+    category:
+      resolveCategoryLabel(dto.categoryId, dto.brandName) ?? base.category,
+    originalPrice,
+    couponPrice: salePrice,
+    price: salePrice,
+    discountPercent: resolveDiscountPercent(dto, salePrice, originalPrice),
     stockCount: resolveDetailStockCount(dto),
     spec,
     detailImages: [image],

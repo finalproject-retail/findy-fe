@@ -11,6 +11,7 @@ const CARD_GAP = 12;
 type ProductRecommendSectionProps = {
   productId: string;
   cardWidth: number;
+  shoppingListAddMode?: boolean;
 };
 
 function getRecommendedProducts(productId: string): Product[] {
@@ -22,6 +23,7 @@ function getRecommendedProducts(productId: string): Product[] {
 export function ProductRecommendSection({
   productId,
   cardWidth,
+  shoppingListAddMode = false,
 }: ProductRecommendSectionProps) {
   const recommended = getRecommendedProducts(productId);
 
@@ -71,7 +73,11 @@ export function ProductRecommendSection({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: CARD_GAP }}
         renderItem={({ item }) => (
-          <RecommendedProductCard product={item} width={cardWidth} />
+          <RecommendedProductCard
+            product={item}
+            width={cardWidth}
+            shoppingListAddMode={shoppingListAddMode}
+          />
         )}
       />
     </View>

@@ -5,7 +5,9 @@ import {
 } from "@/components/map/notifications/buildRelatedProductNotification";
 import type { MapShoppingNotification } from "@/components/map/notifications/types";
 import type { Product } from "@/components/product";
+import { useAuth } from "@/contexts/AuthContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import {
   createContext,
   useCallback,
@@ -48,9 +50,24 @@ function enqueueToast(
   });
 }
 
+function resetMapShoppingNotifications(
+  setNotifications: Dispatch<SetStateAction<MapShoppingNotification[]>>,
+  setActiveToast: Dispatch<SetStateAction<MapShoppingNotification | null>>,
+  toastQueueRef: MutableRefObject<MapShoppingNotification[]>,
+  promoMilestoneRef: MutableRefObject<number>,
+  shownPromoProductIdsRef: MutableRefObject<string[]>,
+) {
+  setNotifications([]);
+  setActiveToast(null);
+  toastQueueRef.current = [];
+  promoMilestoneRef.current = 0;
+  shownPromoProductIdsRef.current = [];
+}
+
 export function MapShoppingNotificationProvider({
   children,
 }: PropsWithChildren) {
+  const { isLoggedIn, isLoading } = useAuth();
   const [notifications, setNotifications] = useState<MapShoppingNotification[]>(
     [],
   );
@@ -60,6 +77,28 @@ export function MapShoppingNotificationProvider({
   const promoMilestoneRef = useRef(0);
   const shownPromoProductIdsRef = useRef<string[]>([]);
   const { hasActiveTrip, addRecommendedMapItem } = useMapNavigation();
+
+  const resetNotifications = useCallback(() => {
+    resetMapShoppingNotifications(
+      setNotifications,
+      setActiveToast,
+      toastQueueRef,
+      promoMilestoneRef,
+      shownPromoProductIdsRef,
+    );
+  }, []);
+
+  useEffect(
+    () => registerAccountCacheClearListener(resetNotifications),
+    [resetNotifications],
+  );
+
+  useEffect(() => {
+    if (isLoading || isLoggedIn) {
+      return;
+    }
+    resetNotifications();
+  }, [isLoading, isLoggedIn, resetNotifications]);
 
   useEffect(() => {
     if (!hasActiveTrip) {

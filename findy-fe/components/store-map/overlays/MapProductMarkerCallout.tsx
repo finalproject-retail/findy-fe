@@ -1,5 +1,5 @@
 import { getUnitPrice } from "@/components/cart/cartItemUtils";
-import { formatPrice, type Product } from "@/components/product";
+import { formatPrice, hasProductDiscount, type Product } from "@/components/product";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
@@ -35,6 +35,7 @@ export function MapProductMarkerCallout({
   pinHeight,
 }: MapProductMarkerCalloutProps) {
   const unitPrice = getUnitPrice(product);
+  const showDiscount = hasProductDiscount(product);
   const calloutHeight = getCalloutHeight(quantity);
   const totalHeight = getCalloutTotalHeight(quantity);
   const left = anchor.x - MAP_CALLOUT_WIDTH / 2;
@@ -67,7 +68,9 @@ export function MapProductMarkerCallout({
             <Text style={styles.quantityLine}>{quantity}개</Text>
           ) : null}
           <View style={styles.priceRow}>
-            <Text style={styles.discount}>{product.discountPercent}%</Text>
+            {showDiscount ? (
+              <Text style={styles.discount}>{product.discountPercent}%</Text>
+            ) : null}
             <Text style={styles.price}>{formatPrice(unitPrice)}</Text>
           </View>
         </View>

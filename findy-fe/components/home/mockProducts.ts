@@ -1,5 +1,5 @@
 import type { Product } from "@/components/product";
-import { isOutOfStock } from "@/components/product/isOutOfStock";
+import { filterInStockProducts } from "@/components/product/isOutOfStock";
 
 export const MOCK_PRODUCTS: Product[] = [
   {
@@ -175,7 +175,7 @@ export const MOCK_PRODUCTS: Product[] = [
 export function getInStockProducts(
   products: Product[] = MOCK_PRODUCTS,
 ): Product[] {
-  return products.filter((product) => !isOutOfStock(product));
+  return filterInStockProducts(products);
 }
 
 export function getProductById(id: string): Product | undefined {
