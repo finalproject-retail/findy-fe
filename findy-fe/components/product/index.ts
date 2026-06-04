@@ -10,7 +10,13 @@ export { ProductCard } from "./ProductCard";
 export { ProductListRow } from "./ProductListRow";
 export { ProductRecommendSection } from "./ProductRecommendSection";
 export { RemainingStockText } from "./RemainingStockText";
-export { isLowStock, isOutOfStock, LOW_STOCK_THRESHOLD } from "./isOutOfStock";
+export {
+  filterInStockProducts,
+  isLowStock,
+  isOutOfStock,
+  LOW_STOCK_THRESHOLD,
+} from "./isOutOfStock";
+export { ProductThumbnail } from "./ProductThumbnail";
 export { formatPrice } from "./formatPrice";
 export { useProductDetail } from "./useProductDetail";
 export type { Product, ProductCoupon } from "./types";
