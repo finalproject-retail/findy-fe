@@ -1,9 +1,12 @@
 import type { Coupon } from "@/components/coupon";
 import type { CartLineItem } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -26,6 +29,7 @@ type CheckoutContextValue = {
 const CheckoutContext = createContext<CheckoutContextValue | null>(null);
 
 export function CheckoutProvider({ children }: PropsWithChildren) {
+  const { isLoggedIn, isLoading } = useAuth();
   const [checkoutItems, setCheckoutItems] = useState<CartLineItem[]>([]);
   const [selectedCoupon, setSelectedCouponState] = useState<Coupon | null>(null);
   const [usedPoints, setUsedPointsState] = useState(0);
@@ -55,6 +59,18 @@ export function CheckoutProvider({ children }: PropsWithChildren) {
     setSelectedCouponState(null);
     setUsedPointsState(0);
   }, []);
+
+  useEffect(
+    () => registerAccountCacheClearListener(clearCheckout),
+    [clearCheckout],
+  );
+
+  useEffect(() => {
+    if (isLoading || isLoggedIn) {
+      return;
+    }
+    clearCheckout();
+  }, [clearCheckout, isLoading, isLoggedIn]);
 
   const setSelectedCoupon = useCallback((coupon: Coupon | null) => {
     setSelectedCouponState(coupon);

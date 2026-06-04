@@ -8,12 +8,15 @@ import {
 } from "@/components/search";
 import { SPACING } from "@/constants/theme";
 import { useRecentSearch } from "@/contexts/RecentSearchContext";
-import { useFocusEffect, useRouter } from "expo-router";
+import { isShoppingListAddModeParam } from "@/constants/searchAddMode";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Keyboard, ScrollView, View } from "react-native";
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { addMode } = useLocalSearchParams<{ addMode?: string | string[] }>();
+  const shoppingListAddMode = isShoppingListAddModeParam(addMode);
   const { recentSearches, addRecentSearch, clearRecentSearches } =
     useRecentSearch();
   const [query, setQuery] = useState("");
@@ -40,7 +43,9 @@ export default function SearchScreen() {
     addRecentSearch(trimmed);
     router.push({
       pathname: "/search/results",
-      params: { q: trimmed },
+      params: shoppingListAddMode
+        ? { q: trimmed, addMode }
+        : { q: trimmed },
     });
   };
 

@@ -42,7 +42,10 @@ export function CartEmptyState({ onAddZone }: CartEmptyStateProps) {
             backgroundColor: COLORS.white,
           }}
         >
-          <Text className="text-md text-charcoal" style={pretendard(500)}>
+          <Text
+            className="text-md"
+            style={{ ...pretendard(600), color: COLORS.main }}
+          >
             구역 고르기
           </Text>
         </Pressable>

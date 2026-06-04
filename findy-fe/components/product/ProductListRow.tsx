@@ -1,11 +1,10 @@
 import { getProductById } from "@/components/home/mockProducts";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { useCart } from "@/contexts/CartContext";
-import {
-  useIsShoppingListMode,
-  useMapNavigation,
-} from "@/contexts/MapNavigationContext";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
+import { useProductAddMode } from "@/components/product/useProductAddMode";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -23,16 +22,19 @@ type ProductListRowProps = {
   product: Product;
   /** false면 하단 구분선 생략 (목록 래퍼에서 처리) */
   showBorder?: boolean;
+  /** 지도 검색 결과 등 — 쇼핑리스트 담기 */
+  shoppingListAddMode?: boolean;
 };
 
 export function ProductListRow({
   product,
   showBorder = true,
+  shoppingListAddMode = false,
 }: ProductListRowProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const { addToCart } = useCart();
-  const isShoppingListMode = useIsShoppingListMode();
+  const isShoppingListMode = useProductAddMode(shoppingListAddMode);
   const { addProductToShoppingTrip } = useMapNavigation();
   const catalogProduct = useMemo(() => {
     const catalogId = resolveCatalogProductId(product.id);
@@ -40,9 +42,7 @@ export function ProductListRow({
   }, [product]);
   const soldOut = isOutOfStock(catalogProduct);
   const stockCount = catalogProduct.stockCount ?? 0;
-  const actionLabel = isShoppingListMode
-    ? "쇼핑 리스트에 추가"
-    : "장바구니 담기";
+  const actionLabel = isShoppingListMode ? "쇼핑리스트 담기" : "장바구니 담기";
   const originalPrice =
     catalogProduct.originalPrice ??
     Math.round(
@@ -50,14 +50,23 @@ export function ProductListRow({
     );
 
   const openProductDetail = () => {
-    router.push(`/product/${resolveCatalogProductId(product.id)}`);
+    const productId = resolveCatalogProductId(product.id);
+    router.push(
+      isShoppingListMode
+        ? {
+            pathname: "/product/[id]",
+            params: { id: productId, addMode: SEARCH_ADD_MODE_SHOPPING_LIST },
+          }
+        : `/product/${productId}`,
+    );
   };
 
   const handleAddPress = () => {
     if (soldOut) return;
     if (isShoppingListMode) {
-      addProductToShoppingTrip(catalogProduct);
-      showToast(TOAST_MESSAGES.addedToShoppingList);
+      void addProductToShoppingTrip(catalogProduct)
+        .then(() => showToast(TOAST_MESSAGES.addedToShoppingList))
+        .catch(console.error);
       return;
     }
     addToCart(catalogProduct)

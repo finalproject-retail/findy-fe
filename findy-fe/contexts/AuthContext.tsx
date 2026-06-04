@@ -1,9 +1,6 @@
 import { setAccessToken } from "@/lib/api/client";
-import {
-  clearStoredSession,
-  loadStoredSession,
-  saveStoredSession,
-} from "@/lib/auth/session";
+import { clearAccountCache } from "@/lib/auth/clearAccountCache";
+import { loadStoredSession, saveStoredSession } from "@/lib/auth/session";
 import {
   createContext,
   useCallback,
@@ -65,7 +62,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await clearStoredSession();
+    await clearAccountCache();
     setAccessToken(null);
     setAccessTokenState(null);
     setIsLoggedIn(false);

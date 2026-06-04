@@ -5,54 +5,97 @@ import {
   RecentlyViewedProductItem,
   RecentlyViewedSearchBar,
   filterRecentlyViewedProducts,
-  getRecentlyViewedPageProducts,
+  useRecentViews,
 } from "@/components/recently-viewed";
-import { SPACING } from "@/constants/theme";
+import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { useMemo, useState } from "react";
-import { FlatList, Text, View } from "react-native";
-
-const PAGE_PRODUCTS = getRecentlyViewedPageProducts();
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
 export default function RecentlyViewedScreen() {
   const [query, setQuery] = useState("");
   const [excludeOutOfStock, setExcludeOutOfStock] = useState(false);
+  const { products, loading, error, reload } = useRecentViews();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
 
   const filteredProducts = useMemo(
-    () => filterRecentlyViewedProducts(PAGE_PRODUCTS, query, excludeOutOfStock),
-    [query, excludeOutOfStock],
+    () => filterRecentlyViewedProducts(products, query, excludeOutOfStock),
+    [products, query, excludeOutOfStock],
   );
 
   return (
     <SafeView>
       <Header title="최근 본 상품" showBack />
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: SPACING.screen,
-          paddingBottom: SPACING.xl,
-        }}
-        ListHeaderComponent={
-          <View style={{ gap: SPACING.md, paddingVertical: SPACING.lg }}>
-            <RecentlyViewedSearchBar value={query} onChangeText={setQuery} />
-            <ExcludeOutOfStockFilter
-              checked={excludeOutOfStock}
-              onChange={setExcludeOutOfStock}
-            />
-          </View>
-        }
-        ListEmptyComponent={
+      {loading && products.length === 0 ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={COLORS.blueText} />
+        </View>
+      ) : error && products.length === 0 ? (
+        <View
+          className="flex-1 items-center justify-center px-screen"
+          style={{ gap: SPACING.md }}
+        >
           <Text
             className="text-center text-md text-text-sub"
-            style={{ ...pretendard(400), paddingTop: SPACING.xl }}
+            style={pretendard(400)}
           >
-            검색 결과가 없습니다.
+            {error}
           </Text>
-        }
-        renderItem={({ item }) => <RecentlyViewedProductItem product={item} />}
-      />
+          <Pressable
+            onPress={() => void reload()}
+            accessibilityRole="button"
+            accessibilityLabel="다시 시도"
+          >
+            <Text className="text-md text-text-blue" style={pretendard(600)}>
+              다시 시도
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: SPACING.screen,
+            paddingBottom: SPACING.xl,
+          }}
+          ListHeaderComponent={
+            <View style={{ gap: SPACING.md, paddingVertical: SPACING.lg }}>
+              <RecentlyViewedSearchBar value={query} onChangeText={setQuery} />
+              <ExcludeOutOfStockFilter
+                checked={excludeOutOfStock}
+                onChange={setExcludeOutOfStock}
+              />
+            </View>
+          }
+          ListEmptyComponent={
+            <Text
+              className="text-center text-md text-text-sub"
+              style={{ ...pretendard(400), paddingTop: SPACING.xl }}
+            >
+              {query.trim() || excludeOutOfStock
+                ? "검색 결과가 없습니다."
+                : "최근 본 상품이 없어요."}
+            </Text>
+          }
+          renderItem={({ item }) => (
+            <RecentlyViewedProductItem product={item} />
+          )}
+        />
+      )}
     </SafeView>
   );
 }

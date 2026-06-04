@@ -1,13 +1,7 @@
 import type { Product } from "@/components/product";
 import type { CartZoneItem } from "@/components/category";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type PropsWithChildren,
-} from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import {
   addCartItem,
   changeCartItemChecked,
@@ -16,7 +10,15 @@ import {
   removeCartItem,
 } from "@/lib/shopping/api";
 import { mapCartApiToLineItems } from "@/lib/shopping/mappers";
-import { useEffect } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from "react";
 
 export type CartLineItem = {
   productId: string;
@@ -57,16 +59,37 @@ function maxQuantityFor(product: Product) {
 }
 
 export function CartProvider({ children }: PropsWithChildren) {
+  const { isLoggedIn, isLoading } = useAuth();
   const [items, setItems] = useState<CartLineItem[]>([]);
   const [zoneItems, setZoneItems] = useState<CartZoneItem[]>([]);
 
+  const resetCartState = useCallback(() => {
+    setItems([]);
+    setZoneItems([]);
+  }, []);
+
+  useEffect(
+    () => registerAccountCacheClearListener(resetCartState),
+    [resetCartState],
+  );
+
   useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+    if (!isLoggedIn) {
+      resetCartState();
+      return;
+    }
+
     getCart()
       .then((cart) => {
         setItems(mapCartApiToLineItems(cart));
       })
-      .catch(console.error);
-  }, []);
+      .catch(() => {
+        resetCartState();
+      });
+  }, [isLoading, isLoggedIn, resetCartState]);
 
   const { availableItems, soldOutItems } = useMemo(() => {
     const available: CartLineItem[] = [];

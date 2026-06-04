@@ -1,10 +1,8 @@
 import { SquareButton } from "@/components/common/SquareButton";
 import { COLORS, SPACING } from "@/constants/theme";
+import { useProductAddMode } from "@/components/product/useProductAddMode";
 import { useCart } from "@/contexts/CartContext";
-import {
-  useIsShoppingListMode,
-  useMapNavigation,
-} from "@/contexts/MapNavigationContext";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -25,7 +23,7 @@ export function ProductDetailCartBar({
 }: ProductDetailCartBarProps) {
   const { showToast } = useToast();
   const { addToCart } = useCart();
-  const isShoppingListMode = useIsShoppingListMode();
+  const isShoppingListMode = useProductAddMode();
   const { addProductToShoppingTrip } = useMapNavigation();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -44,8 +42,13 @@ export function ProductDetailCartBar({
 
   const handleConfirm = async () => {
     if (isShoppingListMode) {
-      addProductToShoppingTrip(product, quantity);
-      showToast(TOAST_MESSAGES.addedToShoppingList);
+      try {
+        await addProductToShoppingTrip(product, quantity);
+        showToast(TOAST_MESSAGES.addedToShoppingList);
+      } catch (error) {
+        console.error(error);
+        return;
+      }
     } else {
       try {
         await addToCart(product, quantity);

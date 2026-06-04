@@ -23,6 +23,9 @@ export function parseApiErrorMessage(error: unknown, fallback: string): string {
     if (Array.isArray(data?.message)) {
       return data.message.join("\n");
     }
+    if (error.response?.status === 500) {
+      return "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+    }
     if (error.message) {
       return error.message;
     }

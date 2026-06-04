@@ -10,6 +10,7 @@ import {
 import { COLORS, SPACING } from "@/constants/theme";
 import { useRecentSearch } from "@/contexts/RecentSearchContext";
 import { pretendard } from "@/utils/pretendard";
+import { isShoppingListAddModeParam } from "@/constants/searchAddMode";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -22,8 +23,12 @@ import {
 
 export default function SearchResultsScreen() {
   const router = useRouter();
-  const { q } = useLocalSearchParams<{ q?: string }>();
+  const { q, addMode } = useLocalSearchParams<{
+    q?: string;
+    addMode?: string | string[];
+  }>();
   const initialQuery = typeof q === "string" ? q : "";
+  const shoppingListAddMode = isShoppingListAddModeParam(addMode);
   const { addRecentSearch } = useRecentSearch();
 
   const [query, setQuery] = useState(initialQuery);
@@ -40,12 +45,19 @@ export default function SearchResultsScreen() {
     const trimmed = query.trim();
     if (!trimmed) return;
     addRecentSearch(trimmed);
-    router.setParams({ q: trimmed });
-  }, [addRecentSearch, query, router]);
+    router.setParams(
+      shoppingListAddMode ? { q: trimmed, addMode } : { q: trimmed },
+    );
+  }, [addMode, addRecentSearch, query, router, shoppingListAddMode]);
 
   const renderItem: ListRenderItem<Product> = useCallback(
-    ({ item }) => <SearchResultProductItem product={item} />,
-    [],
+    ({ item }) => (
+      <SearchResultProductItem
+        product={item}
+        shoppingListAddMode={shoppingListAddMode}
+      />
+    ),
+    [shoppingListAddMode],
   );
 
   const listEmpty = !loading && !error && products.length === 0;
