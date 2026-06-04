@@ -1,25 +1,32 @@
 import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
-import { MOCK_MYPAGE_USER } from "@/components/mypage/mockUser";
+import { useMypageProfile } from "@/components/mypage";
 import {
   SettingsLogoutModal,
   SettingsNavRow,
   SettingsSectionHeader,
   SettingsToggleRow,
 } from "@/components/settings";
-import { SPACING } from "@/constants/theme";
+import { COLORS, SPACING } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
-import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useSettingsPreferences } from "@/contexts/SettingsPreferencesContext";
+import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { showToast } = useToast();
+  const { profile, loading, error, reload } = useMypageProfile();
   const [logoutVisible, setLogoutVisible] = useState(false);
   const {
     notificationEnabled,
@@ -27,6 +34,12 @@ export default function SettingsScreen() {
     setNotificationEnabled,
     setLocationEnabled,
   } = useSettingsPreferences();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
 
   const handleNotificationChange = (next: boolean) => {
     setNotificationEnabled(next);
@@ -63,15 +76,39 @@ export default function SettingsScreen() {
         }}
       >
         <View style={{ paddingTop: SPACING.lg, paddingBottom: SPACING.md }}>
-          <Text className="text-lg text-text-main" style={pretendard(700)}>
-            {MOCK_MYPAGE_USER.name}
-          </Text>
-          <Text
-            className="mt-1 text-sm text-text-sub2"
-            style={pretendard(400)}
-          >
-            {MOCK_MYPAGE_USER.email}
-          </Text>
+          {loading && !profile ? (
+            <ActivityIndicator size="small" color={COLORS.blueText} />
+          ) : error && !profile ? (
+            <View style={{ gap: SPACING.xs }}>
+              <Text className="text-sm text-text-sub2" style={pretendard(400)}>
+                {error}
+              </Text>
+              <Pressable
+                onPress={() => void reload()}
+                accessibilityRole="button"
+                accessibilityLabel="다시 시도"
+              >
+                <Text
+                  className="text-sm text-text-blue"
+                  style={pretendard(600)}
+                >
+                  다시 시도
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <Text className="text-lg text-text-main" style={pretendard(700)}>
+                {profile?.name ?? ""}
+              </Text>
+              <Text
+                className="mt-1 text-sm text-text-sub2"
+                style={pretendard(400)}
+              >
+                {profile?.email ?? ""}
+              </Text>
+            </>
+          )}
         </View>
 
         <SettingsSectionHeader title="개인 정보" />

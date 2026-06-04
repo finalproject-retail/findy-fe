@@ -78,5 +78,6 @@ export function getRecentlyViewedProducts(ids: string[]): Product[] {
 }
 
 export function formatPoints(points: number) {
-  return `${points.toLocaleString("ko-KR")}P`;
+  const normalized = Number.isFinite(points) ? Math.floor(points) : 0;
+  return `${normalized.toLocaleString("ko-KR")}P`;
 }
