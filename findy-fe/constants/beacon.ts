@@ -5,9 +5,7 @@ import { Platform } from "react-native";
 const ANDROID_EMULATOR_HOST = "10.0.2.2";
 
 function resolveMapApiUrl(): string {
-  const fromEnv =
-    process.env.EXPO_PUBLIC_MAP_API_URL?.trim() ||
-    process.env.EXPO_PUBLIC_API_URL?.trim();
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (fromEnv) {
     return fromEnv.replace(/\/$/, "");
   }

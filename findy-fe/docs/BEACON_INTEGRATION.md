@@ -24,10 +24,10 @@ BLE 스캔 (lib/beacon/services/bleScanner)
 ## 환경 변수
 
 ```env
-EXPO_PUBLIC_MAP_API_URL=http://<PC_IP>:8888
+EXPO_PUBLIC_API_URL=http://<PC_IP>:8080
 ```
 
-일반 API는 기존 `EXPO_PUBLIC_API_URL` (Gateway 8080) 그대로.
+일반 API와 map-service API는 모두 `EXPO_PUBLIC_API_URL`을 사용합니다.
 
 ## 실행 (Expo Go 불가)
 
