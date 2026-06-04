@@ -138,7 +138,11 @@ export function ProductListRow({
             {catalogProduct.name}
           </Text>
 
-          <ProductDiscountPriceRow product={catalogProduct} size="md" />
+          <ProductDiscountPriceRow
+            product={catalogProduct}
+            size="md"
+            showOriginalPrice
+          />
         </Pressable>
 
         {!soldOut ? (

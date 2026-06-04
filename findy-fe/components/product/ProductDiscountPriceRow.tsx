@@ -42,6 +42,8 @@ type ProductDiscountPriceRowProps = {
   salePrice?: number;
   size?: PriceTextSize;
   style?: ViewStyle;
+  /** 검색 목록 등 — 취소선 원가 표시 (홈·추천 카드는 false) */
+  showOriginalPrice?: boolean;
 };
 
 export function ProductDiscountPriceRow({
@@ -49,6 +51,7 @@ export function ProductDiscountPriceRow({
   salePrice: salePriceOverride,
   size = "md",
   style,
+  showOriginalPrice = false,
 }: ProductDiscountPriceRowProps) {
   const salePrice = salePriceOverride ?? getSalePrice(product);
   const showDiscount = hasProductDiscount(product);
@@ -71,7 +74,7 @@ export function ProductDiscountPriceRow({
       >
         {formatPrice(salePrice)}
       </Text>
-      {showDiscount ? (
+      {showOriginalPrice && showDiscount ? (
         <Text
           className="text-text-sub"
           style={{
