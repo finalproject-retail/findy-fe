@@ -7,7 +7,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://k8s-findy-findying-86d54789f5-2017036049.ap-northeast-2.elb.amazonaws.com"
+        "EXPO_PUBLIC_API_URL": "https://api.insp1re12131.shop"
       },
       "android": {
         "buildType": "apk"
