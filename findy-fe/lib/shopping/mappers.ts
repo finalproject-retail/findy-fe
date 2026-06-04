@@ -43,8 +43,7 @@ function buildSpec(product: Partial<ShoppingProductApi>): ProductSpec | undefine
 export function mapShoppingProductToProduct(
   product: ShoppingProductSummaryApi | ShoppingProductApi,
 ): Product {
-  const originalPrice = product.originalPrice ?? product.salePrice ?? 0;
-  const salePrice = product.salePrice ?? originalPrice;
+  const originalPrice = product.originalPrice ?? 0;
   const discountPercent = Math.round(toNumber(product.discountRate));
 
   return {
@@ -53,9 +52,9 @@ export function mapShoppingProductToProduct(
     name: buildProductName(product),
     image: product.imageUrl ? { uri: product.imageUrl } : FALLBACK_PRODUCT_IMAGE,
     discountPercent,
-    price: salePrice,
+    price: originalPrice,
     originalPrice,
-    couponPrice: salePrice,
+    couponPrice: originalPrice,
     stockCount: product.stockQuantity ?? 0,
     category:
       "categoryId" in product && product.categoryId != null

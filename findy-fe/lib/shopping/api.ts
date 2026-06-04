@@ -236,9 +236,9 @@ function resolveSort(sort: ProductSearchSort) {
     case "discount":
       return { sortBy: "discountRate", direction: "desc" };
     case "price_asc":
-      return { sortBy: "salePrice", direction: "asc" };
+      return { sortBy: "originalPrice", direction: "asc" };
     case "price_desc":
-      return { sortBy: "salePrice", direction: "desc" };
+      return { sortBy: "originalPrice", direction: "desc" };
     case "popularity":
     default:
       return { sortBy: "createdAt", direction: "desc" };
