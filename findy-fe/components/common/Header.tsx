@@ -18,6 +18,7 @@ export interface HeaderProps {
   title?: string;
   showLogo?: boolean;
   showBack?: boolean;
+  showCenterLogo?: boolean;
   rightIcons?: HeaderRightIcon[];
   onBackPress?: () => void;
   onSearchPress?: () => void;
@@ -28,6 +29,7 @@ export interface HeaderProps {
 export function Header({
   title,
   showLogo = false,
+  showCenterLogo = false,
   showBack = false,
   rightIcons = [],
   onBackPress,
@@ -141,20 +143,24 @@ export function Header({
         ) : null}
       </View>
 
-      {title ? (
-        <View
-          className="absolute inset-0 items-center justify-center px-24"
-          pointerEvents="none"
-        >
-          <Text
-            className="text-lg text-text-main text-center"
-            style={pretendard(700)}
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-        </View>
-      ) : null}
+      {showCenterLogo || title ? (
+  <View
+    className="absolute inset-0 items-center justify-center px-24"
+    pointerEvents="none"
+  >
+    {showCenterLogo ? (
+      <PinkLogo width={68} height={22} accessibilityLabel="Findy" />
+    ) : (
+      <Text
+        className="text-lg text-text-main text-center"
+        style={pretendard(700)}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
+    )}
+  </View>
+) : null}
 
       <View className="z-10 flex-1 flex-row items-center justify-end gap-3">
         {icons.map(renderRightIcon)}
