@@ -20,14 +20,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function PaymentCouponsScreen() {
   const router = useRouter();
   const { selectedCoupon, setSelectedCoupon, checkoutItems } = useCheckout();
-  const { coupons, loading, error, reload } = useOrderCoupons();
-
-  useFocusEffect(
-    useCallback(() => {
-      void reload();
-    }, [reload]),
-  );
-
   const subtotal = useMemo(
     () =>
       checkoutItems.reduce(
@@ -35,6 +27,14 @@ export default function PaymentCouponsScreen() {
         0,
       ),
     [checkoutItems],
+  );
+
+  const { coupons, loading, error, reload } = useOrderCoupons(subtotal);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
   );
 
   const selectableCoupons = useMemo(

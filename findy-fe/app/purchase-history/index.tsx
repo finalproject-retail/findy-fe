@@ -31,7 +31,8 @@ export default function PurchaseHistoryScreen() {
   const [period, setPeriod] = useState<PeriodInquiryValue>(
     getDefaultPeriodInquiryValue,
   );
-  const { orders, loading, error, reload } = usePurchaseHistoryOrders();
+  const { orders, orderDetails, loading, error, reload } =
+    usePurchaseHistoryOrders();
 
   useFocusEffect(
     useCallback(() => {
@@ -40,9 +41,9 @@ export default function PurchaseHistoryScreen() {
   );
 
   const dateGroups = useMemo(() => {
-    const filtered = filterPurchaseHistoryOrders(orders, query);
+    const filtered = filterPurchaseHistoryOrders(orders, query, orderDetails);
     return groupPurchaseHistoryOrdersByDate(filtered);
-  }, [orders, query]);
+  }, [orders, orderDetails, query]);
 
   return (
     <SafeView>
@@ -94,7 +95,11 @@ export default function PurchaseHistoryScreen() {
             </Text>
           ) : (
             dateGroups.map((group) => (
-              <PurchaseHistoryOrderDateSection key={group.date} group={group} />
+              <PurchaseHistoryOrderDateSection
+                key={group.date}
+                group={group}
+                orderDetails={orderDetails}
+              />
             ))
           )}
         </ScrollView>

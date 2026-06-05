@@ -18,7 +18,23 @@ type CouponApiBase = {
   daysLimit?: number | null;
 };
 
-/** GET /api/v1/coupons/me, /available-for-order */
+/** GET /api/v1/coupons/available-for-order */
+export type AvailableOrderCouponApiDto = {
+  userCouponId: number;
+  couponId: number;
+  couponName: string;
+  couponType: string;
+  discountType: string;
+  discountValue: number;
+  minOrderAmount: number;
+  expiresAt: string;
+  expectedDiscountAmount: number;
+  membershipGrade?: string | null;
+  grade?: string | null;
+  targetGrade?: string | null;
+};
+
+/** GET /api/v1/coupons/me */
 export type UserCouponApiDto = CouponApiBase & {
   userCouponId: number;
   isUsed: boolean;
