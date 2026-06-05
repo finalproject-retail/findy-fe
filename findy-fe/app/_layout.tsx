@@ -7,7 +7,6 @@ import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { MapShoppingNotificationProvider } from "@/contexts/MapShoppingNotificationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
-import { PurchaseHistoryProvider } from "@/contexts/PurchaseHistoryContext";
 import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -106,23 +105,21 @@ export default function RootLayout() {
       <CartProvider>
         <RecentSearchProvider>
           <CheckoutProvider>
-            <PurchaseHistoryProvider>
-              <PointsProvider>
-                <StoreMapConfigProvider>
-                  <MapNavigationProvider>
-                    <BeaconLocationProvider>
-                      <MapShoppingNotificationProvider>
-                        <ToastProvider>
-                          <AuthGuard>
-                            <RootLayoutNav />
-                          </AuthGuard>
-                        </ToastProvider>
-                      </MapShoppingNotificationProvider>
-                    </BeaconLocationProvider>
-                  </MapNavigationProvider>
-                </StoreMapConfigProvider>
-              </PointsProvider>
-            </PurchaseHistoryProvider>
+            <PointsProvider>
+              <StoreMapConfigProvider>
+                <MapNavigationProvider>
+                  <BeaconLocationProvider>
+                    <MapShoppingNotificationProvider>
+                      <ToastProvider>
+                        <AuthGuard>
+                          <RootLayoutNav />
+                        </AuthGuard>
+                      </ToastProvider>
+                    </MapShoppingNotificationProvider>
+                  </BeaconLocationProvider>
+                </MapNavigationProvider>
+              </StoreMapConfigProvider>
+            </PointsProvider>
           </CheckoutProvider>
         </RecentSearchProvider>
       </CartProvider>

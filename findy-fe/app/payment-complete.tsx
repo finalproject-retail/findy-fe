@@ -4,7 +4,6 @@ import { COLORS, SPACING } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { usePoints } from "@/contexts/PointsContext";
-import { usePurchaseHistory } from "@/contexts/PurchaseHistoryContext";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -24,7 +23,6 @@ export default function PaymentCompleteScreen() {
   const { checkoutItems, clearCheckout } = useCheckout();
   const { endShoppingTrip } = useMapNavigation();
   const { commitPendingBarcodeRewards } = usePoints();
-  const { addPurchaseFromCheckout } = usePurchaseHistory();
   const purchaseRecordedRef = useRef(false);
 
   useEffect(() => {
@@ -36,16 +34,9 @@ export default function PaymentCompleteScreen() {
     if (purchaseRecordedRef.current) return;
     purchaseRecordedRef.current = true;
 
-    addPurchaseFromCheckout(checkoutItems);
     void commitPendingBarcodeRewards();
     endShoppingTrip();
-  }, [
-    addPurchaseFromCheckout,
-    checkoutItems,
-    commitPendingBarcodeRewards,
-    endShoppingTrip,
-    router,
-  ]);
+  }, [checkoutItems, commitPendingBarcodeRewards, endShoppingTrip, router]);
 
   const handleConfirm = () => {
     clearCheckout();
