@@ -51,8 +51,10 @@ async function fetchByKind(
       return fetchPopularProducts(limit);
     case "findy":
       return fetchFindyRecommendProducts(limit);
-    case "personalized":
-      return fetchPersonalizedRecommendations(limit);
+    case "personalized": {
+      const result = await fetchPersonalizedRecommendations(limit);
+      return result.products;
+    }
   }
 }
 

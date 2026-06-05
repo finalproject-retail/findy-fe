@@ -31,7 +31,7 @@ import {
 
 type MapNavigationContextValue = {
   navigationData: StoreMapNavigationMock;
-  /** null이면 경로 미표시 — 새로고침 후에만 갱신 */
+  /** null이면 경로 미표시 — 쇼핑 시작·새로고침 시 갱신 */
   routeSnapshot: NavigationRouteSnapshot | null;
   navigationRefreshKey: number;
   tripLineItems: CartLineItem[];
@@ -69,6 +69,16 @@ const MapNavigationContext = createContext<MapNavigationContextValue | null>(
 function maxTripQuantity(product: Product) {
   const stock = product.stockCount ?? 99;
   return Math.max(stock, 1);
+}
+
+function buildRouteSnapshot(
+  currentLocation: StoreMapNavigationMock["currentLocation"],
+  shoppingItems: ShoppingMapItem[],
+): NavigationRouteSnapshot {
+  return {
+    currentLocation: { ...currentLocation },
+    shoppingItems: shoppingItems.map((item) => ({ ...item })),
+  };
 }
 
 function mergeTripLineItems(
@@ -134,10 +144,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
             ? prev.shoppingItems
             : [];
 
-      setRouteSnapshot({
-        currentLocation: { ...prev.currentLocation },
-        shoppingItems: shoppingItems.map((item) => ({ ...item })),
-      });
+      setRouteSnapshot(buildRouteSnapshot(prev.currentLocation, shoppingItems));
 
       return {
         ...prev,
@@ -167,11 +174,15 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
       setRecommendedProductsById({});
-      setNavigationData((prev) => ({
-        ...prev,
-        shoppingItems: mapItems,
-        recommendedItems: [],
-      }));
+      setNavigationData((prev) => {
+        setRouteSnapshot(buildRouteSnapshot(prev.currentLocation, mapItems));
+        return {
+          ...prev,
+          shoppingItems: mapItems,
+          recommendedItems: [],
+        };
+      });
+      setNavigationRefreshKey((key) => key + 1);
     },
     [clearPendingBarcodeRewards],
   );
