@@ -6,6 +6,7 @@ import {
 import type { Product } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { MAP_NAVIGATION_EMPTY } from "@/components/store-map/overlays/mock/mapNavigationEmpty";
+import { GRID_COLS } from "@/components/store-map/grid/layout";
 import { fetchCongestionOnRefresh } from "@/components/store-map/overlays/fetchCongestionOnRefresh";
 import type {
   NavigationRouteSnapshot,
@@ -16,6 +17,13 @@ import { resolveCatalogProductId } from "@/components/product/resolveCatalogProd
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
+import { createShoppingPath } from "@/lib/map/api/fetchShoppingPath";
+import {
+  applyGridIdToShoppingItem,
+  destinationGridIdsFromMapItems,
+  orderShoppingItemsByDestinationGridIds,
+} from "@/lib/map/pathUtils";
+import type { PathNavigationApi } from "@/lib/map/types";
 import { addProductToShoppingList } from "@/lib/shopping/addProductToShoppingList";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 import { rollBarcodePointReward } from "@/utils/barcodePointReward";
@@ -33,6 +41,8 @@ type MapNavigationContextValue = {
   navigationData: StoreMapNavigationMock;
   /** null이면 경로 미표시 — 쇼핑 시작·새로고침 시 갱신 */
   routeSnapshot: NavigationRouteSnapshot | null;
+  pathNavigation: PathNavigationApi | null;
+  destinationGridIds: number[];
   navigationRefreshKey: number;
   tripLineItems: CartLineItem[];
   recommendedProductsById: Record<string, Product>;
@@ -41,13 +51,16 @@ type MapNavigationContextValue = {
   shoppingTripActive: boolean;
   hasActiveTrip: boolean;
   activeShoppingListId: number | null;
-  refreshNavigationOverlay: () => void;
+  refreshNavigationOverlay: (storeId: number, gridCols?: number) => Promise<void>;
   applyShoppingItems: (items: ShoppingMapItem[]) => void;
   startShoppingTrip: (
     lineItems: CartLineItem[],
     mapItems: ShoppingMapItem[],
     shoppingListId?: number | null,
+    destinationGridIds?: number[],
   ) => void;
+  /** map-service 경로 API 호출 — route-generating·새로고침에서 사용 */
+  generateShoppingPath: (storeId: number, gridCols?: number) => Promise<boolean>;
   syncShoppingTrip: (
     lineItems: CartLineItem[],
     shoppingListId?: number | null,
@@ -74,10 +87,12 @@ function maxTripQuantity(product: Product) {
 function buildRouteSnapshot(
   currentLocation: StoreMapNavigationMock["currentLocation"],
   shoppingItems: ShoppingMapItem[],
+  pathNavigation?: PathNavigationApi | null,
 ): NavigationRouteSnapshot {
   return {
     currentLocation: { ...currentLocation },
     shoppingItems: shoppingItems.map((item) => ({ ...item })),
+    pathNavigation: pathNavigation ?? null,
   };
 }
 
@@ -120,6 +135,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
   const [routeSnapshot, setRouteSnapshot] =
     useState<NavigationRouteSnapshot | null>(null);
+  const [pathNavigation, setPathNavigation] =
+    useState<PathNavigationApi | null>(null);
+  const [destinationGridIds, setDestinationGridIds] = useState<number[]>([]);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
   const [tripLineItems, setTripLineItems] = useState<CartLineItem[]>([]);
   const [recommendedProductsById, setRecommendedProductsById] = useState<
@@ -135,25 +153,79 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const hasActiveTrip =
     tripLineItems.length > 0 || navigationData.shoppingItems.length > 0;
 
-  const refreshNavigationOverlay = useCallback(() => {
-    setNavigationData((prev) => {
-      const shoppingItems =
+  const applyRouteFromPath = useCallback(
+    (
+      mapItems: ShoppingMapItem[],
+      path: PathNavigationApi | null,
+      gridCols = GRID_COLS,
+    ) => {
+      const normalizedItems = mapItems.map((item) =>
+        applyGridIdToShoppingItem(item, gridCols),
+      );
+      const orderedItems = path
+        ? orderShoppingItemsByDestinationGridIds(
+            normalizedItems,
+            path.destinationGridIds,
+            gridCols,
+          )
+        : normalizedItems;
+
+      setPathNavigation(path);
+      setNavigationData((prev) => {
+        setRouteSnapshot(
+          buildRouteSnapshot(prev.currentLocation, orderedItems, path),
+        );
+        return {
+          ...prev,
+          shoppingItems: orderedItems,
+        };
+      });
+      setNavigationRefreshKey((key) => key + 1);
+    },
+    [],
+  );
+
+  const generateShoppingPath = useCallback(
+    async (storeId: number, gridCols = GRID_COLS) => {
+      if (destinationGridIds.length === 0) {
+        return false;
+      }
+
+      const mapItems =
         tripLineItems.length > 0
           ? tripLineItemsToShoppingMapItems(tripLineItems)
-          : prev.shoppingItems.length > 0
-            ? prev.shoppingItems
-            : [];
+          : navigationData.shoppingItems;
 
-      setRouteSnapshot(buildRouteSnapshot(prev.currentLocation, shoppingItems));
+      try {
+        const path = await createShoppingPath(storeId, destinationGridIds);
+        applyRouteFromPath(mapItems, path, gridCols);
+        return true;
+      } catch (error) {
+        if (__DEV__) {
+          console.warn("[MapNavigation] path API failed:", error);
+        }
+        applyRouteFromPath(mapItems, null, gridCols);
+        return false;
+      }
+    },
+    [
+      applyRouteFromPath,
+      destinationGridIds,
+      navigationData.shoppingItems,
+      tripLineItems,
+    ],
+  );
 
-      return {
+  const refreshNavigationOverlay = useCallback(
+    async (storeId: number, gridCols = GRID_COLS) => {
+      setNavigationData((prev) => ({
         ...prev,
-        shoppingItems,
         beaconCongestion: fetchCongestionOnRefresh(),
-      };
-    });
-    setNavigationRefreshKey((key) => key + 1);
-  }, [tripLineItems]);
+      }));
+      await generateShoppingPath(storeId, gridCols);
+    },
+    [generateShoppingPath],
+  );
 
   const applyShoppingItems = useCallback((items: ShoppingMapItem[]) => {
     setNavigationData((prev) => ({
@@ -167,6 +239,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       lineItems: CartLineItem[],
       mapItems: ShoppingMapItem[],
       shoppingListId?: number | null,
+      nextDestinationGridIds?: number[],
     ) => {
       clearPendingBarcodeRewards();
       setShoppingTripActive(true);
@@ -174,8 +247,12 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
       setRecommendedProductsById({});
+      setPathNavigation(null);
+      setDestinationGridIds(
+        nextDestinationGridIds ?? destinationGridIdsFromMapItems(mapItems, GRID_COLS),
+      );
       setNavigationData((prev) => {
-        setRouteSnapshot(buildRouteSnapshot(prev.currentLocation, mapItems));
+        setRouteSnapshot(buildRouteSnapshot(prev.currentLocation, mapItems, null));
         return {
           ...prev,
           shoppingItems: mapItems,
@@ -218,6 +295,8 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     setPickedQuantityByProductId({});
     setRecommendedProductsById({});
     setRouteSnapshot(null);
+    setPathNavigation(null);
+    setDestinationGridIds([]);
     setNavigationData((prev) => ({
       ...prev,
       shoppingItems: [],
@@ -331,6 +410,8 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     () => ({
       navigationData,
       routeSnapshot,
+      pathNavigation,
+      destinationGridIds,
       navigationRefreshKey,
       tripLineItems,
       recommendedProductsById,
@@ -339,6 +420,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       hasActiveTrip,
       activeShoppingListId,
       refreshNavigationOverlay,
+      generateShoppingPath,
       applyShoppingItems,
       startShoppingTrip,
       syncShoppingTrip,
@@ -354,6 +436,8 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [
       navigationData,
       routeSnapshot,
+      pathNavigation,
+      destinationGridIds,
       navigationRefreshKey,
       tripLineItems,
       recommendedProductsById,
@@ -362,6 +446,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       hasActiveTrip,
       activeShoppingListId,
       refreshNavigationOverlay,
+      generateShoppingPath,
       applyShoppingItems,
       startShoppingTrip,
       syncShoppingTrip,

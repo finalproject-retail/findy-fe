@@ -39,6 +39,7 @@ import {
   SHEET_PEEK_HANDLE_BLOCK_HEIGHT,
 } from "./constants";
 import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
+import { orderShoppingItemsByDestinationGridIds } from "@/lib/map/pathUtils";
 import { orderShoppingMinimumRoute } from "@/components/store-map/overlays/utils/orderShoppingRoute";
 import { ScanBarcodeRequiredModal } from "@/components/map/ScanBarcodeRequiredModal";
 import { MapShoppingSheetEmpty } from "./MapShoppingSheetEmpty";
@@ -98,6 +99,7 @@ export function MapShoppingBottomSheet({
   const { addPendingBarcodeReward, clearPendingBarcodeRewards } = usePoints();
   const {
     navigationData,
+    pathNavigation,
     tripLineItems,
     pickedQuantityByProductId,
     hasActiveTrip,
@@ -109,12 +111,23 @@ export function MapShoppingBottomSheet({
 
   const routeProductIds = useMemo(() => {
     const config = getEmartStoreMapConfig();
+    if (pathNavigation?.destinationGridIds.length) {
+      return orderShoppingItemsByDestinationGridIds(
+        navigationData.shoppingItems,
+        pathNavigation.destinationGridIds,
+        config.cols,
+      ).map((item) => item.id);
+    }
     return orderShoppingMinimumRoute(
       config,
       navigationData.currentLocation,
       navigationData.shoppingItems,
     ).map((item) => item.id);
-  }, [navigationData.currentLocation, navigationData.shoppingItems]);
+  }, [
+    navigationData.currentLocation,
+    navigationData.shoppingItems,
+    pathNavigation,
+  ]);
 
   const sortedTripLineItems = useMemo(
     () =>

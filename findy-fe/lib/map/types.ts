@@ -43,3 +43,18 @@ export type ApiEnvelope<T> = {
   message?: string;
   data?: T;
 };
+
+/** map-service stores/{storeId}/navigation/path */
+export type PathLegApi = {
+  fromGridId: number;
+  toGridId: number;
+  pathGridIds: number[];
+};
+
+export type PathNavigationApi = {
+  storeId: number;
+  currentGridId: number;
+  destinationGridIds: number[];
+  legs: PathLegApi[];
+  fullPathGridIds: number[];
+};

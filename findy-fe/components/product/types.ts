@@ -26,6 +26,8 @@ export type Product = {
   price: number;
   /** 상품 상세 — 카테고리 경로 (예: 간편식품 · 농심) */
   category?: string;
+  /** map-service·경로 API용 매장 격자 id */
+  gridId?: number | null;
   /** 상품 상세 — 쿠폰 적용 전 정가 */
   originalPrice?: number;
   /** 상품 상세 — 쿠폰 적용가 (없으면 price 사용) */

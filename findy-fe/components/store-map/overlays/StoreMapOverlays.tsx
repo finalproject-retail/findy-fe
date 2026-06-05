@@ -19,6 +19,9 @@ import { scaledMarkerSize } from "./utils/overlayScale";
 import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
 import { buildNavigationPathSegmentsFromAisleLegs } from "./utils/buildNavigationPath";
 import { orderShoppingMinimumRoute } from "./utils/orderShoppingRoute";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import { orderShoppingItemsByDestinationGridIds } from "@/lib/map/pathUtils";
+import type { GridNode } from "./utils/aisleGraph";
 import {
   assertAisleCell,
   locationMatchesShoppingStop,
@@ -68,6 +71,13 @@ export function StoreMapOverlays({
     if (!routeSnapshot || routeSnapshot.shoppingItems.length === 0) {
       return [];
     }
+    if (routeSnapshot.pathNavigation?.destinationGridIds.length) {
+      return orderShoppingItemsByDestinationGridIds(
+        routeSnapshot.shoppingItems,
+        routeSnapshot.pathNavigation.destinationGridIds,
+        config.cols,
+      );
+    }
     return orderShoppingMinimumRoute(
       config,
       routeSnapshot.currentLocation,
@@ -78,6 +88,14 @@ export function StoreMapOverlays({
   const aisleLegs = useMemo(() => {
     if (!routeSnapshot || routeOrder.length === 0) {
       return [];
+    }
+    if (routeSnapshot.pathNavigation?.legs.length) {
+      return routeSnapshot.pathNavigation.legs.map((leg) =>
+        leg.pathGridIds.map((gridId): GridNode => {
+          const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
+          return { x: gridX, y: gridY };
+        }),
+      );
     }
     return splitRouteAtShoppingGoals(
       config,
