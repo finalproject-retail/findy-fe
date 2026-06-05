@@ -1,15 +1,14 @@
 import type { Product } from "@/components/product/types";
 import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
 import type { RecentViewApiDto } from "@/lib/auth/types";
+import { resolveStockCountFromApiFields } from "@/lib/products/resolveProductStock";
 
 function resolveRecentViewStockCount(dto: RecentViewApiDto): number | undefined {
-  if (dto.saleStatus === "OUT_OF_STOCK" || dto.stockStatus === "OUT_OF_STOCK") {
-    return 0;
-  }
-  if (dto.stockCount != null && Number.isFinite(dto.stockCount)) {
-    return Math.max(0, Math.round(dto.stockCount));
-  }
-  return undefined;
+  return resolveStockCountFromApiFields({
+    saleStatus: dto.saleStatus,
+    stockStatus: dto.stockStatus,
+    stockCount: dto.stockCount,
+  });
 }
 
 export function mapRecentViewToProduct(dto: RecentViewApiDto): Product | null {

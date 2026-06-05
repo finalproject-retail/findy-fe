@@ -1,3 +1,4 @@
+import { AdminContentFrame } from "@/components/admin/AdminContentFrame";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
@@ -20,24 +21,26 @@ export default function AdminProductsScreen() {
         flexGrow: 1,
       }}
     >
-      <AdminHeader
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        showTitle={!isWide}
-      />
-      <View
-        style={{
-          flex: 1,
-          paddingHorizontal: 20,
-          paddingTop: 40,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text style={{ ...pretendard(600), fontSize: 16, color: ADMIN_COLORS.navyMuted }}>
-          상품 별 성과 화면은 준비 중입니다.
-        </Text>
-      </View>
+      <AdminContentFrame>
+        <AdminHeader
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          showTitle={!isWide}
+        />
+        <View
+          style={{
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingTop: 40,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ ...pretendard(600), fontSize: 16, color: ADMIN_COLORS.navyMuted }}>
+            상품 별 성과 화면은 준비 중입니다.
+          </Text>
+        </View>
+      </AdminContentFrame>
     </ScrollView>
   );
 }

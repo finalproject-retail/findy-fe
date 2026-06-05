@@ -134,7 +134,9 @@ export default function MypageScreen() {
               onSeeAllPress={() => router.push("/recently-viewed")}
             />
             <MypageMenuList
-              onPurchaseHistoryPress={() => router.push("/purchase-history")}
+              onPurchaseHistoryPress={() =>
+                router.push("/purchase-history" as Href)
+              }
               onFaqPress={() => router.push("/faq")}
               onSettingsPress={() => router.push("/settings")}
             />

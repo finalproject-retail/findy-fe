@@ -1,6 +1,7 @@
 import { findSubCategory } from "@/components/category/categoryCatalog";
 import type { Product, ProductSpec } from "@/components/product/types";
 import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
+import { resolveStockCountFromApiFields } from "@/lib/products/resolveProductStock";
 import type { ProductApiDto } from "./types";
 
 function resolveId(dto: ProductApiDto): string {
@@ -83,10 +84,7 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
   }
 
   const { salePrice, originalPrice } = resolveProductPrices(dto);
-  const stockCount =
-    dto.saleStatus === "OUT_OF_STOCK"
-      ? 0
-      : (dto.stockCount ?? dto.stockQuantity ?? dto.stock);
+  const stockCount = resolveStockCountFromApiFields(dto);
 
   return {
     id,
@@ -122,12 +120,9 @@ function resolveCategoryLabel(
 }
 
 function resolveDetailStockCount(dto: ProductApiDto): number | undefined {
-  if (dto.saleStatus === "OUT_OF_STOCK") {
-    return 0;
-  }
-  const raw = dto.stockCount ?? dto.stockQuantity ?? dto.stock;
-  if (raw != null && Number.isFinite(raw)) {
-    return Math.max(0, raw);
+  const stockCount = resolveStockCountFromApiFields(dto);
+  if (stockCount != null) {
+    return stockCount;
   }
   if (dto.saleStatus === "ON_SALE") {
     return undefined;

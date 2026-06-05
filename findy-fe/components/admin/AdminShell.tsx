@@ -1,4 +1,4 @@
-import { ADMIN_COLORS, ADMIN_LAYOUT } from "@/constants/adminTheme";
+import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
 import { type PropsWithChildren } from "react";
 import { View } from "react-native";
@@ -18,11 +18,7 @@ export function AdminShell({ children }: PropsWithChildren) {
         }}
       >
         <AdminSidebar />
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <View style={{ flex: 1, width: "100%", maxWidth: ADMIN_LAYOUT.contentMaxWidth }}>
-            {children}
-          </View>
-        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>{children}</View>
       </View>
     );
   }

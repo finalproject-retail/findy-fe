@@ -6,8 +6,13 @@ import {
   alignProductDtoWithShoppingPrice,
   mapProductsFromApi,
 } from "@/lib/products/mapProductFromApi";
+import { filterInStockProducts } from "@/components/product/isOutOfStock";
+import { enrichProductsWithShoppingStock } from "@/lib/products/enrichProductsWithShoppingStock";
+import { SHOPPING_API_MAX_SECTION_SIZE } from "@/lib/products/constants";
 import type { PersonalizedRecommendationsApiData } from "@/lib/recommendations/types";
 import { recommendationApiClient } from "./recommendationClient";
+
+const HOME_STOCK_OVERFETCH_RATIO = 3;
 
 export type PersonalizedRecommendationsResult = {
   products: Product[];
@@ -55,5 +60,24 @@ export async function fetchPersonalizedRecommendations(
     shoppingStyles: data?.shoppingStyles ?? [],
     preferredCategories: data?.preferredCategories ?? [],
     baseType: data?.baseType,
+  };
+}
+
+/** 홈 온보딩 추천 — 추천 API에 재고가 없어 쇼핑 API로 실시간 재고 반영 후 품절 제외 */
+export async function fetchPersonalizedRecommendationsInStock(
+  size: number,
+): Promise<PersonalizedRecommendationsResult> {
+  const fetchSize = Math.min(
+    Math.max(size, size * HOME_STOCK_OVERFETCH_RATIO),
+    SHOPPING_API_MAX_SECTION_SIZE,
+  );
+
+  const result = await fetchPersonalizedRecommendations(fetchSize);
+  const enriched = await enrichProductsWithShoppingStock(result.products);
+  const inStock = filterInStockProducts(enriched).slice(0, size);
+
+  return {
+    ...result,
+    products: inStock,
   };
 }

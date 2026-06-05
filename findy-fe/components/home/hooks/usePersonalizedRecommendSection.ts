@@ -6,7 +6,7 @@ import { getUserPreferences } from "@/lib/api/preferences";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { resolvePrimaryShoppingStyleLabel } from "@/lib/onboarding/mapShoppingStyleLabel";
 import { buildPersonalizedSectionTitle } from "@/lib/recommendations/buildPersonalizedSectionTitle";
-import { fetchPersonalizedRecommendations } from "@/lib/recommendations/api/fetchPersonalizedRecommendations";
+import { fetchPersonalizedRecommendationsInStock } from "@/lib/recommendations/api/fetchPersonalizedRecommendations";
 import { useEffect, useState } from "react";
 
 type UsePersonalizedRecommendSectionOptions = {
@@ -53,7 +53,7 @@ export function usePersonalizedRecommendSection({
       try {
         const [sectionTitle, recommendations] = await Promise.all([
           resolveSectionTitle(),
-          fetchPersonalizedRecommendations(limit),
+          fetchPersonalizedRecommendationsInStock(limit),
         ]);
 
         if (cancelled) {
@@ -65,7 +65,7 @@ export function usePersonalizedRecommendSection({
         if (recommendations.products.length === 0) {
           setProducts(getInStockProducts().slice(0, limit));
         } else {
-          setProducts(recommendations.products.slice(0, limit));
+          setProducts(recommendations.products);
         }
 
         setVisible(true);
