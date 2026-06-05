@@ -3,6 +3,7 @@ import {
   addShoppingListItem,
   createShoppingList,
 } from "@/lib/shopping/api";
+import { cancelActiveShoppingListIfExists } from "@/lib/shopping/cancelActiveShoppingListIfExists";
 import { syncCartSelectionToServer } from "@/lib/shopping/syncCartSelection";
 import type { ShoppingListApi } from "@/lib/shopping/types";
 
@@ -16,6 +17,8 @@ export async function createShoppingListFromCart(
   }
 
   await syncCartSelectionToServer(allCartLines);
+
+  await cancelActiveShoppingListIfExists();
 
   let shoppingList = await createShoppingList();
 

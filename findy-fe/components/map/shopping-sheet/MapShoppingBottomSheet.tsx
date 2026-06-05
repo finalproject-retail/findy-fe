@@ -5,6 +5,7 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart } from "@/contexts/CartContext";
+import { cancelActiveShoppingListIfExists } from "@/lib/shopping/cancelActiveShoppingListIfExists";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
@@ -72,7 +73,7 @@ export function MapShoppingBottomSheet({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
-  const { addToCart } = useCart();
+  const { addToCart, refreshCart } = useCart();
   const { setCheckoutFromTrip } = useCheckout();
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
@@ -312,16 +313,22 @@ export function MapShoppingBottomSheet({
 
   const handleConfirmShopLater = async () => {
     try {
-      for (const line of tripLineItems) {
-        await addToCart(line.product, line.quantity);
-      }
+      await cancelActiveShoppingListIfExists();
+      await refreshCart();
 
       clearPendingBarcodeRewards();
       endShoppingTrip();
       setShopLaterModalVisible(false);
       router.replace("/(tabs)");
     } catch (error) {
-      console.error(error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "쇼핑을 종료하지 못했습니다. 다시 시도해 주세요.";
+      showToast(message);
+      if (__DEV__) {
+        console.warn("[MapShoppingBottomSheet] shopLater", error);
+      }
     }
   };
 

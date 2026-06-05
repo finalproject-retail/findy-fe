@@ -4,8 +4,19 @@ import {
   saveAdminSession,
 } from "@/lib/admin/adminSession";
 import { setAccessToken } from "@/lib/api/client";
+import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { clearAccountCache } from "@/lib/auth/clearAccountCache";
-import { loadStoredSession, saveStoredSession } from "@/lib/auth/session";
+import { isInvalidStoredSessionError } from "@/lib/auth/isInvalidStoredSessionError";
+import {
+  resolveNeedsOnboarding,
+  withOnboardingFlag,
+} from "@/lib/auth/resolveNeedsOnboarding";
+import {
+  clearStoredSession,
+  loadStoredSession,
+  saveStoredSession,
+} from "@/lib/auth/session";
+import type { UserProfile } from "@/lib/auth/types";
 import {
   createContext,
   useCallback,
@@ -23,15 +34,33 @@ type AuthContextValue = {
   accessToken: string | null;
   signIn: (token: string, options?: { asAdmin?: boolean }) => Promise<void>;
   signOut: () => Promise<void>;
+  markOnboardingComplete: () => void;
+  refreshProfile: () => Promise<UserProfile>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdminSession, setIsAdminSession] = useState(false);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
+
+  const syncProfileStatus = useCallback(async (): Promise<UserProfile> => {
+    setIsProfileLoading(true);
+    try {
+      const profile = await fetchMyProfile();
+      const needsOnboarding = await resolveNeedsOnboarding(profile);
+      setNeedsOnboarding(needsOnboarding);
+      return withOnboardingFlag(profile, needsOnboarding);
+    } catch {
+      setNeedsOnboarding(false);
+      throw new Error("회원 정보를 불러오지 못했습니다.");
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +124,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       accessToken,
       signIn,
       signOut,
+      markOnboardingComplete,
+      refreshProfile: syncProfileStatus,
     }),
     [accessToken, isAdminSession, isLoading, isLoggedIn, signIn, signOut],
   );

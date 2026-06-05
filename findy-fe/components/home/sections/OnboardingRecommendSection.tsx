@@ -1,5 +1,4 @@
-import { HOME_SECTION_LIMITS } from "@/components/home/constants";
-import { useHomeSectionProducts } from "@/components/home/hooks/useHomeSectionProducts";
+import { usePersonalizedRecommendSection } from "@/components/home/hooks/usePersonalizedRecommendSection";
 import { HomeSection } from "@/components/home/HomeSection";
 import { ProductCard } from "@/components/product";
 import { COLORS, SPACING } from "@/constants/theme";
@@ -16,14 +15,16 @@ export function OnboardingRecommendSection({
 }: OnboardingRecommendSectionProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = (screenWidth - SPACING.screen * 2 - CARD_GAP) / 2.7;
-  const { products, loading } = useHomeSectionProducts({
-    kind: "personalized",
+  const { products, title, loading, visible } = usePersonalizedRecommendSection({
     storeId,
-    limit: HOME_SECTION_LIMITS.onboardingRecommend,
   });
 
+  if (!visible) {
+    return null;
+  }
+
   return (
-    <HomeSection title="🔎 1인 가구 김핀디님을 위해 골라왔어요">
+    <HomeSection title={title}>
       {loading ? (
         <View className="items-center py-6">
           <ActivityIndicator color={COLORS.main} />

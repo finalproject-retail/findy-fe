@@ -1,5 +1,6 @@
 import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import { authenticatedUserApiClient } from "@/lib/auth/api/authenticatedUserApiClient";
+import { isAxiosError } from "axios";
 import { mapUserProfileFromApi } from "@/lib/auth/mapUserProfile";
 import type { ApiEnvelope, UserMeApiDto, UserProfile } from "@/lib/auth/types";
 
@@ -16,6 +17,9 @@ export async function fetchMyProfile(): Promise<UserProfile> {
 
     return mapUserProfileFromApi(body.data);
   } catch (error) {
+    if (isAxiosError(error)) {
+      throw error;
+    }
     throw new Error(parseApiErrorMessage(error, "회원 정보를 불러오지 못했습니다."));
   }
 }
