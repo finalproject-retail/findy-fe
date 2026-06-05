@@ -18,7 +18,12 @@ import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { removeCartItem } from "@/lib/shopping/api";
 import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import {
+  dedupeDestinationGridIds,
+  destinationGridIdsFromMapItems,
+} from "@/lib/map/pathUtils";
 import { pretendard } from "@/utils/pretendard";
+import { GRID_COLS } from "@/components/store-map/grid/layout";
 import { type Href, useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -62,6 +67,7 @@ export default function CartScreen() {
     try {
       let shoppingListLines: CartLineItem[] = [];
       let activeShoppingListId: number | null = null;
+      let productDestinationGridIds: number[] = [];
 
       if (hasSelectedProducts) {
         const shoppingList = await createShoppingListFromCart(
@@ -70,6 +76,7 @@ export default function CartScreen() {
         );
         shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
         activeShoppingListId = shoppingList.shoppingListId;
+        productDestinationGridIds = shoppingList.destinationGridIds ?? [];
 
         await Promise.all(
           selectedLines
@@ -92,7 +99,27 @@ export default function CartScreen() {
         }),
       );
 
-      startShoppingTrip(shoppingListLines, mapItems, activeShoppingListId);
+      const productDestinationIds = hasSelectedProducts
+        ? productDestinationGridIds
+        : [];
+      const zoneDestinationGridIds = hasSelectedZones
+        ? destinationGridIdsFromMapItems(zoneMapItems, GRID_COLS)
+        : [];
+      const allDestinationGridIds = dedupeDestinationGridIds([
+        ...productDestinationIds,
+        ...zoneDestinationGridIds,
+      ]);
+      const resolvedDestinationGridIds =
+        allDestinationGridIds.length > 0
+          ? allDestinationGridIds
+          : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
+
+      startShoppingTrip(
+        shoppingListLines,
+        mapItems,
+        activeShoppingListId,
+        resolvedDestinationGridIds,
+      );
 
       if (hasSelectedZones) {
         setZoneItems([]);

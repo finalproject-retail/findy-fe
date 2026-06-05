@@ -1,3 +1,5 @@
+import type { PathNavigationApi } from "@/lib/map/types";
+
 /** 격자 좌표 (col = gridX, row = gridY, 0-index) */
 export type MapGridPoint = {
   gridX: number;
@@ -11,6 +13,8 @@ export type ShoppingMapItem = MapGridPoint & {
   id: string;
   name: string;
   visitOrder: number;
+  /** map-service 경로 API 목적지 격자 */
+  gridId?: number;
 };
 
 /** 추천(광고) — 경로 제외, 격자 한 칸 중심 */
@@ -36,6 +40,8 @@ export type StoreMapNavigationMock = {
 export type NavigationRouteSnapshot = {
   currentLocation: CurrentLocationMock;
   shoppingItems: ShoppingMapItem[];
+  /** map-service 경로 API 응답 — 있으면 로컬 pathfinding 대신 사용 */
+  pathNavigation?: PathNavigationApi | null;
 };
 
 export type MapPixelPoint = {

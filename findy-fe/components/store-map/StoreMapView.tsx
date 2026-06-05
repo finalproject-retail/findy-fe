@@ -61,6 +61,7 @@ type StoreMapViewProps = {
   navigationRefreshKey?: number;
   /** 바코드 수령 완료된 쇼핑 마커 id */
   pickedMarkerIds?: ReadonlySet<string>;
+  pickedQuantityByProductId?: Record<string, number>;
   selectedMarkerProductId?: string | null;
   tripLineItems?: CartLineItem[];
   recommendedProductsById?: Record<string, Product>;
@@ -87,6 +88,7 @@ export function StoreMapView({
   routeSnapshot = null,
   navigationRefreshKey = 0,
   pickedMarkerIds,
+  pickedQuantityByProductId = {},
   selectedMarkerProductId = null,
   tripLineItems = [],
   recommendedProductsById = {},
@@ -557,6 +559,7 @@ export function StoreMapView({
                   routeSnapshot={routeSnapshot}
                   navigationRefreshKey={navigationRefreshKey}
                   pickedMarkerIds={pickedMarkerIds}
+                  pickedQuantityByProductId={pickedQuantityByProductId}
                   selectedMarkerProductId={selectedMarkerProductId}
                   tripLineItems={tripLineItems}
                   recommendedProductsById={recommendedProductsById}

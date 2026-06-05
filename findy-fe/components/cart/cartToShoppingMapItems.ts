@@ -7,6 +7,7 @@ import type {
 } from "@/components/store-map/overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 
 /** 목 데이터 — 상품별 선호 매대 위치 */
 const PRODUCT_GRID_PREFERENCES: Record<string, MapGridPoint> = {
@@ -23,8 +24,15 @@ function getProductGridLocation(
   productId: string,
   category: string | undefined,
   fallbackIndex: number,
-): MapGridPoint {
+  gridId?: number | null,
+): MapGridPoint & { gridId?: number } {
   const config = getEmartStoreMapConfig();
+
+  if (gridId != null) {
+    const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
+    return { gridX, gridY, gridId };
+  }
+
   const preferred = PRODUCT_GRID_PREFERENCES[productId];
 
   if (preferred) {
@@ -58,6 +66,7 @@ export function productToRecommendedMapItem(
     product.id,
     product.category,
     fallbackIndex,
+    product.gridId,
   );
 
   return {
@@ -80,17 +89,17 @@ export function cartToShoppingMapItems(
     if (seen.has(item.productId)) continue;
     seen.add(item.productId);
 
-    const { gridX, gridY } = getProductGridLocation(
+    const location = getProductGridLocation(
       item.productId,
       item.product.category,
       result.length,
+      item.product.gridId,
     );
 
     result.push({
       id: item.productId,
       name: item.product.name,
-      gridX,
-      gridY,
+      ...location,
       visitOrder: result.length + 1,
     });
   }

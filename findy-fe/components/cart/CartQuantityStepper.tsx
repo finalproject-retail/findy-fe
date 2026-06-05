@@ -15,6 +15,8 @@ const STEPPER_SYMBOL_SIZE_COMPACT = 18;
 type CartQuantityStepperProps = {
   quantity: number;
   maxQuantity: number;
+  /** 스캔 수 등 — 이보다 적게는 줄일 수 없음 (기본 1) */
+  minQuantity?: number;
   onDecrease: () => void;
   onIncrease: () => void;
   /** 지도 바텀시트 등 좁은 영역 */
@@ -24,11 +26,12 @@ type CartQuantityStepperProps = {
 export function CartQuantityStepper({
   quantity,
   maxQuantity,
+  minQuantity = MIN_QUANTITY,
   onDecrease,
   onIncrease,
   compact = false,
 }: CartQuantityStepperProps) {
-  const canDecrease = quantity > MIN_QUANTITY;
+  const canDecrease = quantity > minQuantity;
   const canIncrease = quantity < maxQuantity;
   const width = compact ? STEPPER_WIDTH_COMPACT : STEPPER_WIDTH;
   const height = compact ? STEPPER_HEIGHT_COMPACT : STEPPER_HEIGHT;

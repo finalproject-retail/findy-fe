@@ -60,6 +60,7 @@ export function mapShoppingProductToProduct(
       "categoryId" in product && product.categoryId != null
         ? `카테고리 ${product.categoryId}`
         : undefined,
+    gridId: product.gridId ?? null,
     spec: buildSpec(product),
   };
 }

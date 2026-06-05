@@ -51,7 +51,13 @@ export function MapShoppingSheetItem({
   const showDiscount = hasProductDiscount(product);
   const originalPrice = getDisplayOriginalPrice(product);
   const stockCount = getStockCount(product);
-  const maxQuantity = Math.max(stockCount, 1);
+  const serverScanned = item.scannedQuantity ?? 0;
+  /** 스캔 이력이 있으면 − 눌러 바코드 취소 모달로 이어지게 함 (버튼 비활성화 안 함) */
+  const minQuantity = serverScanned > 0 ? 0 : 1;
+  const maxQuantity = Math.max(
+    Math.max(stockCount, quantity),
+    minQuantity,
+  );
   const lowStock = isLowStock(product);
   const recommendCardWidth =
     (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3.1;
@@ -376,6 +382,7 @@ export function MapShoppingSheetItem({
               compact
               quantity={quantity}
               maxQuantity={maxQuantity}
+              minQuantity={minQuantity}
               onDecrease={() => onQuantityChange(quantity - 1)}
               onIncrease={() => onQuantityChange(quantity + 1)}
             />

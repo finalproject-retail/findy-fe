@@ -19,9 +19,12 @@ import { scaledMarkerSize } from "./utils/overlayScale";
 import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
 import { buildNavigationPathSegmentsFromAisleLegs } from "./utils/buildNavigationPath";
 import { orderShoppingMinimumRoute } from "./utils/orderShoppingRoute";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import { orderShoppingItemsByDestinationGridIds } from "@/lib/map/pathUtils";
+import type { GridNode } from "./utils/aisleGraph";
 import {
   assertAisleCell,
-  locationMatchesShoppingStop,
+  isRoutingLegComplete,
   resolveRecommendedMarkers,
   resolveShoppingMarkers,
 } from "./utils/resolveGridMarkers";
@@ -38,6 +41,7 @@ type StoreMapOverlaysProps = {
   navigationRefreshKey?: number;
   /** 바코드 수령 완료된 쇼핑 마커 id (상품 id) */
   pickedMarkerIds?: ReadonlySet<string>;
+  pickedQuantityByProductId?: Record<string, number>;
   selectedMarkerProductId?: string | null;
   tripLineItems?: CartLineItem[];
   recommendedProductsById?: Record<string, Product>;
@@ -56,6 +60,7 @@ export function StoreMapOverlays({
   routeSnapshot = null,
   navigationRefreshKey = 0,
   pickedMarkerIds,
+  pickedQuantityByProductId = {},
   selectedMarkerProductId = null,
   tripLineItems = [],
   recommendedProductsById = {},
@@ -68,6 +73,13 @@ export function StoreMapOverlays({
     if (!routeSnapshot || routeSnapshot.shoppingItems.length === 0) {
       return [];
     }
+    if (routeSnapshot.pathNavigation?.destinationGridIds.length) {
+      return orderShoppingItemsByDestinationGridIds(
+        routeSnapshot.shoppingItems,
+        routeSnapshot.pathNavigation.destinationGridIds,
+        config.cols,
+      );
+    }
     return orderShoppingMinimumRoute(
       config,
       routeSnapshot.currentLocation,
@@ -78,6 +90,14 @@ export function StoreMapOverlays({
   const aisleLegs = useMemo(() => {
     if (!routeSnapshot || routeOrder.length === 0) {
       return [];
+    }
+    if (routeSnapshot.pathNavigation?.legs.length) {
+      return routeSnapshot.pathNavigation.legs.map((leg) =>
+        leg.pathGridIds.map((gridId): GridNode => {
+          const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
+          return { x: gridX, y: gridY };
+        }),
+      );
     }
     return splitRouteAtShoppingGoals(
       config,
@@ -101,18 +121,50 @@ export function StoreMapOverlays({
   useEffect(() => {
     if (activeLegIndex >= routeOrder.length) return;
     const target = routeOrder[activeLegIndex];
-    if (locationMatchesShoppingStop(data.currentLocation, target)) {
+    if (
+      isRoutingLegComplete(
+        data.currentLocation,
+        target,
+        pickedQuantityByProductId,
+      )
+    ) {
       setActiveLegIndex((prev) => Math.min(prev + 1, maxLegIndex));
     }
-  }, [activeLegIndex, data.currentLocation, maxLegIndex, routeOrder]);
+  }, [
+    activeLegIndex,
+    data.currentLocation,
+    maxLegIndex,
+    pickedQuantityByProductId,
+    routeOrder,
+  ]);
 
   const advanceNavigationLeg = useCallback(() => {
     setActiveLegIndex((prev) => Math.min(prev + 1, maxLegIndex));
   }, [maxLegIndex]);
 
   const pathSegments = useMemo(
-    () => buildNavigationPathSegmentsFromAisleLegs(aisleLegs, cellPx, activeLegIndex),
-    [aisleLegs, cellPx, activeLegIndex]
+    () =>
+      buildNavigationPathSegmentsFromAisleLegs(
+        aisleLegs,
+        cellPx,
+        (legIndex) => {
+          if (legIndex < activeLegIndex) {
+            return true;
+          }
+          const target = routeOrder[legIndex];
+          if (!target) {
+            return false;
+          }
+          return (pickedQuantityByProductId[target.id] ?? 0) > 0;
+        },
+      ),
+    [
+      aisleLegs,
+      cellPx,
+      activeLegIndex,
+      routeOrder,
+      pickedQuantityByProductId,
+    ],
   );
 
   const shoppingMarkers = useMemo(

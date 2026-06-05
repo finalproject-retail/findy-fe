@@ -54,6 +54,7 @@ export function MapScreen() {
 
   const {
     storeMapConfig,
+    storeId,
     isLoading: isMapConfigLoading,
     error: mapConfigError,
   } = useStoreMapConfig();
@@ -168,6 +169,7 @@ export function MapScreen() {
             routeSnapshot={routeSnapshot}
             navigationRefreshKey={navigationRefreshKey}
             pickedMarkerIds={pickedMarkerIds}
+            pickedQuantityByProductId={pickedQuantityByProductId}
             selectedMarkerProductId={selectedMarkerProductId}
             tripLineItems={tripLineItems}
             recommendedProductsById={recommendedProductsById}
@@ -193,7 +195,7 @@ export function MapScreen() {
           onToggleRoute={() => setShowRoute((v) => !v)}
           onRefreshPress={() => {
             handleDismissMarkerCallout();
-            refreshNavigationOverlay();
+            void refreshNavigationOverlay(storeId, storeMapConfig.cols);
           }}
         />
       </View>

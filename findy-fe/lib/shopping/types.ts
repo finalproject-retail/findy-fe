@@ -11,6 +11,7 @@ export type ShoppingProductSummaryApi = {
   productId: number;
   brandName: string | null;
   productName: string;
+  gridId?: number | null;
   barcode?: string | null;
   imageUrl: string | null;
   originalPrice: number | null;
@@ -87,6 +88,7 @@ export type ShoppingListApi = {
   totalAmount: number;
   scannedAmount: number;
   items: ShoppingListItemApi[];
+  destinationGridIds?: number[];
 };
 
 export type ShoppingLineItem = {
