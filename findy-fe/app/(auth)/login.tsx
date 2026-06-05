@@ -4,6 +4,7 @@ import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
+import { saveUserPreferences } from "@/lib/api/preferences";
 import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
@@ -219,17 +220,16 @@ export default function LoginScreen() {
         return;
       }
 
-      const userEmail = id.trim();
-      const userName = typeof signupName === "string" ? signupName : "";
-      const completed = await isOnboardingCompleted(userEmail);
-
-      if (completed) {
-        router.replace("/(tabs)");
-      } else {
+      if (profile.isFirstLogin) {
         router.replace({
           pathname: "/onboarding",
-          params: { email: userEmail, name: userName },
+          params: {
+            email: profile.email,
+            name: profile.name || (typeof signupName === "string" ? signupName : ""),
+          },
         } as unknown as Href);
+      } else {
+        router.replace("/(tabs)");
       }
     } catch (error: unknown) {
       Alert.alert("에러", getApiErrorMessage(error));

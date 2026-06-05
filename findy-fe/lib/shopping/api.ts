@@ -1,5 +1,6 @@
 import { getApiErrorMessage } from "@/lib/api";
 import { shoppingApiClient } from "@/lib/products/api/productClient";
+import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
 import { resolveShoppingUserId } from "@/lib/shopping/shoppingUserId";
 
 export { DEFAULT_USER_ID } from "@/lib/shopping/shoppingUserId";
@@ -41,7 +42,7 @@ export async function addCartItem(
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<CartApi>>(
       "/api/v1/carts/items",
-      { productId: Number(productId), quantity },
+      { productId: parseShoppingProductId(productId), quantity },
       { headers: userHeaders(userId) },
     );
     return unwrap(response.data);
@@ -136,7 +137,7 @@ export async function addShoppingListItem(
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
       "/api/v1/shopping-lists/items",
-      { productId: Number(productId), quantity },
+      { productId: parseShoppingProductId(productId), quantity },
       { headers: userHeaders(userId) },
     );
     return unwrap(response.data);

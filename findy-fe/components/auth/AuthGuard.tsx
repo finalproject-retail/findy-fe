@@ -16,7 +16,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading || (isLoggedIn && isProfileLoading)) {
       return;
     }
 
