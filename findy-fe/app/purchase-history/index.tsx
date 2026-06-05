@@ -17,7 +17,7 @@ import {
 } from "@/lib/orders/purchaseHistoryUtils";
 import { pretendard } from "@/utils/pretendard";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -33,11 +33,22 @@ export default function PurchaseHistoryScreen() {
   );
   const { orders, orderDetails, loading, error, reload } =
     usePurchaseHistoryOrders();
+  const periodRef = useRef(period);
+  periodRef.current = period;
+  const isInitialFocus = useRef(true);
+
+  useEffect(() => {
+    void reload(period);
+  }, [period, reload]);
 
   useFocusEffect(
     useCallback(() => {
-      void reload(period);
-    }, [period, reload]),
+      if (isInitialFocus.current) {
+        isInitialFocus.current = false;
+        return;
+      }
+      void reload(periodRef.current);
+    }, [reload]),
   );
 
   const dateGroups = useMemo(() => {
