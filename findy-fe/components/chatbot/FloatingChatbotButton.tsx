@@ -1,30 +1,21 @@
-import { Ionicons } from "@expo/vector-icons";
 import { COLORS, LAYOUT, RADIUS, SPACING } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BUTTON_SIZE = 58;
-const TAB_PATHS = new Set(["/", "/category", "/coupon", "/mypage"]);
-const HIDDEN_PATH_PREFIXES = ["/chatbot", "/login", "/signup", "/onboarding"];
 
 export function FloatingChatbotButton() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
-  const shouldHide = HIDDEN_PATH_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-
-  if (shouldHide) {
+  if (pathname !== "/") {
     return null;
   }
 
-  const isTabPath = TAB_PATHS.has(pathname);
-  const bottom = isTabPath
-    ? LAYOUT.tabBarTotalHeight + insets.bottom + SPACING.md
-    : insets.bottom + SPACING.lg;
+  const bottom = LAYOUT.tabBarTotalHeight + insets.bottom + SPACING.md;
 
   return (
     <Pressable
