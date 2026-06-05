@@ -12,7 +12,7 @@ const ONBOARDING_HREF = "/onboarding" as Href;
  * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
-  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession, needsOnboarding } =
+  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession, isAdminUser, needsOnboarding } =
     useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -42,6 +42,11 @@ export function AuthGuard({ children }: PropsWithChildren) {
       return;
     }
 
+    if (inAdminGroup && !isAdminUser) {
+      router.replace(USER_HOME_HREF);
+      return;
+    }
+
     if (isAdminSession && inUserTabs) {
       router.replace(ADMIN_HOME_HREF);
       return;
@@ -62,6 +67,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
     }
   }, [
     isAdminSession,
+    isAdminUser,
     isLoading,
     isLoggedIn,
     isProfileLoading,

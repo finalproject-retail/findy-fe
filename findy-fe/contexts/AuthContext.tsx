@@ -10,6 +10,7 @@ import {
   resolveNeedsOnboarding,
   withOnboardingFlag,
 } from "@/lib/auth/resolveNeedsOnboarding";
+import { isAdminRole } from "@/lib/auth/roles";
 import {
   loadStoredSession,
   saveStoredSession,
@@ -30,6 +31,7 @@ type AuthContextValue = {
   isLoading: boolean;
   isProfileLoading: boolean;
   isAdminSession: boolean;
+  isAdminUser: boolean;
   needsOnboarding: boolean;
   accessToken: string | null;
   signIn: (
@@ -43,11 +45,21 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function syncAdminSessionFromProfile(profile: UserProfile): Promise<boolean> {
+  if (!profile.isAdmin) {
+    await saveAdminSession(false);
+    return false;
+  }
+
+  return loadAdminSession();
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdminSession, setIsAdminSession] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
 
@@ -56,9 +68,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       const profile = await fetchMyProfile();
       const needs = await resolveNeedsOnboarding(profile);
+      const adminSession = await syncAdminSessionFromProfile(profile);
+
+      setIsAdminUser(profile.isAdmin);
+      setIsAdminSession(adminSession);
       setNeedsOnboarding(needs);
+
       return withOnboardingFlag(profile, needs);
     } catch {
+      setIsAdminUser(false);
+      setIsAdminSession(false);
       setNeedsOnboarding(false);
       throw new Error("회원 정보를 불러오지 못했습니다.");
     } finally {
@@ -75,10 +94,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     async function restoreSession() {
       try {
-        const [stored, adminSession] = await Promise.all([
-          loadStoredSession(),
-          loadAdminSession(),
-        ]);
+        const stored = await loadStoredSession();
         if (cancelled) {
           return;
         }
@@ -87,14 +103,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
           setAccessToken(stored);
           setAccessTokenState(stored);
           setIsLoggedIn(true);
-          setIsAdminSession(adminSession);
 
-          if (!adminSession) {
-            try {
-              await syncProfileStatus();
-            } catch {
-              // 세션 복원 시 프로필 조회 실패는 로그인 화면에서 재시도
-            }
+          try {
+            await syncProfileStatus();
+          } catch {
+            // 세션 복원 시 프로필 조회 실패는 로그인 화면에서 재시도
           }
         }
       } finally {
@@ -143,6 +156,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setAccessTokenState(null);
     setIsLoggedIn(false);
     setIsAdminSession(false);
+    setIsAdminUser(false);
     setNeedsOnboarding(false);
   }, []);
 
@@ -152,6 +166,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isLoading,
       isProfileLoading,
       isAdminSession,
+      isAdminUser,
       needsOnboarding,
       accessToken,
       signIn,
@@ -162,6 +177,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [
       accessToken,
       isAdminSession,
+      isAdminUser,
       isLoading,
       isLoggedIn,
       isProfileLoading,

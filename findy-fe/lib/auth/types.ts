@@ -14,6 +14,7 @@ export type UserMeApiDto = {
   email: string;
   grade: string;
   reward: number;
+  role?: string | null;
   /** Jackson may emit `firstLogin` for record field `isFirstLogin`. */
   isFirstLogin?: boolean;
   firstLogin?: boolean;
@@ -25,6 +26,8 @@ export type UserProfile = {
   name: string;
   grade: MembershipGrade;
   reward: number;
+  role: string;
+  isAdmin: boolean;
   isFirstLogin: boolean;
 };
 
