@@ -1,5 +1,6 @@
 import CategoryIcon from "@/assets/icons/category-icon.svg";
 import HomeIcon from "@/assets/icons/home-icon.svg";
+import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 import { ADMIN_COLORS, ADMIN_LAYOUT } from "@/constants/adminTheme";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
 import { pretendard } from "@/utils/pretendard";
@@ -90,16 +91,21 @@ function NavItem({
 export function AdminSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
         width: ADMIN_LAYOUT.sidebarWidth,
+        flexGrow: 0,
+        flexShrink: 0,
+        alignSelf: "stretch",
         backgroundColor: ADMIN_COLORS.cardBg,
         borderRightWidth: 1,
         borderRightColor: ADMIN_COLORS.border,
         paddingTop: 28,
         paddingHorizontal: 12,
+        paddingBottom: Math.max(insets.bottom, 12),
       }}
     >
       <Text
@@ -113,15 +119,20 @@ export function AdminSidebar() {
       >
         Findy Manager
       </Text>
-      {NAV_ITEMS.map((item) => (
-        <NavItem
-          key={item.label}
-          item={item}
-          active={item.match(pathname)}
-          layout="sidebar"
-          onPress={() => router.push(item.href)}
-        />
-      ))}
+
+      <View style={{ flex: 1 }}>
+        {NAV_ITEMS.map((item) => (
+          <NavItem
+            key={item.label}
+            item={item}
+            active={item.match(pathname)}
+            layout="sidebar"
+            onPress={() => router.push(item.href)}
+          />
+        ))}
+      </View>
+
+      <AdminLogoutButton layout="sidebar" />
     </View>
   );
 }
@@ -151,6 +162,7 @@ export function AdminTabBar() {
           onPress={() => router.push(item.href)}
         />
       ))}
+      <AdminLogoutButton layout="tab" />
     </View>
   );
 }

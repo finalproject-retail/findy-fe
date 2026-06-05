@@ -9,7 +9,14 @@ export function AdminShell({ children }: PropsWithChildren) {
 
   if (isWide) {
     return (
-      <View style={{ flex: 1, flexDirection: "row", backgroundColor: ADMIN_COLORS.pageBg }}>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "stretch",
+          backgroundColor: ADMIN_COLORS.pageBg,
+        }}
+      >
         <AdminSidebar />
         <View style={{ flex: 1, alignItems: "center" }}>
           <View style={{ flex: 1, width: "100%", maxWidth: ADMIN_LAYOUT.contentMaxWidth }}>

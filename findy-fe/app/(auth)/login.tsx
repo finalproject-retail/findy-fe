@@ -28,6 +28,8 @@ type LoginTab = "general" | "admin";
 
 const SOCIAL_BUTTON_SIZE = 56;
 const TAB_BORDER_WIDTH = 2;
+const LOGIN_WEB_MAX_WIDTH = 400;
+const isWeb = Platform.OS === "web";
 
 const styles = StyleSheet.create({
   safe: {
@@ -37,11 +39,20 @@ const styles = StyleSheet.create({
   kav: {
     flex: 1,
   },
+  kavWeb: {
+    alignItems: "center",
+  },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.screen,
     paddingTop: 130,
     paddingBottom: 36,
+  },
+  contentWeb: {
+    width: "100%",
+    maxWidth: LOGIN_WEB_MAX_WIDTH,
+    paddingTop: 100,
+    alignSelf: "center",
   },
   logoSection: {
     alignItems: "center",
@@ -238,10 +249,10 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <KeyboardAvoidingView
-        style={styles.kav}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={[styles.kav, isWeb && styles.kavWeb]}
+        behavior={isWeb ? undefined : Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, isWeb && styles.contentWeb]}>
           <View style={styles.logoSection}>
             <Image
               source={require("@/assets/images/splash-logo.png")}
@@ -313,58 +324,58 @@ export default function LoginScreen() {
                 로그인
               </Button>
 
-            {tab === "general" && (
-              <>
-                <View style={styles.orRow}>
-                  <View style={styles.orLine} />
-                  <Text style={styles.orText}>or</Text>
-                  <View style={styles.orLine} />
-                </View>
+              {tab === "general" && (
+                <>
+                  <View style={styles.orRow}>
+                    <View style={styles.orLine} />
+                    <Text style={styles.orText}>or</Text>
+                    <View style={styles.orLine} />
+                  </View>
 
-                <View style={styles.socialRow}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.socialButton,
-                      pressed && { opacity: 0.85 },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Google로 계속하기"
-                  >
-                    <GoogleLogo
-                      width={SOCIAL_BUTTON_SIZE}
-                      height={SOCIAL_BUTTON_SIZE}
-                    />
-                  </Pressable>
+                  <View style={styles.socialRow}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.socialButton,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Google로 계속하기"
+                    >
+                      <GoogleLogo
+                        width={SOCIAL_BUTTON_SIZE}
+                        height={SOCIAL_BUTTON_SIZE}
+                      />
+                    </Pressable>
 
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.socialButton,
-                      pressed && { opacity: 0.85 },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="카카오로 계속하기"
-                  >
-                    <KakaoLogo
-                      width={SOCIAL_BUTTON_SIZE}
-                      height={SOCIAL_BUTTON_SIZE}
-                    />
-                  </Pressable>
-                </View>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.socialButton,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="카카오로 계속하기"
+                    >
+                      <KakaoLogo
+                        width={SOCIAL_BUTTON_SIZE}
+                        height={SOCIAL_BUTTON_SIZE}
+                      />
+                    </Pressable>
+                  </View>
 
-                <View style={styles.linksRow}>
-                  <Pressable accessibilityRole="button">
-                    <Text style={styles.linkText}>비밀번호 찾기</Text>
-                  </Pressable>
-                  <Text style={styles.linkSep}>|</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push("/signup")}
-                  >
-                    <Text style={styles.linkText}>회원가입</Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
+                  <View style={styles.linksRow}>
+                    <Pressable accessibilityRole="button">
+                      <Text style={styles.linkText}>비밀번호 찾기</Text>
+                    </Pressable>
+                    <Text style={styles.linkSep}>|</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push("/signup")}
+                    >
+                      <Text style={styles.linkText}>회원가입</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </View>
           </Form>
         </View>
