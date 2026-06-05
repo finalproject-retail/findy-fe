@@ -49,7 +49,7 @@ function toggleSelection(current: string[], id: string): string[] {
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { refreshProfile } = useAuth();
+  const { markOnboardingComplete, refreshProfile } = useAuth();
   const params = useLocalSearchParams<{ name?: string; email?: string }>();
 
   const [profileName, setProfileName] = useState(
@@ -105,6 +105,7 @@ export default function OnboardingScreen() {
     setIsSaving(true);
     try {
       await saveUserPreferences({ categoryIds, shoppingStyleIds });
+      markOnboardingComplete();
       await refreshProfile();
       router.replace("/(tabs)");
     } catch (error) {
@@ -114,6 +115,7 @@ export default function OnboardingScreen() {
       setIsSaving(false);
     }
   }, [
+    markOnboardingComplete,
     refreshProfile,
     router,
     selectedCategories,

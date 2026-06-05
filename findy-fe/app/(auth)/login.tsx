@@ -4,7 +4,12 @@ import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
+import {
+  extractAccessToken,
+  extractLoginData,
+  postLogin,
+  resolveIsFirstLoginFromLogin,
+} from "@/lib/auth/api/login";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
 export default function LoginScreen() {
   const router = useRouter();
   const { name: signupName } = useLocalSearchParams<{ name?: string }>();
-  const { signIn, signOut, refreshProfile } = useAuth();
+  const { signIn, signOut } = useAuth();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -203,6 +208,7 @@ export default function LoginScreen() {
     try {
       await signOut();
       const loginBody = await postLogin(id.trim(), password);
+      const loginData = extractLoginData(loginBody);
       const accessToken = extractAccessToken(loginBody);
 
       if (!accessToken) {
@@ -211,22 +217,25 @@ export default function LoginScreen() {
         );
       }
 
-      await signIn(accessToken, { asAdmin: tab === "admin" });
+      const isFirstLogin = resolveIsFirstLoginFromLogin(loginData);
+
+      await signIn(accessToken, {
+        asAdmin: tab === "admin",
+        isFirstLogin: tab === "admin" ? false : isFirstLogin,
+      });
 
       if (tab === "admin") {
         router.replace("/(admin)" as Href);
         return;
       }
 
-      const profile = await refreshProfile();
-
-      if (profile.isFirstLogin) {
+      if (isFirstLogin) {
         router.replace({
           pathname: "/onboarding",
           params: {
-            email: profile.email,
+            email: loginData?.email ?? id.trim(),
             name:
-              profile.name ||
+              loginData?.name ??
               (typeof signupName === "string" ? signupName : ""),
           },
         } as unknown as Href);
