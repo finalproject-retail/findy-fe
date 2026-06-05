@@ -15,7 +15,7 @@ export function FloatingChatbotButton() {
     return null;
   }
 
-  const bottom = LAYOUT.tabBarTotalHeight + insets.bottom + SPACING.md;
+  const bottom = LAYOUT.tabBarTotalHeight + insets.bottom + SPACING.md -15;
 
   return (
     <Pressable
