@@ -1,5 +1,6 @@
 import { MOCK_PRODUCTS } from "@/components/home/mockProducts";
 import type { Product } from "@/components/product";
+import type { ProductSortType } from "./searchTypes";
 
 export const POPULAR_SEARCH_TERMS = [
   "생차녹차",
@@ -33,8 +34,6 @@ export const SEARCH_SUGGESTION_KEYWORDS = [
   "두부",
   "마라탕",
 ] as const;
-
-import type { ProductSortType } from "./searchTypes";
 
 const POPULARITY_ORDER: Record<string, number> = {
   "green-tea": 1,

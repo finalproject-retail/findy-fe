@@ -1,4 +1,4 @@
-import { RADIUS, TYPOGRAPHY } from "@/constants/theme";
+import { TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { Text, View } from "react-native";

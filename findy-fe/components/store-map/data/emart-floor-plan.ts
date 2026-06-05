@@ -17,7 +17,6 @@ import {
   GRID_COLS,
   GRID_ROWS,
   ISLAND_ROW_BANDS,
-  ISLAND_START_COLS,
   CHECKOUT_SHELF_ROWS,
   CHECKOUT_SHELF_Y,
   NUTS_SHELF_ROWS,
@@ -125,7 +124,7 @@ function addIslandBand(
 }
 
 function addRightColumn(units: ShelfUnit[], faces: FaceRect[]) {
-  const pairs: Array<{ id: string; y: number; top: ShelfHalf; bottom: ShelfHalf }> = [
+  const pairs: { id: string; y: number; top: ShelfHalf; bottom: ShelfHalf }[] = [
     { id: "right-43-44", y: 3, top: { shelfNumber: SN(43), category: "냉동식품" }, bottom: { shelfNumber: SN(44), category: "냉동식품" } },
     { id: "right-45-46", y: 8, top: { shelfNumber: SN(45), category: "냉동식품" }, bottom: { shelfNumber: SN(46), category: "냉동식품" } },
     { id: "right-47-48", y: 13, top: { shelfNumber: SN(47), category: "냉동식품" }, bottom: { shelfNumber: SN(48), category: "냉동식품" } },
@@ -319,12 +318,12 @@ function addPerimeterAndService(units: ShelfUnit[], faces: FaceRect[]) {
   );
 
   /** 하단(왼→오): 행사 61 · 가전 60 · 주류 59 */
-  const bottomWallStrips: Array<{
+  const bottomWallStrips: {
     id: string;
     x: number;
     w: number;
     half: ShelfHalf;
-  }> = [
+  }[] = [
     { id: "w-bot-event", x: BOTTOM_WALL_START_X, w: BOTTOM_WALL_EVENT_COLS, half: { shelfNumber: SN(61), category: "행사" } },
     { id: "w-bot-appliance", x: BOTTOM_WALL_APPLIANCE_X, w: BOTTOM_WALL_APPLIANCE_COLS, half: { shelfNumber: SN(60), category: "가전" } },
     { id: "w-bot-liquor", x: BOTTOM_WALL_LIQUOR_X, w: BOTTOM_WALL_LIQUOR_COLS, half: { shelfNumber: SN(59), category: "주류" } },

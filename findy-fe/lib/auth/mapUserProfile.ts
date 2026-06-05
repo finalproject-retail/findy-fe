@@ -1,19 +1,9 @@
-import type { MembershipGrade } from "@/components/mypage/mockUser";
+import { normalizeMembershipGrade } from "@/lib/coupon/membershipGrade";
+import { isAdminRole } from "@/lib/auth/roles";
 import type { UserMeApiDto, UserProfile } from "@/lib/auth/types";
 
-export function mapMembershipGrade(raw: string | null | undefined): MembershipGrade {
-  const normalized = raw?.trim().toLowerCase() ?? "";
-
-  if (normalized === "vip") {
-    return "vip";
-  }
-  if (normalized === "gold") {
-    return "gold";
-  }
-  if (normalized === "silver") {
-    return "silver";
-  }
-  return "bronze";
+export function mapMembershipGrade(raw: string | null | undefined) {
+  return normalizeMembershipGrade(raw) ?? "bronze";
 }
 
 function resolveIsFirstLogin(dto: UserMeApiDto): boolean {
@@ -27,12 +17,16 @@ function resolveIsFirstLogin(dto: UserMeApiDto): boolean {
 }
 
 export function mapUserProfileFromApi(dto: UserMeApiDto): UserProfile {
+  const role = dto.role?.trim() ?? "";
+
   return {
     userId: String(dto.userId),
     email: dto.email,
     name: dto.name,
     grade: mapMembershipGrade(dto.grade),
     reward: dto.reward ?? 0,
+    role,
+    isAdmin: isAdminRole(role),
     isFirstLogin: resolveIsFirstLogin(dto),
   };
 }

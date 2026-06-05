@@ -1,4 +1,5 @@
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { FloatingChatbotButton } from "@/components/chatbot";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
@@ -21,28 +22,32 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="product/[id]" />
-      <Stack.Screen name="points" />
-      <Stack.Screen name="recently-viewed" />
-      <Stack.Screen name="purchase-history" />
-      <Stack.Screen name="faq" />
-      <Stack.Screen name="search" />
-      <Stack.Screen name="category" />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="cart" />
-      <Stack.Screen name="shopping-course" />
-      <Stack.Screen name="route-generating" />
-      <Stack.Screen name="payment" />
-      <Stack.Screen name="payment-coupons" />
-      <Stack.Screen name="payment-qr" />
-      <Stack.Screen name="payment-complete" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-    </Stack>
+    <View className="flex-1">
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="product/[id]" />
+        <Stack.Screen name="points" />
+        <Stack.Screen name="recently-viewed" />
+        <Stack.Screen name="purchase-history" />
+        <Stack.Screen name="faq" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="category" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="cart" />
+        <Stack.Screen name="shopping-course" />
+        <Stack.Screen name="route-generating" />
+        <Stack.Screen name="payment" />
+        <Stack.Screen name="payment-coupons" />
+        <Stack.Screen name="payment-qr" />
+        <Stack.Screen name="payment-complete" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="chatbot" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+      </Stack>
+      <FloatingChatbotButton />
+    </View>
   );
 }
 

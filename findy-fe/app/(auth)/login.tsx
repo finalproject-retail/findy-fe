@@ -1,11 +1,18 @@
 import { Button } from "@/components/common/Button";
+import { Form } from "@/components/common/Form";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiErrorMessage } from "@/lib/api/client";
-import { saveUserPreferences } from "@/lib/api/preferences";
-import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
-import axios from "axios";
+import { getApiErrorMessage, setAccessToken } from "@/lib/api/client";
+import {
+  extractAccessToken,
+  extractLoginData,
+  postLogin,
+  resolveIsFirstLoginFromLogin,
+} from "@/lib/auth/api/login";
+import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
+import { isAdminRole } from "@/lib/auth/roles";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -20,7 +27,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 import GoogleLogo from "@/assets/icons/google_logo.svg";
 import KakaoLogo from "@/assets/icons/kakao_logo.svg";
 
@@ -28,6 +34,8 @@ type LoginTab = "general" | "admin";
 
 const SOCIAL_BUTTON_SIZE = 56;
 const TAB_BORDER_WIDTH = 2;
+const LOGIN_WEB_MAX_WIDTH = 400;
+const isWeb = Platform.OS === "web";
 
 const styles = StyleSheet.create({
   safe: {
@@ -37,11 +45,20 @@ const styles = StyleSheet.create({
   kav: {
     flex: 1,
   },
+  kavWeb: {
+    alignItems: "center",
+  },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.screen,
     paddingTop: 130,
     paddingBottom: 36,
+  },
+  contentWeb: {
+    width: "100%",
+    maxWidth: LOGIN_WEB_MAX_WIDTH,
+    paddingTop: 100,
+    alignSelf: "center",
   },
   logoSection: {
     alignItems: "center",
@@ -106,10 +123,10 @@ const styles = StyleSheet.create({
   },
   fieldsBlock: {
     width: "100%",
-    marginBottom: 32,
   },
   loginActions: {
     width: "100%",
+    marginTop: 32,
   },
   fieldGap: {
     height: 20,
@@ -160,15 +177,16 @@ const styles = StyleSheet.create({
   socialButton: {
     width: SOCIAL_BUTTON_SIZE,
     height: SOCIAL_BUTTON_SIZE,
-    justifyContent: "center", 
+    justifyContent: "center",
     alignItems: "center",
   },
 });
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { name: signupName } = useLocalSearchParams<{ name?: string }>();
-  const { signIn, signOut } = useAuth();
+  const { signIn, signOut, refreshProfile } = useAuth();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -194,6 +212,7 @@ export default function LoginScreen() {
     try {
       await signOut();
       const loginBody = await postLogin(id.trim(), password);
+      const loginData = extractLoginData(loginBody);
       const accessToken = extractAccessToken(loginBody);
 
       if (!accessToken) {
@@ -202,28 +221,50 @@ export default function LoginScreen() {
         );
       }
 
-      const profile = await signIn(accessToken);
+      const isFirstLogin = resolveIsFirstLoginFromLogin(loginData);
 
-      if (profile.isFirstLogin) {
+      setAccessToken(accessToken);
+      const profile = await fetchMyProfile();
+      const isAdmin = isAdminRole(profile.role);
+
+      if (tab === "admin" && !isAdmin) {
+        setAccessToken(null);
+        showToast(TOAST_MESSAGES.loginUseGeneralTab);
+        return;
+      }
+
+      if (tab === "general" && isAdmin) {
+        setAccessToken(null);
+        showToast(TOAST_MESSAGES.loginUseAdminTab);
+        return;
+      }
+
+      await signIn(accessToken, {
+        asAdmin: tab === "admin",
+        isFirstLogin: tab === "admin" ? false : isFirstLogin,
+      });
+      await refreshProfile();
+
+      if (tab === "admin") {
+        router.replace("/(admin)" as Href);
+        return;
+      }
+
+      if (isFirstLogin) {
         router.replace({
           pathname: "/onboarding",
           params: {
-            email: profile.email,
-            name: profile.name || (typeof signupName === "string" ? signupName : ""),
+            email: loginData?.email ?? id.trim(),
+            name:
+              loginData?.name ??
+              (typeof signupName === "string" ? signupName : ""),
           },
         } as unknown as Href);
       } else {
         router.replace("/(tabs)");
       }
     } catch (error: unknown) {
-      let errorMsg = getApiErrorMessage(error);
-      if (axios.isAxiosError(error) && error.response?.data) {
-        const message = (error.response.data as { message?: string | string[] })
-          .message;
-        if (typeof message === "string") errorMsg = message;
-        else if (Array.isArray(message)) errorMsg = message.join("\n");
-      }
-      Alert.alert("에러", errorMsg);
+      Alert.alert("에러", getApiErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -232,10 +273,10 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <KeyboardAvoidingView
-        style={styles.kav}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={[styles.kav, isWeb && styles.kavWeb]}
+        behavior={isWeb ? undefined : Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, isWeb && styles.contentWeb]}>
           <View style={styles.logoSection}>
             <Image
               source={require("@/assets/images/splash-logo.png")}
@@ -279,13 +320,14 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.fieldsBlock}>
+          <Form onSubmit={handleLogin} style={styles.fieldsBlock}>
             <Input
               placeholder="ID"
               value={id}
               onChangeText={setId}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="username"
               error={idError}
             />
             <View style={styles.fieldGap} />
@@ -294,63 +336,72 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
+              onSubmitEditing={handleLogin}
+              returnKeyType="go"
               error={passwordError}
             />
-          </View>
 
-          <View style={styles.loginActions}>
-            <Button onPress={handleLogin} isLoading={isLoading}>
-              로그인
-            </Button>
+            <View style={styles.loginActions}>
+              <Button onPress={handleLogin} isLoading={isLoading}>
+                로그인
+              </Button>
 
-            {tab === "general" && (
-              <>
-                <View style={styles.orRow}>
-                  <View style={styles.orLine} />
-                  <Text style={styles.orText}>or</Text>
-                  <View style={styles.orLine} />
-                </View>
+              {tab === "general" && (
+                <>
+                  <View style={styles.orRow}>
+                    <View style={styles.orLine} />
+                    <Text style={styles.orText}>or</Text>
+                    <View style={styles.orLine} />
+                  </View>
 
-                <View style={styles.socialRow}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.socialButton,
-                      pressed && { opacity: 0.85 },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Google로 계속하기"
-                  >
+                  <View style={styles.socialRow}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.socialButton,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Google로 계속하기"
+                    >
+                      <GoogleLogo
+                        width={SOCIAL_BUTTON_SIZE}
+                        height={SOCIAL_BUTTON_SIZE}
+                      />
+                    </Pressable>
 
-                    <GoogleLogo width={SOCIAL_BUTTON_SIZE} height={SOCIAL_BUTTON_SIZE} />
-                  </Pressable>
-                  
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.socialButton,
-                      pressed && { opacity: 0.85 },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="카카오로 계속하기"
-                  >
-                    <KakaoLogo width={SOCIAL_BUTTON_SIZE} height={SOCIAL_BUTTON_SIZE} />
-                  </Pressable>
-                </View>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.socialButton,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="카카오로 계속하기"
+                    >
+                      <KakaoLogo
+                        width={SOCIAL_BUTTON_SIZE}
+                        height={SOCIAL_BUTTON_SIZE}
+                      />
+                    </Pressable>
+                  </View>
 
-                <View style={styles.linksRow}>
-                  <Pressable accessibilityRole="button">
-                    <Text style={styles.linkText}>비밀번호 찾기</Text>
-                  </Pressable>
-                  <Text style={styles.linkSep}>|</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push("/signup")}
-                  >
-                    <Text style={styles.linkText}>회원가입</Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
+                  <View style={styles.linksRow}>
+                    <Pressable accessibilityRole="button">
+                      <Text style={styles.linkText}>비밀번호 찾기</Text>
+                    </Pressable>
+                    <Text style={styles.linkSep}>|</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push("/signup")}
+                    >
+                      <Text style={styles.linkText}>회원가입</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </View>
+          </Form>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
