@@ -3,7 +3,7 @@ import { Redirect, type Href } from "expo-router";
 import { Image, View } from "react-native";
 
 export default function Index() {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading, isAdminSession } = useAuth();
 
   if (isLoading) {
     return (
@@ -18,7 +18,7 @@ export default function Index() {
   }
 
   if (isLoggedIn) {
-    return <Redirect href={"/(tabs)" as Href} />;
+    return <Redirect href={(isAdminSession ? "/(admin)" : "/(tabs)") as Href} />;
   }
 
   return <Redirect href={"/(auth)/login" as Href} />;

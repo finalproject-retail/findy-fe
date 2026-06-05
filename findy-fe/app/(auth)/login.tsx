@@ -1,4 +1,5 @@
 import { Button } from "@/components/common/Button";
+import { Form } from "@/components/common/Form";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +20,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 
 import GoogleLogo from "@/assets/icons/google_logo.svg";
 import KakaoLogo from "@/assets/icons/kakao_logo.svg";
@@ -106,10 +106,10 @@ const styles = StyleSheet.create({
   },
   fieldsBlock: {
     width: "100%",
-    marginBottom: 32,
   },
   loginActions: {
     width: "100%",
+    marginTop: 32,
   },
   fieldGap: {
     height: 20,
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   socialButton: {
     width: SOCIAL_BUTTON_SIZE,
     height: SOCIAL_BUTTON_SIZE,
-    justifyContent: "center", 
+    justifyContent: "center",
     alignItems: "center",
   },
 });
@@ -202,7 +202,12 @@ export default function LoginScreen() {
         );
       }
 
-      await signIn(accessToken);
+      await signIn(accessToken, { asAdmin: tab === "admin" });
+
+      if (tab === "admin") {
+        router.replace("/(admin)" as Href);
+        return;
+      }
 
       const userEmail = id.trim();
       const userName = typeof signupName === "string" ? signupName : "";
@@ -280,13 +285,14 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.fieldsBlock}>
+          <Form onSubmit={handleLogin} style={styles.fieldsBlock}>
             <Input
               placeholder="ID"
               value={id}
               onChangeText={setId}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="username"
               error={idError}
             />
             <View style={styles.fieldGap} />
@@ -295,14 +301,17 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
+              onSubmitEditing={handleLogin}
+              returnKeyType="go"
               error={passwordError}
             />
-          </View>
 
-          <View style={styles.loginActions}>
-            <Button onPress={handleLogin} isLoading={isLoading}>
-              로그인
-            </Button>
+            <View style={styles.loginActions}>
+              <Button onPress={handleLogin} isLoading={isLoading}>
+                로그인
+              </Button>
 
             {tab === "general" && (
               <>
@@ -321,10 +330,12 @@ export default function LoginScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Google로 계속하기"
                   >
-
-                    <GoogleLogo width={SOCIAL_BUTTON_SIZE} height={SOCIAL_BUTTON_SIZE} />
+                    <GoogleLogo
+                      width={SOCIAL_BUTTON_SIZE}
+                      height={SOCIAL_BUTTON_SIZE}
+                    />
                   </Pressable>
-                  
+
                   <Pressable
                     style={({ pressed }) => [
                       styles.socialButton,
@@ -333,7 +344,10 @@ export default function LoginScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="카카오로 계속하기"
                   >
-                    <KakaoLogo width={SOCIAL_BUTTON_SIZE} height={SOCIAL_BUTTON_SIZE} />
+                    <KakaoLogo
+                      width={SOCIAL_BUTTON_SIZE}
+                      height={SOCIAL_BUTTON_SIZE}
+                    />
                   </Pressable>
                 </View>
 
@@ -351,7 +365,8 @@ export default function LoginScreen() {
                 </View>
               </>
             )}
-          </View>
+            </View>
+          </Form>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

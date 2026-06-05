@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decodeJwtPayload } from "@/lib/auth/getUserIdFromToken";
 
 export const ACCESS_TOKEN_KEY = "findy_access_token";
+export const ADMIN_SESSION_KEY = "findy_admin_session";
 const SESSION_EXPIRES_AT_KEY = "findy_session_expires_at";
 
 function getJwtExpiresAtMs(token: string): number | null {
@@ -37,7 +38,11 @@ function isSessionExpired(expiresAtMs: number | null): boolean {
 }
 
 export async function clearStoredSession(): Promise<void> {
-  await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, SESSION_EXPIRES_AT_KEY]);
+  await AsyncStorage.multiRemove([
+    ACCESS_TOKEN_KEY,
+    SESSION_EXPIRES_AT_KEY,
+    ADMIN_SESSION_KEY,
+  ]);
 }
 
 export async function loadStoredSession(): Promise<string | null> {

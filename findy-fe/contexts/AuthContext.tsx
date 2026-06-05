@@ -1,3 +1,8 @@
+import {
+  clearAdminSession,
+  loadAdminSession,
+  saveAdminSession,
+} from "@/lib/admin/adminSession";
 import { setAccessToken } from "@/lib/api/client";
 import { clearAccountCache } from "@/lib/auth/clearAccountCache";
 import { loadStoredSession, saveStoredSession } from "@/lib/auth/session";
@@ -14,8 +19,9 @@ import {
 type AuthContextValue = {
   isLoggedIn: boolean;
   isLoading: boolean;
+  isAdminSession: boolean;
   accessToken: string | null;
-  signIn: (token: string) => Promise<void>;
+  signIn: (token: string, options?: { asAdmin?: boolean }) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -24,6 +30,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdminSession, setIsAdminSession] = useState(false);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +38,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     async function restoreSession() {
       try {
-        const stored = await loadStoredSession();
+        const [stored, adminSession] = await Promise.all([
+          loadStoredSession(),
+          loadAdminSession(),
+        ]);
         if (cancelled) {
           return;
         }
@@ -39,6 +49,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           setAccessToken(stored);
           setAccessTokenState(stored);
           setIsLoggedIn(true);
+          setIsAdminSession(adminSession);
         }
       } finally {
         if (!cancelled) {
@@ -54,29 +65,38 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const signIn = useCallback(async (token: string) => {
-    await saveStoredSession(token);
-    setAccessToken(token);
-    setAccessTokenState(token);
-    setIsLoggedIn(true);
-  }, []);
+  const signIn = useCallback(
+    async (token: string, options?: { asAdmin?: boolean }) => {
+      const asAdmin = options?.asAdmin ?? false;
+      await saveStoredSession(token);
+      await saveAdminSession(asAdmin);
+      setAccessToken(token);
+      setAccessTokenState(token);
+      setIsLoggedIn(true);
+      setIsAdminSession(asAdmin);
+    },
+    [],
+  );
 
   const signOut = useCallback(async () => {
     await clearAccountCache();
+    await clearAdminSession();
     setAccessToken(null);
     setAccessTokenState(null);
     setIsLoggedIn(false);
+    setIsAdminSession(false);
   }, []);
 
   const value = useMemo(
     () => ({
       isLoggedIn,
       isLoading,
+      isAdminSession,
       accessToken,
       signIn,
       signOut,
     }),
-    [accessToken, isLoading, isLoggedIn, signIn, signOut],
+    [accessToken, isAdminSession, isLoading, isLoggedIn, signIn, signOut],
   );
 
   return (
