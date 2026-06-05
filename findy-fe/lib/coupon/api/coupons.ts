@@ -1,6 +1,7 @@
 import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import type { Coupon } from "@/components/coupon/types";
 import { authenticatedUserApiClient } from "@/lib/auth/api/authenticatedUserApiClient";
+import { buildUserApiHeaders } from "@/lib/auth/api/userApiHeaders";
 import type { ApiEnvelope } from "@/lib/auth/types";
 import {
   extractCouponItem,
@@ -10,9 +11,11 @@ import { mapAvailableCouponsFromApi } from "@/lib/coupon/mapAvailableCouponFromA
 import { mapUserCouponsFromApi } from "@/lib/coupon/mapUserCouponFromApi";
 import type {
   AvailableCouponApiDto,
+  AvailableOrderCouponApiDto,
   CouponListApiData,
   UserCouponApiDto,
 } from "@/lib/coupon/api/types";
+import { mapOrderCouponsFromApi } from "@/lib/coupon/mapOrderCouponFromApi";
 
 const COUPONS_BASE = "/api/v1/coupons";
 
@@ -58,16 +61,21 @@ export async function fetchAvailableCoupons(): Promise<Coupon[]> {
   }
 }
 
-export async function fetchAvailableCouponsForOrder(): Promise<Coupon[]> {
+export async function fetchAvailableCouponsForOrder(
+  orderAmount: number,
+): Promise<Coupon[]> {
   try {
     const response = await authenticatedUserApiClient.get<
-      ApiEnvelope<CouponListApiData | UserCouponApiDto[]>
-    >(`${COUPONS_BASE}/available-for-order`);
+      ApiEnvelope<CouponListApiData | AvailableOrderCouponApiDto[]>
+    >(`${COUPONS_BASE}/available-for-order`, {
+      params: { orderAmount: Math.max(0, Math.round(orderAmount)) },
+      headers: buildUserApiHeaders(),
+    });
 
     assertSuccess(response.data, "사용 가능한 쿠폰을 불러오지 못했습니다.");
 
-    return mapUserCouponsFromApi(
-      extractCouponList<UserCouponApiDto>(response.data.data),
+    return mapOrderCouponsFromApi(
+      extractCouponList<AvailableOrderCouponApiDto>(response.data.data),
     );
   } catch (error) {
     throw new Error(

@@ -2,15 +2,21 @@ import { Header } from "@/components/common";
 import { SquareButton } from "@/components/common/SquareButton";
 import { getUnitPrice } from "@/components/cart";
 import { formatPrice, hasProductDiscount } from "@/components/product";
+import type { MembershipGrade } from "@/components/mypage/mockUser";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { useOrderCoupons } from "@/hooks/useOrderCoupons";
+import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import {
   getCouponDiscountAmount,
   getCouponDiscountLabel,
   isCouponSelectable,
 } from "@/lib/coupon/couponDiscount";
+import {
+  getMembershipRewardRate,
+  getMembershipRewardRateLabel,
+} from "@/lib/coupon/membershipGrade";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -46,7 +52,9 @@ export default function PaymentScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [itemsExpanded, setItemsExpanded] = useState(false);
-  const { balance, pendingBarcodeRewardPoints } = usePoints();
+  const [membershipGrade, setMembershipGrade] =
+    useState<MembershipGrade>("bronze");
+  const { balance, pendingBarcodeRewardPoints, refreshReward } = usePoints();
   const {
     checkoutItems,
     selectedCoupon,
@@ -54,13 +62,6 @@ export default function PaymentScreen() {
     setUsedPoints,
     setSelectedCoupon,
   } = useCheckout();
-  const { coupons, reload: reloadOrderCoupons } = useOrderCoupons();
-
-  useFocusEffect(
-    useCallback(() => {
-      void reloadOrderCoupons();
-    }, [reloadOrderCoupons]),
-  );
 
   const subtotal = useMemo(
     () =>
@@ -69,6 +70,18 @@ export default function PaymentScreen() {
         0,
       ),
     [checkoutItems],
+  );
+
+  const { coupons, reload: reloadOrderCoupons } = useOrderCoupons(subtotal);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadOrderCoupons();
+      void refreshReward();
+      void fetchMyProfile()
+        .then((profile) => setMembershipGrade(profile.grade))
+        .catch(() => undefined);
+    }, [refreshReward, reloadOrderCoupons]),
   );
 
   const couponDiscount = useMemo(
@@ -100,12 +113,13 @@ export default function PaymentScreen() {
   const appliedPoints = Math.min(usedPoints, maxUsablePoints);
   const totalPayment = Math.max(0, subtotal - couponDiscount - appliedPoints);
 
-  const goldMemberEarnPoints = useMemo(
-    () => Math.floor(subtotal * 0.015),
-    [subtotal],
+  const membershipEarnPoints = useMemo(
+    () => Math.floor(subtotal * getMembershipRewardRate(membershipGrade)),
+    [membershipGrade, subtotal],
   );
   const barcodeEarnPoints = pendingBarcodeRewardPoints;
-  const totalEarnPoints = goldMemberEarnPoints + barcodeEarnPoints;
+  const totalEarnPoints = membershipEarnPoints + barcodeEarnPoints;
+  const membershipEarnLabel = getMembershipRewardRateLabel(membershipGrade);
 
   const orderHasMore = checkoutItems.length > ORDER_PREVIEW_MAX;
   const displayedOrderItems = useMemo(() => {
@@ -237,19 +251,22 @@ export default function PaymentScreen() {
             <View style={styles.benefitRow}>
               <Text style={styles.benefitLabel}>포인트</Text>
               <View style={styles.benefitContent}>
-                <View style={[styles.benefitField, styles.benefitFieldPoint]}>
-                  <TextInput
-                    value={
-                      appliedPoints > 0
-                        ? appliedPoints.toLocaleString("ko-KR")
-                        : ""
-                    }
-                    onChangeText={handlePointInput}
-                    placeholder="0"
-                    keyboardType="number-pad"
-                    style={styles.pointInput}
-                  />
-                  <Text style={styles.pointUnit}>원</Text>
+                <View style={styles.benefitField}>
+                  <View style={styles.pointValueRow}>
+                    <TextInput
+                      value={
+                        appliedPoints > 0
+                          ? appliedPoints.toLocaleString("ko-KR")
+                          : ""
+                      }
+                      onChangeText={handlePointInput}
+                      placeholder="0"
+                      placeholderTextColor={COLORS.subText}
+                      keyboardType="number-pad"
+                      style={styles.pointInput}
+                    />
+                    <Text style={styles.pointUnit}>원</Text>
+                  </View>
                 </View>
                 <Pressable
                   style={styles.allPointButton}
@@ -295,9 +312,9 @@ export default function PaymentScreen() {
                 </Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>골드 회원 적립 포인트 (1.5%)</Text>
+                <Text style={styles.summaryLabel}>{membershipEarnLabel}</Text>
                 <Text style={styles.earningDetailValue}>
-                  + {goldMemberEarnPoints.toLocaleString("ko-KR")} P
+                  + {membershipEarnPoints.toLocaleString("ko-KR")} P
                 </Text>
               </View>
               <View style={styles.summaryRow}>
@@ -455,12 +472,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: SPACING.md,
     paddingVertical: 12,
+    justifyContent: "center",
+  },
+  pointValueRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-  },
-  benefitFieldPoint: {
-    justifyContent: "space-between",
+    gap: 2,
   },
   selectValue: {
     ...pretendard(500),
@@ -475,7 +493,8 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   pointInput: {
-    flex: 1,
+    minWidth: 16,
+    maxWidth: 120,
     ...pretendard(600),
     fontSize: TYPOGRAPHY.size.lg,
     color: COLORS.text,
@@ -486,7 +505,6 @@ const styles = StyleSheet.create({
     ...pretendard(600),
     fontSize: TYPOGRAPHY.size.lg,
     color: COLORS.text,
-    marginLeft: 4,
   },
   allPointButton: {
     minWidth: BENEFIT_ACTION_MIN_WIDTH,

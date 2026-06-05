@@ -1,10 +1,16 @@
 import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import { authenticatedUserApiClient } from "@/lib/auth/api/authenticatedUserApiClient";
+import { buildUserApiHeaders } from "@/lib/auth/api/userApiHeaders";
 import type {
   OrderDetailApiDto,
   OrderListApiData,
   OrderSummaryApiDto,
 } from "@/lib/orders/api/types";
+import { enrichOrderItemsWithProductInfo } from "@/lib/orders/enrichOrderItemsWithProductInfo";
+import {
+  mapOrderDetailFromApi,
+  mapOrderSummaryFromApi,
+} from "@/lib/orders/mapOrderFromApi";
 
 const ORDERS_BASE = "/api/v1/orders";
 
@@ -45,11 +51,16 @@ export async function fetchOrders(
   try {
     const response = await authenticatedUserApiClient.get<
       OrdersApiEnvelope<OrderListApiData | OrderSummaryApiDto[]>
-    >(ORDERS_BASE, { params });
+    >(ORDERS_BASE, {
+      params,
+      headers: buildUserApiHeaders(),
+    });
 
     assertOrdersSuccess(response.data, "구매 내역을 불러오지 못했습니다.");
 
-    return extractOrderList(response.data.data);
+    return extractOrderList(response.data.data).map((order) =>
+      mapOrderSummaryFromApi(order),
+    );
   } catch (error) {
     throw new Error(
       parseApiErrorMessage(error, "구매 내역을 불러오지 못했습니다."),
@@ -61,7 +72,9 @@ export async function fetchOrderDetail(orderId: number): Promise<OrderDetailApiD
   try {
     const response = await authenticatedUserApiClient.get<
       OrdersApiEnvelope<OrderDetailApiDto>
-    >(`${ORDERS_BASE}/${orderId}`);
+    >(`${ORDERS_BASE}/${orderId}`, {
+      headers: buildUserApiHeaders(),
+    });
 
     assertOrdersSuccess(response.data, "구매 내역 상세를 불러오지 못했습니다.");
 
@@ -69,7 +82,10 @@ export async function fetchOrderDetail(orderId: number): Promise<OrderDetailApiD
       throw new Error("구매 내역 상세를 불러오지 못했습니다.");
     }
 
-    return response.data.data;
+    const mapped = mapOrderDetailFromApi(response.data.data);
+    const items = await enrichOrderItemsWithProductInfo(mapped.items);
+
+    return { ...mapped, items };
   } catch (error) {
     throw new Error(
       parseApiErrorMessage(error, "구매 내역 상세를 불러오지 못했습니다."),
