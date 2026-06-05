@@ -1,4 +1,8 @@
-export function formatCouponExpireLabel(iso: string): string {
+export function formatCouponExpireLabel(iso?: string | null): string {
+  if (!iso?.trim()) {
+    return "유효기간 정보 없음";
+  }
+
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return iso;

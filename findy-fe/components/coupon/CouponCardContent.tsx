@@ -8,6 +8,9 @@ type CouponCardContentProps = {
   showDiscountChevron?: boolean;
 };
 
+/** 최소 구매 조건 유무와 관계없이 카드 높이 맞춤 */
+const MIN_PURCHASE_ROW_HEIGHT = 18;
+
 export function CouponCardContent({
   coupon,
   showDiscountChevron = true,
@@ -35,11 +38,13 @@ export function CouponCardContent({
       >
         {coupon.name}
       </Text>
-      {coupon.minPurchaseAmount > 0 ? (
-        <Text className="text-sm text-text-sub2" style={pretendard(400)}>
-          {coupon.minPurchaseAmount.toLocaleString("ko-KR")}원 이상 구매 시
-        </Text>
-      ) : null}
+      <View style={{ minHeight: MIN_PURCHASE_ROW_HEIGHT, justifyContent: "center" }}>
+        {coupon.minPurchaseAmount > 0 ? (
+          <Text className="text-sm text-text-sub2" style={pretendard(400)}>
+            {coupon.minPurchaseAmount.toLocaleString("ko-KR")}원 이상 구매 시
+          </Text>
+        ) : null}
+      </View>
       <Text className="text-sm text-text-sub2" style={pretendard(400)}>
         {coupon.expiresAtLabel}
       </Text>
