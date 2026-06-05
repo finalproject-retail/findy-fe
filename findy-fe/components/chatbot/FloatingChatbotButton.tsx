@@ -18,17 +18,15 @@ export function FloatingChatbotButton() {
     return null;
   }
 
-  // 일반 사용자 홈 탭에서만 표시 (관리자 홈도 pathname이 "/"일 수 있음)
-  const tabSegment = segments[1];
+  const tabSegment = segments.at(1);
   const onUserHome =
-    rootSegment === "(tabs)" &&
-    (tabSegment == null || tabSegment === "index");
+    rootSegment === "(tabs)" && (tabSegment == null || tabSegment === "index");
 
   if (!onUserHome) {
     return null;
   }
 
-  const bottom = LAYOUT.tabBarTotalHeight + insets.bottom + SPACING.md -15;
+  const bottom = LAYOUT.tabBarTotalHeight + insets.bottom + SPACING.md - 15;
 
   return (
     <Pressable
