@@ -1,6 +1,6 @@
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -28,7 +28,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "bot-guide",
     sender: "bot",
-    text: "궁금한 내용을 입력하거나 아래 빠른 질문을 선택해 주세요.",
+    text: "궁금한 내용을 입력하거나 아래 빠른 질문을 선택해주세요.",
   },
 ];
 
@@ -74,7 +74,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           className="mr-sm items-center justify-center rounded-full bg-sub"
           style={{ width: 32, height: 32 }}
         >
-          <Ionicons name="chatbubble-ellipses" size={18} color={COLORS.main} />
+          <MaterialCommunityIcons name="robot" size={19} color={COLORS.main} />
         </View>
       ) : null}
       <View

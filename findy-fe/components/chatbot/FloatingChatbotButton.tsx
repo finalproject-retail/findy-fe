@@ -1,10 +1,10 @@
 import { COLORS, LAYOUT, RADIUS, SPACING } from "@/constants/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const BUTTON_SIZE = 58;
+const BUTTON_SIZE = 55;
 
 export function FloatingChatbotButton() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export function FloatingChatbotButton() {
         zIndex: 100,
       }}
     >
-      <Ionicons name="chatbubble-ellipses" size={27} color={COLORS.white} />
+      <MaterialCommunityIcons name="robot" size={30} color={COLORS.white} />
     </Pressable>
   );
 }
