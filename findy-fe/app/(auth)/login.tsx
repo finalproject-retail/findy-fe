@@ -2,14 +2,17 @@ import { Button } from "@/components/common/Button";
 import { Form } from "@/components/common/Form";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiErrorMessage } from "@/lib/api/client";
+import { getApiErrorMessage, setAccessToken } from "@/lib/api/client";
 import {
   extractAccessToken,
   extractLoginData,
   postLogin,
   resolveIsFirstLoginFromLogin,
 } from "@/lib/auth/api/login";
+import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
+import { isAdminRole } from "@/lib/auth/roles";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -181,8 +184,9 @@ const styles = StyleSheet.create({
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { name: signupName } = useLocalSearchParams<{ name?: string }>();
-  const { signIn, signOut } = useAuth();
+  const { signIn, signOut, refreshProfile } = useAuth();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -219,10 +223,27 @@ export default function LoginScreen() {
 
       const isFirstLogin = resolveIsFirstLoginFromLogin(loginData);
 
+      setAccessToken(accessToken);
+      const profile = await fetchMyProfile();
+      const isAdmin = isAdminRole(profile.role);
+
+      if (tab === "admin" && !isAdmin) {
+        setAccessToken(null);
+        showToast(TOAST_MESSAGES.loginUseGeneralTab);
+        return;
+      }
+
+      if (tab === "general" && isAdmin) {
+        setAccessToken(null);
+        showToast(TOAST_MESSAGES.loginUseAdminTab);
+        return;
+      }
+
       await signIn(accessToken, {
         asAdmin: tab === "admin",
         isFirstLogin: tab === "admin" ? false : isFirstLogin,
       });
+      await refreshProfile();
 
       if (tab === "admin") {
         router.replace("/(admin)" as Href);
