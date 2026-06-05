@@ -32,7 +32,10 @@ type AuthContextValue = {
   isAdminSession: boolean;
   needsOnboarding: boolean;
   accessToken: string | null;
-  signIn: (token: string, options?: { asAdmin?: boolean }) => Promise<void>;
+  signIn: (
+    token: string,
+    options?: { asAdmin?: boolean; isFirstLogin?: boolean },
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   markOnboardingComplete: () => void;
   refreshProfile: () => Promise<UserProfile>;
@@ -109,7 +112,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [syncProfileStatus]);
 
   const signIn = useCallback(
-    async (token: string, options?: { asAdmin?: boolean }) => {
+    async (
+      token: string,
+      options?: { asAdmin?: boolean; isFirstLogin?: boolean },
+    ) => {
       const asAdmin = options?.asAdmin ?? false;
       await saveStoredSession(token);
       await saveAdminSession(asAdmin);
@@ -120,6 +126,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       if (asAdmin) {
         setNeedsOnboarding(false);
+        return;
+      }
+
+      if (typeof options?.isFirstLogin === "boolean") {
+        setNeedsOnboarding(options.isFirstLogin);
       }
     },
     [],

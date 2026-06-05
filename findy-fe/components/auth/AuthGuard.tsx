@@ -5,13 +5,15 @@ import { useEffect, type PropsWithChildren } from "react";
 const LOGIN_HREF = "/(auth)/login" as Href;
 const USER_HOME_HREF = "/(tabs)" as Href;
 const ADMIN_HOME_HREF = "/(admin)" as Href;
+const ONBOARDING_HREF = "/onboarding" as Href;
 
 /**
  * 로그인 없이 보호된 화면 접근 시 로그인으로 이동.
  * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
-  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession } = useAuth();
+  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession, needsOnboarding } =
+    useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -24,6 +26,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
     const inAuthGroup = root === "(auth)";
     const inAdminGroup = root === "(admin)";
     const inUserTabs = root === "(tabs)";
+    const inOnboarding = root === "onboarding";
 
     if (!isLoggedIn && !inAuthGroup) {
       router.replace(LOGIN_HREF);
@@ -31,6 +34,11 @@ export function AuthGuard({ children }: PropsWithChildren) {
     }
 
     if (!isLoggedIn) {
+      return;
+    }
+
+    if (!isAdminSession && needsOnboarding && !inOnboarding && !inAuthGroup) {
+      router.replace(ONBOARDING_HREF);
       return;
     }
 
@@ -45,9 +53,22 @@ export function AuthGuard({ children }: PropsWithChildren) {
     }
 
     if (inAuthGroup) {
-      router.replace(isAdminSession ? ADMIN_HOME_HREF : USER_HOME_HREF);
+      if (isAdminSession) {
+        router.replace(ADMIN_HOME_HREF);
+        return;
+      }
+
+      router.replace(needsOnboarding ? ONBOARDING_HREF : USER_HOME_HREF);
     }
-  }, [isAdminSession, isLoading, isLoggedIn, isProfileLoading, router, segments]);
+  }, [
+    isAdminSession,
+    isLoading,
+    isLoggedIn,
+    isProfileLoading,
+    needsOnboarding,
+    router,
+    segments,
+  ]);
 
   return children;
 }
