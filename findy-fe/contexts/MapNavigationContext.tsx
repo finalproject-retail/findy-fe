@@ -40,13 +40,18 @@ type MapNavigationContextValue = {
   /** 쇼핑 시작 후 지도·검색에서 쇼핑리스트 담기 모드 */
   shoppingTripActive: boolean;
   hasActiveTrip: boolean;
+  activeShoppingListId: number | null;
   refreshNavigationOverlay: () => void;
   applyShoppingItems: (items: ShoppingMapItem[]) => void;
   startShoppingTrip: (
     lineItems: CartLineItem[],
     mapItems: ShoppingMapItem[],
+    shoppingListId?: number | null,
   ) => void;
-  syncShoppingTrip: (lineItems: CartLineItem[]) => void;
+  syncShoppingTrip: (
+    lineItems: CartLineItem[],
+    shoppingListId?: number | null,
+  ) => void;
   endShoppingTrip: () => void;
   markProductPicked: (productId: string, amount?: number) => void;
   updateShoppingItems: (items: ShoppingMapItem[]) => void;
@@ -124,6 +129,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     Record<string, number>
   >({});
   const [shoppingTripActive, setShoppingTripActive] = useState(false);
+  const [activeShoppingListId, setActiveShoppingListId] = useState<number | null>(
+    null,
+  );
   const hasActiveTrip =
     tripLineItems.length > 0 || navigationData.shoppingItems.length > 0;
 
@@ -155,9 +163,14 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   }, []);
 
   const startShoppingTrip = useCallback(
-    (lineItems: CartLineItem[], mapItems: ShoppingMapItem[]) => {
+    (
+      lineItems: CartLineItem[],
+      mapItems: ShoppingMapItem[],
+      shoppingListId?: number | null,
+    ) => {
       clearPendingBarcodeRewards();
       setShoppingTripActive(true);
+      setActiveShoppingListId(shoppingListId ?? null);
       setTripLineItems(lineItems);
       setPickedQuantityByProductId({});
       setRecommendedProductsById({});
@@ -174,7 +187,11 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [clearPendingBarcodeRewards],
   );
 
-  const syncShoppingTrip = useCallback((lineItems: CartLineItem[]) => {
+  const syncShoppingTrip = useCallback(
+    (lineItems: CartLineItem[], shoppingListId?: number | null) => {
+    if (shoppingListId != null) {
+      setActiveShoppingListId(shoppingListId);
+    }
     setTripLineItems(lineItems);
 
     const pickedQuantityMap = lineItems.reduce<Record<string, number>>(
@@ -191,10 +208,12 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       ...prev,
       shoppingItems: tripLineItemsToShoppingMapItems(lineItems),
     }));
-  }, []);
+  },
+  []);
 
   const endShoppingTrip = useCallback(() => {
     setShoppingTripActive(false);
+    setActiveShoppingListId(null);
     setTripLineItems([]);
     setPickedQuantityByProductId({});
     setRecommendedProductsById({});
@@ -300,7 +319,10 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       setShoppingTripActive(true);
       const catalogId = resolveCatalogProductId(product.id);
       const shoppingList = await addProductToShoppingList(catalogId, quantity);
-      syncShoppingTrip(mapShoppingListApiToLineItems(shoppingList));
+      syncShoppingTrip(
+        mapShoppingListApiToLineItems(shoppingList),
+        shoppingList.shoppingListId,
+      );
     },
     [syncShoppingTrip],
   );
@@ -315,6 +337,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       pickedQuantityByProductId,
       shoppingTripActive,
       hasActiveTrip,
+      activeShoppingListId,
       refreshNavigationOverlay,
       applyShoppingItems,
       startShoppingTrip,
@@ -337,6 +360,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       pickedQuantityByProductId,
       shoppingTripActive,
       hasActiveTrip,
+      activeShoppingListId,
       refreshNavigationOverlay,
       applyShoppingItems,
       startShoppingTrip,

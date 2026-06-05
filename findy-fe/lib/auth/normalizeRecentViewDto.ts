@@ -47,6 +47,27 @@ export function normalizeRecentViewDto(raw: unknown): RecentViewApiDto | null {
     readString(item.thumbnailUrl ?? item.thumbnail_url) ??
     (nested ? readString(nested.imageUrl ?? nested.image_url) : null);
   const viewedAt = readString(item.viewedAt ?? item.viewed_at);
+  const stockCount =
+    readNumber(
+      item.stockCount ??
+        item.stock_count ??
+        item.stockQuantity ??
+        item.stock_quantity,
+    ) ??
+    (nested
+      ? readNumber(
+          nested.stockQuantity ??
+            nested.stock_quantity ??
+            nested.stockCount ??
+            nested.stock_count,
+        )
+      : null);
+  const saleStatus =
+    readString(item.saleStatus ?? item.sale_status) ??
+    (nested ? readString(nested.saleStatus ?? nested.sale_status) : null);
+  const stockStatus =
+    readString(item.stockStatus ?? item.stock_status) ??
+    (nested ? readString(nested.stockStatus ?? nested.stock_status) : null);
 
   if (productId == null || !productName) {
     return null;
@@ -58,6 +79,9 @@ export function normalizeRecentViewDto(raw: unknown): RecentViewApiDto | null {
     price,
     thumbnailUrl,
     viewedAt: viewedAt ?? "",
+    stockCount: stockCount ?? undefined,
+    saleStatus,
+    stockStatus,
   };
 }
 

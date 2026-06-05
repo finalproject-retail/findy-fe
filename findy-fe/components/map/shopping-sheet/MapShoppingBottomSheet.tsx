@@ -421,7 +421,7 @@ export function MapShoppingBottomSheet({
       try {
         const shoppingList = await scanShoppingListItem(barcode, 1);
         const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-        syncShoppingTrip(nextLineItems);
+        syncShoppingTrip(nextLineItems, shoppingList.shoppingListId);
 
         const lineAfter = nextLineItems.find(
           (item) => item.product.barcode === barcode,

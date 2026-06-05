@@ -26,11 +26,13 @@ const DISMISS_SLIDE_OUT = -140;
 type MapShoppingToastProps = {
   notification: MapShoppingNotification;
   onDismiss: () => void;
+  onPress?: () => void;
 };
 
 export function MapShoppingToast({
   notification,
   onDismiss,
+  onPress,
 }: MapShoppingToastProps) {
   const slideAnim = useRef(new Animated.Value(DISMISS_SLIDE_OUT)).current;
   const [timerProgress, setTimerProgress] = useState(1);
@@ -161,9 +163,15 @@ export function MapShoppingToast({
       >
         <View style={styles.shadowShell} pointerEvents="auto">
           <Pressable
-            onPress={dismissWithAnimation}
+            onPress={() => {
+              if (onPress) {
+                onPress();
+                return;
+              }
+              dismissWithAnimation();
+            }}
             accessibilityRole="button"
-            accessibilityLabel="연관 상품 알림 닫기"
+            accessibilityLabel="추천 상품 알림 보기"
             style={styles.toast}
           >
             <View style={styles.contentRow}>

@@ -2,7 +2,10 @@ import type { Product } from "@/components/product";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import { getAccessToken } from "@/lib/api/client";
 import type { ApiEnvelope } from "@/lib/map/types";
-import { mapProductsFromApi } from "@/lib/products/mapProductFromApi";
+import {
+  alignProductDtoWithShoppingPrice,
+  mapProductsFromApi,
+} from "@/lib/products/mapProductFromApi";
 import type { PersonalizedRecommendationsApiData } from "@/lib/recommendations/types";
 import { recommendationApiClient } from "./recommendationClient";
 
@@ -43,9 +46,12 @@ export async function fetchPersonalizedRecommendations(
   }
 
   const data = body.data;
+  const items = (data?.recommendations ?? []).map(
+    alignProductDtoWithShoppingPrice,
+  );
 
   return {
-    products: mapProductsFromApi(data?.recommendations ?? []),
+    products: mapProductsFromApi(items),
     shoppingStyles: data?.shoppingStyles ?? [],
     preferredCategories: data?.preferredCategories ?? [],
     baseType: data?.baseType,
