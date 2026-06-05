@@ -149,7 +149,7 @@ export function Header({
     pointerEvents="none"
   >
     {showCenterLogo ? (
-      <PinkLogo width={68} height={22} accessibilityLabel="Findy" />
+      <PinkLogo width={68} height={32} accessibilityLabel="Findy" />
     ) : (
       <Text
         className="text-lg text-text-main text-center"
