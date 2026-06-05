@@ -21,8 +21,8 @@ type AdminZoneVisitHeatmapProps = {
   stretch?: boolean;
 };
 
-const ZONE_LABEL_COL_WIDTH = 88;
-const ZONE_CELL_WIDTH = 92;
+const ZONE_LABEL_COL_WIDTH = 108;
+const ZONE_CELL_WIDTH = 100;
 
 /** 인접 셀 border 겹침 방지 — 상·좌는 테이블 래퍼, 셀은 우·하만 */
 function tableCellBorder(style?: ViewStyle): ViewStyle {
@@ -221,9 +221,11 @@ export function AdminZoneVisitHeatmap({
                   })}
                 >
                   <Text
+                    numberOfLines={2}
                     style={{
                       ...pretendard(600),
-                      fontSize: 12,
+                      fontSize: 11,
+                      lineHeight: 14,
                       color: ADMIN_COLORS.navy,
                       textAlign: "center",
                     }}
@@ -248,9 +250,11 @@ export function AdminZoneVisitHeatmap({
                     })}
                   >
                     <Text
+                      numberOfLines={2}
                       style={{
                         ...pretendard(600),
-                        fontSize: 12,
+                        fontSize: 11,
+                        lineHeight: 14,
                         color: ADMIN_COLORS.navy,
                         textAlign: "center",
                       }}
