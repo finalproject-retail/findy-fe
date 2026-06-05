@@ -1,13 +1,16 @@
+import {
+  clearAdminSession,
+  loadAdminSession,
+  saveAdminSession,
+} from "@/lib/admin/adminSession";
 import { setAccessToken } from "@/lib/api/client";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { clearAccountCache } from "@/lib/auth/clearAccountCache";
-import { isInvalidStoredSessionError } from "@/lib/auth/isInvalidStoredSessionError";
 import {
   resolveNeedsOnboarding,
   withOnboardingFlag,
 } from "@/lib/auth/resolveNeedsOnboarding";
 import {
-  clearStoredSession,
   loadStoredSession,
   saveStoredSession,
 } from "@/lib/auth/session";
@@ -26,9 +29,10 @@ type AuthContextValue = {
   isLoggedIn: boolean;
   isLoading: boolean;
   isProfileLoading: boolean;
+  isAdminSession: boolean;
   needsOnboarding: boolean;
   accessToken: string | null;
-  signIn: (token: string) => Promise<UserProfile>;
+  signIn: (token: string, options?: { asAdmin?: boolean }) => Promise<void>;
   signOut: () => Promise<void>;
   markOnboardingComplete: () => void;
   refreshProfile: () => Promise<UserProfile>;
@@ -40,6 +44,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdminSession, setIsAdminSession] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
 
@@ -47,9 +52,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setIsProfileLoading(true);
     try {
       const profile = await fetchMyProfile();
-      const needsOnboarding = await resolveNeedsOnboarding(profile);
-      setNeedsOnboarding(needsOnboarding);
-      return withOnboardingFlag(profile, needsOnboarding);
+      const needs = await resolveNeedsOnboarding(profile);
+      setNeedsOnboarding(needs);
+      return withOnboardingFlag(profile, needs);
     } catch {
       setNeedsOnboarding(false);
       throw new Error("회원 정보를 불러오지 못했습니다.");
@@ -58,41 +63,34 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  const markOnboardingComplete = useCallback(() => {
+    setNeedsOnboarding(false);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     async function restoreSession() {
       try {
-        const stored = await loadStoredSession();
+        const [stored, adminSession] = await Promise.all([
+          loadStoredSession(),
+          loadAdminSession(),
+        ]);
         if (cancelled) {
           return;
         }
+
         if (stored) {
           setAccessToken(stored);
           setAccessTokenState(stored);
           setIsLoggedIn(true);
-          setIsProfileLoading(true);
-          try {
-            const profile = await fetchMyProfile();
-            if (!cancelled) {
-              const needsOnboarding = await resolveNeedsOnboarding(profile);
-              setNeedsOnboarding(needsOnboarding);
-            }
-          } catch (error) {
-            if (!cancelled) {
-              if (isInvalidStoredSessionError(error)) {
-                await clearStoredSession();
-                setAccessToken(null);
-                setAccessTokenState(null);
-                setIsLoggedIn(false);
-                setNeedsOnboarding(false);
-              } else {
-                setNeedsOnboarding(false);
-              }
-            }
-          } finally {
-            if (!cancelled) {
-              setIsProfileLoading(false);
+          setIsAdminSession(adminSession);
+
+          if (!adminSession) {
+            try {
+              await syncProfileStatus();
+            } catch {
+              // 세션 복원 시 프로필 조회 실패는 로그인 화면에서 재시도
             }
           }
         }
@@ -108,29 +106,32 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [syncProfileStatus]);
 
   const signIn = useCallback(
-    async (token: string) => {
+    async (token: string, options?: { asAdmin?: boolean }) => {
+      const asAdmin = options?.asAdmin ?? false;
       await saveStoredSession(token);
+      await saveAdminSession(asAdmin);
       setAccessToken(token);
       setAccessTokenState(token);
       setIsLoggedIn(true);
-      return syncProfileStatus();
+      setIsAdminSession(asAdmin);
+
+      if (asAdmin) {
+        setNeedsOnboarding(false);
+      }
     },
-    [syncProfileStatus],
+    [],
   );
 
   const signOut = useCallback(async () => {
     await clearAccountCache();
+    await clearAdminSession();
     setAccessToken(null);
     setAccessTokenState(null);
     setIsLoggedIn(false);
-    setNeedsOnboarding(false);
-    setIsProfileLoading(false);
-  }, []);
-
-  const markOnboardingComplete = useCallback(() => {
+    setIsAdminSession(false);
     setNeedsOnboarding(false);
   }, []);
 
@@ -139,6 +140,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isLoggedIn,
       isLoading,
       isProfileLoading,
+      isAdminSession,
       needsOnboarding,
       accessToken,
       signIn,
@@ -148,6 +150,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }),
     [
       accessToken,
+      isAdminSession,
       isLoading,
       isLoggedIn,
       isProfileLoading,

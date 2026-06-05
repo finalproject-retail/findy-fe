@@ -1,6 +1,12 @@
-import { SPACING } from "@/constants/theme";
+import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
-import { ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { CouponFilterChips } from "./CouponFilterChips";
 import { MyCouponCard } from "./MyCouponCard";
 import { MyCouponsEmptyState } from "./MyCouponsEmptyState";
@@ -12,6 +18,9 @@ type MyCouponsTabProps = {
   onFilterChange: (filter: CouponFilter) => void;
   onBrowseCoupons: () => void;
   contentPaddingBottom: number;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 };
 
 export function MyCouponsTab({
@@ -20,8 +29,11 @@ export function MyCouponsTab({
   onFilterChange,
   onBrowseCoupons,
   contentPaddingBottom,
+  loading = false,
+  error = null,
+  onRetry,
 }: MyCouponsTabProps) {
-  const isEmpty = coupons.length === 0;
+  const isEmpty = !loading && !error && coupons.length === 0;
 
   return (
     <View className="flex-1">
@@ -32,7 +44,34 @@ export function MyCouponsTab({
         <CouponFilterChips value={filter} onChange={onFilterChange} />
       </View>
 
-      {isEmpty ? (
+      {loading && coupons.length === 0 ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={COLORS.blueText} />
+        </View>
+      ) : error && coupons.length === 0 ? (
+        <View
+          className="flex-1 items-center justify-center px-screen"
+          style={{ gap: SPACING.md, paddingBottom: contentPaddingBottom }}
+        >
+          <Text
+            className="text-center text-md text-text-sub"
+            style={pretendard(400)}
+          >
+            {error}
+          </Text>
+          {onRetry ? (
+            <Pressable
+              onPress={onRetry}
+              accessibilityRole="button"
+              accessibilityLabel="다시 시도"
+            >
+              <Text className="text-md text-text-blue" style={pretendard(600)}>
+                다시 시도
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : isEmpty ? (
         <View style={{ flex: 1, paddingBottom: contentPaddingBottom }}>
           <MyCouponsEmptyState onBrowseCoupons={onBrowseCoupons} />
         </View>

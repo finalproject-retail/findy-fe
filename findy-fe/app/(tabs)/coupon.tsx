@@ -2,46 +2,97 @@ import { Header } from "@/components/common";
 import {
   CouponTopTabs,
   GetCouponsTab,
-  MOCK_COUPONS,
   MyCouponsTab,
   filterCoupons,
   type CouponFilter,
   type CouponTab,
 } from "@/components/coupon";
+import { useMypageProfile } from "@/components/mypage";
 import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
 import { LAYOUT } from "@/constants/theme";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
-import { useMemo, useState } from "react";
-import { View } from "react-native";
+import { useAvailableCoupons } from "@/hooks/useAvailableCoupons";
+import { useMyCoupons } from "@/hooks/useMyCoupons";
+import { downloadCoupon } from "@/lib/coupon/api/coupons";
+import { canDownloadMembershipCoupon } from "@/lib/coupon/membershipGrade";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CouponScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { profile, reload: reloadProfile } = useMypageProfile();
   const [activeTab, setActiveTab] = useState<CouponTab>("my");
   const [filter, setFilter] = useState<CouponFilter>("all");
-  const [downloadedIds, setDownloadedIds] = useState<Set<string>>(
-    () => new Set(),
+  const [downloadingCouponId, setDownloadingCouponId] = useState<string | null>(
+    null,
   );
+  const {
+    coupons: myCouponsFromApi,
+    loading: myCouponsLoading,
+    error: myCouponsError,
+    reload: reloadMyCoupons,
+  } = useMyCoupons();
+  const {
+    coupons: availableCouponsFromApi,
+    loading: availableCouponsLoading,
+    error: availableCouponsError,
+    reload: reloadAvailableCoupons,
+  } = useAvailableCoupons();
 
   const contentPaddingBottom = LAYOUT.tabBarTotalHeight + insets.bottom + 20;
+  const userGrade = profile?.grade ?? null;
 
-  const myCoupons = useMemo(() => {
-    const downloaded = MOCK_COUPONS.filter((coupon) =>
-      downloadedIds.has(coupon.id),
-    );
-    return filterCoupons(downloaded, filter);
-  }, [downloadedIds, filter]);
+  useFocusEffect(
+    useCallback(() => {
+      void reloadProfile();
 
-  const availableCoupons = useMemo(
-    () => filterCoupons(MOCK_COUPONS, filter),
-    [filter],
+      if (activeTab === "my") {
+        void reloadMyCoupons();
+        return;
+      }
+
+      void reloadAvailableCoupons();
+    }, [activeTab, reloadAvailableCoupons, reloadMyCoupons, reloadProfile]),
   );
 
-  const handleDownload = (couponId: string) => {
-    if (downloadedIds.has(couponId)) return;
-    setDownloadedIds((prev) => new Set(prev).add(couponId));
-    showToast(TOAST_MESSAGES.couponDownloaded);
+  const myCoupons = useMemo(
+    () => filterCoupons(myCouponsFromApi, filter, userGrade),
+    [myCouponsFromApi, filter, userGrade],
+  );
+
+  const availableCoupons = useMemo(
+    () => filterCoupons(availableCouponsFromApi, filter, userGrade),
+    [availableCouponsFromApi, filter, userGrade],
+  );
+
+  const handleDownload = async (couponId: string) => {
+    const coupon = availableCouponsFromApi.find((item) => item.id === couponId);
+    if (!coupon?.couponId || coupon.isDownloaded) {
+      return;
+    }
+
+    if (!canDownloadMembershipCoupon(coupon, userGrade)) {
+      Alert.alert("다운로드 불가", "내 등급에서 받을 수 없는 멤버십 쿠폰입니다.");
+      return;
+    }
+
+    setDownloadingCouponId(couponId);
+
+    try {
+      await downloadCoupon(coupon.couponId);
+      showToast(TOAST_MESSAGES.couponDownloaded);
+      await Promise.all([reloadAvailableCoupons(), reloadMyCoupons()]);
+    } catch (error) {
+      Alert.alert(
+        "쿠폰 다운로드 실패",
+        error instanceof Error ? error.message : "쿠폰 다운로드에 실패했습니다.",
+      );
+    } finally {
+      setDownloadingCouponId(null);
+    }
   };
 
   return (
@@ -57,15 +108,21 @@ export default function CouponScreen() {
             onFilterChange={setFilter}
             onBrowseCoupons={() => setActiveTab("get")}
             contentPaddingBottom={contentPaddingBottom}
+            loading={myCouponsLoading}
+            error={myCouponsError}
+            onRetry={() => void reloadMyCoupons()}
           />
         ) : (
           <GetCouponsTab
             coupons={availableCoupons}
             filter={filter}
             onFilterChange={setFilter}
-            downloadedIds={downloadedIds}
-            onDownload={handleDownload}
+            onDownload={(couponId) => void handleDownload(couponId)}
             contentPaddingBottom={contentPaddingBottom}
+            loading={availableCouponsLoading}
+            error={availableCouponsError}
+            onRetry={() => void reloadAvailableCoupons()}
+            downloadingCouponId={downloadingCouponId}
           />
         )}
       </View>

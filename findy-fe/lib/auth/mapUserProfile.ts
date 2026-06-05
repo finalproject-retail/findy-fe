@@ -1,19 +1,8 @@
-import type { MembershipGrade } from "@/components/mypage/mockUser";
+import { normalizeMembershipGrade } from "@/lib/coupon/membershipGrade";
 import type { UserMeApiDto, UserProfile } from "@/lib/auth/types";
 
-export function mapMembershipGrade(raw: string | null | undefined): MembershipGrade {
-  const normalized = raw?.trim().toLowerCase() ?? "";
-
-  if (normalized === "vip") {
-    return "vip";
-  }
-  if (normalized === "gold") {
-    return "gold";
-  }
-  if (normalized === "silver") {
-    return "silver";
-  }
-  return "bronze";
+export function mapMembershipGrade(raw: string | null | undefined) {
+  return normalizeMembershipGrade(raw) ?? "bronze";
 }
 
 function resolveIsFirstLogin(dto: UserMeApiDto): boolean {

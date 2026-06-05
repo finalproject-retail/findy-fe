@@ -3,15 +3,15 @@ import { useRouter, useSegments, type Href } from "expo-router";
 import { useEffect, type PropsWithChildren } from "react";
 
 const LOGIN_HREF = "/(auth)/login" as Href;
-const HOME_HREF = "/(tabs)" as Href;
-const ONBOARDING_HREF = "/onboarding" as Href;
+const USER_HOME_HREF = "/(tabs)" as Href;
+const ADMIN_HOME_HREF = "/(admin)" as Href;
 
 /**
  * 로그인 없이 보호된 화면 접근 시 로그인으로 이동.
- * 온보딩 미완료(isFirstLogin) 사용자는 온보딩으로 이동.
+ * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
-  const { isLoggedIn, isLoading, isProfileLoading, needsOnboarding } = useAuth();
+  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -20,35 +20,34 @@ export function AuthGuard({ children }: PropsWithChildren) {
       return;
     }
 
-    const inAuthGroup = segments[0] === "(auth)";
-    const onOnboarding = segments[0] === "onboarding";
+    const root = segments[0];
+    const inAuthGroup = root === "(auth)";
+    const inAdminGroup = root === "(admin)";
+    const inUserTabs = root === "(tabs)";
 
     if (!isLoggedIn && !inAuthGroup) {
       router.replace(LOGIN_HREF);
       return;
     }
 
-    if (isLoggedIn && needsOnboarding && !onOnboarding && !inAuthGroup) {
-      router.replace(ONBOARDING_HREF);
+    if (!isLoggedIn) {
       return;
     }
 
-    if (isLoggedIn && !needsOnboarding && onOnboarding) {
-      router.replace(HOME_HREF);
+    if (isAdminSession && inUserTabs) {
+      router.replace(ADMIN_HOME_HREF);
       return;
     }
 
-    if (isLoggedIn && inAuthGroup && !needsOnboarding) {
-      router.replace(HOME_HREF);
+    if (!isAdminSession && inAdminGroup) {
+      router.replace(USER_HOME_HREF);
+      return;
     }
-  }, [
-    isLoading,
-    isLoggedIn,
-    isProfileLoading,
-    needsOnboarding,
-    router,
-    segments,
-  ]);
+
+    if (inAuthGroup) {
+      router.replace(isAdminSession ? ADMIN_HOME_HREF : USER_HOME_HREF);
+    }
+  }, [isAdminSession, isLoading, isLoggedIn, isProfileLoading, router, segments]);
 
   return children;
 }

@@ -1,6 +1,6 @@
 import { CartCheckbox } from "@/components/cart/CartCheckbox";
 import type { CategoryMiddle } from "@/components/category";
-import { COLORS, SPACING } from "@/constants/theme";
+import { SPACING } from "@/constants/theme";
 import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import { pretendard } from "@/utils/pretendard";
 import { Pressable, ScrollView, Text, View } from "react-native";

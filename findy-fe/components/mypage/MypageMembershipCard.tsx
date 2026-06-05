@@ -1,9 +1,8 @@
 import PointIcon from "@/assets/icons/point-icon.svg";
 import { BORDER, COLORS, RADIUS, SPACING } from "@/constants/theme";
-import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import {
   GRADE_IMAGES,
   formatPoints,
@@ -17,19 +16,23 @@ const GRADE_ICON_SIZE = 40;
 type MypageMembershipCardProps = {
   user: Pick<MypageUser, "grade" | "points">;
   onGetCouponPress?: () => void;
+  downloadingMembershipCoupons?: boolean;
   onPointsPress?: () => void;
 };
 
 export function MypageMembershipCard({
   user,
   onGetCouponPress,
+  downloadingMembershipCoupons = false,
   onPointsPress,
 }: MypageMembershipCardProps) {
-  const { showToast } = useToast();
   const gradeConfig = getGradeConfig(user.grade);
 
   const handleGetCouponPress = () => {
-    showToast(TOAST_MESSAGES.couponDownloaded);
+    if (downloadingMembershipCoupons) {
+      return;
+    }
+
     onGetCouponPress?.();
   };
 
@@ -72,6 +75,7 @@ export function MypageMembershipCard({
 
         <Pressable
           onPress={handleGetCouponPress}
+          disabled={downloadingMembershipCoupons}
           accessibilityRole="button"
           accessibilityLabel="쿠폰 받기"
           style={{
@@ -79,11 +83,18 @@ export function MypageMembershipCard({
             paddingVertical: SPACING.sm,
             borderRadius: RADIUS.full,
             backgroundColor: COLORS.text,
+            opacity: downloadingMembershipCoupons ? 0.7 : 1,
+            minWidth: 92,
+            alignItems: "center",
           }}
         >
-          <Text className="text-sm text-white" style={pretendard(600)}>
-            쿠폰 받기
-          </Text>
+          {downloadingMembershipCoupons ? (
+            <ActivityIndicator size="small" color={COLORS.white} />
+          ) : (
+            <Text className="text-sm text-white" style={pretendard(600)}>
+              쿠폰 받기
+            </Text>
+          )}
         </Pressable>
       </View>
 

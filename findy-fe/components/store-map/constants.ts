@@ -1,5 +1,3 @@
-import { COLORS } from "@/constants/theme";
-
 export const BASE_CELL_PX = 12;
 
 /**
