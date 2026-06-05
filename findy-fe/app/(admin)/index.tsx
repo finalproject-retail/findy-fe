@@ -14,23 +14,35 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-function DashboardSection({
+function DashboardRow({
   children,
   isWide,
-  fullWidth,
 }: {
   children: ReactNode;
   isWide: boolean;
-  fullWidth?: boolean;
 }) {
   return (
     <View
-      style={
-        isWide && !fullWidth
-          ? { width: "48%" }
-          : { width: "100%" }
-      }
+      style={{
+        flexDirection: isWide ? "row" : "column",
+        alignItems: "stretch",
+        gap: 20,
+      }}
     >
+      {children}
+    </View>
+  );
+}
+
+function DashboardSection({
+  children,
+  isWide,
+}: {
+  children: ReactNode;
+  isWide: boolean;
+}) {
+  return (
+    <View style={isWide ? { flex: 1, minWidth: 0 } : { width: "100%" }}>
       {children}
     </View>
   );
@@ -56,33 +68,33 @@ export default function AdminDashboardScreen() {
       />
 
       <View style={{ paddingHorizontal: 20, gap: 28, paddingTop: 8 }}>
-        <View
-          style={{
-            flexDirection: isWide ? "row" : "column",
-            flexWrap: "wrap",
-            gap: 20,
-            justifyContent: "space-between",
-          }}
-        >
+        <DashboardRow isWide={isWide}>
           <DashboardSection isWide={isWide}>
-            <AdminOperationsSummary insight={data.insight} stats={data.stats} />
+            <AdminOperationsSummary
+              insight={data.insight}
+              stats={data.stats}
+              stretch={isWide}
+            />
           </DashboardSection>
 
           <DashboardSection isWide={isWide}>
             <AdminProductFunnel
               steps={data.funnel}
               finalConversionRate={data.finalConversionRate}
+              stretch={isWide}
             />
           </DashboardSection>
+        </DashboardRow>
 
-          <DashboardSection isWide={isWide} fullWidth={!isWide}>
-            <AdminZoneVisitHeatmap zones={data.zones} />
+        <DashboardRow isWide={isWide}>
+          <DashboardSection isWide={isWide}>
+            <AdminZoneVisitHeatmap zones={data.zones} stretch={isWide} />
           </DashboardSection>
 
           <DashboardSection isWide={isWide}>
-            <AdminPromoProductList products={data.promoProducts} />
+            <AdminPromoProductList products={data.promoProducts} stretch={isWide} />
           </DashboardSection>
-        </View>
+        </DashboardRow>
       </View>
     </ScrollView>
   );

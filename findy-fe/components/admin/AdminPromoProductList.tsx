@@ -1,13 +1,20 @@
-import DownArrowIcon from "@/assets/icons/down-arrow-icon.svg";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
+import {
+  ADMIN_ZONE_CARD_BODY_HEIGHT,
+} from "@/lib/admin/adminDashboardLayout";
 import type { AdminPromoProduct, AdminPromoType } from "@/lib/admin/mockDashboardData";
 import { ADMIN_PROMO_LABELS } from "@/lib/admin/mockDashboardData";
 import { pretendard } from "@/utils/pretendard";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Image, ScrollView, Text, View } from "react-native";
 
 type AdminPromoProductListProps = {
   products: AdminPromoProduct[];
+  stretch?: boolean;
 };
+
+const HEADERS = ["순위", "상품명", "행사 종류", "선택률", "구매율"] as const;
+const ROW_MIN_HEIGHT = 64;
+const MOBILE_LIST_MAX_HEIGHT = 320;
 
 function promoBadgeStyle(type: AdminPromoType) {
   switch (type) {
@@ -29,7 +36,180 @@ function promoBadgeStyle(type: AdminPromoType) {
   }
 }
 
-export function AdminPromoProductList({ products }: AdminPromoProductListProps) {
+function columnStyle(header: (typeof HEADERS)[number], stretch: boolean) {
+  if (stretch) {
+    switch (header) {
+      case "순위":
+        return { flex: 0.7 };
+      case "상품명":
+        return { flex: 2.2 };
+      case "행사 종류":
+        return { flex: 1.1 };
+      case "선택률":
+      case "구매율":
+        return { flex: 0.8 };
+    }
+  }
+
+  return {
+    width: header === "상품명" ? 220 : 90,
+  };
+}
+
+function PromoTableHeader({ stretch }: { stretch: boolean }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        backgroundColor: ADMIN_COLORS.statCardBg,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: ADMIN_COLORS.border,
+      }}
+    >
+      {HEADERS.map((header) => (
+        <Text
+          key={header}
+          style={{
+            ...columnStyle(header, stretch),
+            ...pretendard(600),
+            fontSize: 12,
+            color: ADMIN_COLORS.navyMuted,
+            textAlign: header === "상품명" ? "left" : "center",
+          }}
+        >
+          {header}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+function PromoTableRow({
+  product,
+  stretch,
+}: {
+  product: AdminPromoProduct;
+  stretch: boolean;
+}) {
+  const badge = promoBadgeStyle(product.promoType);
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: ADMIN_COLORS.border,
+        minHeight: ROW_MIN_HEIGHT,
+      }}
+    >
+      <Text
+        style={{
+          ...columnStyle("순위", stretch),
+          textAlign: "center",
+          ...pretendard(600),
+          fontSize: 14,
+          color: ADMIN_COLORS.navy,
+        }}
+      >
+        {product.rank}
+      </Text>
+
+      <View
+        style={{
+          ...columnStyle("상품명", stretch),
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <Image
+          source={require("@/assets/images/splash-logo.png")}
+          style={{ width: 36, height: 36, borderRadius: 6 }}
+          resizeMode="cover"
+        />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              ...pretendard(600),
+              fontSize: 12,
+              color: ADMIN_COLORS.navy,
+            }}
+          >
+            {product.name}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              ...pretendard(400),
+              fontSize: 10,
+              color: ADMIN_COLORS.navyMuted,
+            }}
+          >
+            (상품 ID: {product.productId})
+          </Text>
+        </View>
+      </View>
+
+      <View style={{ ...columnStyle("행사 종류", stretch), alignItems: "center" }}>
+        <View
+          style={{
+            backgroundColor: badge.bg,
+            borderRadius: 999,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+          }}
+        >
+          <Text
+            style={{
+              ...pretendard(600),
+              fontSize: 10,
+              color: badge.text,
+            }}
+          >
+            {ADMIN_PROMO_LABELS[product.promoType]}
+          </Text>
+        </View>
+      </View>
+
+      <Text
+        style={{
+          ...columnStyle("선택률", stretch),
+          textAlign: "center",
+          ...pretendard(700),
+          fontSize: 14,
+          color: ADMIN_COLORS.navy,
+        }}
+      >
+        {product.selectionRate}%
+      </Text>
+
+      <Text
+        style={{
+          ...columnStyle("구매율", stretch),
+          textAlign: "center",
+          ...pretendard(700),
+          fontSize: 14,
+          color: ADMIN_COLORS.negativeText,
+        }}
+      >
+        {product.purchaseRate}%
+      </Text>
+    </View>
+  );
+}
+
+export function AdminPromoProductList({
+  products,
+  stretch = false,
+}: AdminPromoProductListProps) {
+  const cardBodyHeight = stretch ? ADMIN_ZONE_CARD_BODY_HEIGHT : MOBILE_LIST_MAX_HEIGHT;
+
   return (
     <View style={{ gap: 16 }}>
       <Text style={{ ...pretendard(700), fontSize: 18, color: ADMIN_COLORS.navy }}>
@@ -38,6 +218,7 @@ export function AdminPromoProductList({ products }: AdminPromoProductListProps) 
 
       <View
         style={{
+          height: cardBodyHeight,
           backgroundColor: ADMIN_COLORS.cardBg,
           borderRadius: 12,
           borderWidth: 1,
@@ -45,161 +226,35 @@ export function AdminPromoProductList({ products }: AdminPromoProductListProps) 
           overflow: "hidden",
         }}
       >
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ minWidth: 640 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                backgroundColor: ADMIN_COLORS.statCardBg,
-                paddingVertical: 12,
-                paddingHorizontal: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: ADMIN_COLORS.border,
-              }}
+        {stretch ? (
+          <>
+            <PromoTableHeader stretch />
+            <ScrollView
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
             >
-              {["순위", "상품명", "행사 종류", "선택률", "구매율"].map((header) => (
-                <Text
-                  key={header}
-                  style={{
-                    ...pretendard(600),
-                    fontSize: 12,
-                    color: ADMIN_COLORS.navyMuted,
-                    width: header === "상품명" ? 220 : 90,
-                    textAlign: header === "상품명" ? "left" : "center",
-                  }}
-                >
-                  {header}
-                </Text>
+              {products.map((product) => (
+                <PromoTableRow key={product.rank} product={product} stretch />
               ))}
+            </ScrollView>
+          </>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+            <View style={{ minWidth: 640, height: cardBodyHeight }}>
+              <PromoTableHeader stretch={false} />
+              <ScrollView
+                style={{ height: cardBodyHeight - 45 }}
+                showsVerticalScrollIndicator
+                nestedScrollEnabled
+              >
+                {products.map((product) => (
+                  <PromoTableRow key={product.rank} product={product} stretch={false} />
+                ))}
+              </ScrollView>
             </View>
-
-            {products.map((product) => {
-              const badge = promoBadgeStyle(product.promoType);
-              return (
-                <View
-                  key={product.rank}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 14,
-                    paddingHorizontal: 12,
-                    borderBottomWidth: 1,
-                    borderBottomColor: ADMIN_COLORS.border,
-                  }}
-                >
-                  <Text
-                    style={{
-                      width: 90,
-                      textAlign: "center",
-                      ...pretendard(600),
-                      fontSize: 14,
-                      color: ADMIN_COLORS.navy,
-                    }}
-                  >
-                    {product.rank}
-                  </Text>
-
-                  <View
-                    style={{
-                      width: 220,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <Image
-                      source={require("@/assets/images/splash-logo.png")}
-                      style={{ width: 36, height: 36, borderRadius: 6 }}
-                      resizeMode="cover"
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          ...pretendard(600),
-                          fontSize: 12,
-                          color: ADMIN_COLORS.navy,
-                        }}
-                      >
-                        {product.name}
-                      </Text>
-                      <Text
-                        style={{
-                          ...pretendard(400),
-                          fontSize: 10,
-                          color: ADMIN_COLORS.navyMuted,
-                        }}
-                      >
-                        (상품 ID: {product.productId})
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={{ width: 90, alignItems: "center" }}>
-                    <View
-                      style={{
-                        backgroundColor: badge.bg,
-                        borderRadius: 999,
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          ...pretendard(600),
-                          fontSize: 10,
-                          color: badge.text,
-                        }}
-                      >
-                        {ADMIN_PROMO_LABELS[product.promoType]}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text
-                    style={{
-                      width: 90,
-                      textAlign: "center",
-                      ...pretendard(700),
-                      fontSize: 14,
-                      color: ADMIN_COLORS.navy,
-                    }}
-                  >
-                    {product.selectionRate}%
-                  </Text>
-
-                  <Text
-                    style={{
-                      width: 90,
-                      textAlign: "center",
-                      ...pretendard(700),
-                      fontSize: 14,
-                      color: ADMIN_COLORS.negativeText,
-                    }}
-                  >
-                    {product.purchaseRate}%
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-
-        <Pressable
-          accessibilityRole="button"
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-            paddingVertical: 16,
-          }}
-        >
-          <Text style={{ ...pretendard(500), fontSize: 14, color: ADMIN_COLORS.navyMuted }}>
-            더보기
-          </Text>
-          <DownArrowIcon width={14} height={14} />
-        </Pressable>
+          </ScrollView>
+        )}
       </View>
     </View>
   );

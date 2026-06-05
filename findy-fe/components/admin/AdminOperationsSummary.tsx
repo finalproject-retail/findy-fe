@@ -7,6 +7,7 @@ import { Text, View } from "react-native";
 type AdminOperationsSummaryProps = {
   insight: string;
   stats: AdminStatCard[];
+  stretch?: boolean;
 };
 
 function StatCard({ stat, compact }: { stat: AdminStatCard; compact?: boolean }) {
@@ -48,51 +49,73 @@ function StatCard({ stat, compact }: { stat: AdminStatCard; compact?: boolean })
   );
 }
 
-export function AdminOperationsSummary({ insight, stats }: AdminOperationsSummaryProps) {
+export function AdminOperationsSummary({
+  insight,
+  stats,
+  stretch = false,
+}: AdminOperationsSummaryProps) {
   const isWide = useAdminWideLayout();
 
   return (
-    <View style={{ gap: 16 }}>
+    <View style={stretch ? { flex: 1, gap: 16 } : { gap: 16 }}>
       <Text style={{ ...pretendard(700), fontSize: 18, color: ADMIN_COLORS.navy }}>
         운영 요약
       </Text>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
+      <View
+        style={
+          stretch
+            ? {
+                flex: 1,
+                backgroundColor: ADMIN_COLORS.cardBg,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ADMIN_COLORS.border,
+                padding: 20,
+                gap: 16,
+              }
+            : { gap: 16 }
+        }
+      >
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View
+            style={{
+              width: 4,
+              borderRadius: 2,
+              backgroundColor: ADMIN_COLORS.accentBar,
+            }}
+          />
+          <Text
+            style={{
+              flex: 1,
+              ...pretendard(500),
+              fontSize: 14,
+              color: ADMIN_COLORS.navyMuted,
+              lineHeight: 22,
+            }}
+          >
+            {insight}
+          </Text>
+        </View>
+
         <View
           style={{
-            width: 4,
-            borderRadius: 2,
-            backgroundColor: ADMIN_COLORS.accentBar,
-          }}
-        />
-        <Text
-          style={{
-            flex: 1,
-            ...pretendard(500),
-            fontSize: 14,
-            color: ADMIN_COLORS.navyMuted,
-            lineHeight: 22,
+            flex: stretch ? 1 : undefined,
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 12,
+            alignContent: stretch ? "stretch" : undefined,
           }}
         >
-          {insight}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 12,
-        }}
-      >
-        {stats.map((stat) => (
-          <View
-            key={stat.label}
-            style={isWide ? { width: "48%" } : { width: "48%" }}
-          >
-            <StatCard stat={stat} compact={isWide} />
-          </View>
-        ))}
+          {stats.map((stat) => (
+            <View
+              key={stat.label}
+              style={isWide ? { width: "48%", flexGrow: stretch ? 1 : 0 } : { width: "48%" }}
+            >
+              <StatCard stat={stat} compact={isWide} />
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );

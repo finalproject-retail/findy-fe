@@ -100,6 +100,49 @@ export function getDefaultAdminDateRange(): AdminDateRange {
 }
 
 /** API 연동 전 목업 데이터 */
+const MOCK_PROMO_NAMES = [
+  "[농심] 사리곰탕 소컵 6입",
+  "[오뚜기] 진라면 순한맛 5입",
+  "[삼양] 불닭볶음면 4입",
+  "[CJ] 햇반 210g 12입",
+  "[서울] 우유 1L",
+  "[동원] 참치캔 4입",
+  "[롯데] 제크 80g",
+  "[해태] 허니버터칩",
+  "[농심] 신라면 5입",
+  "[오뚜기] 스낵면 5입",
+  "[풀무원] 두부 300g",
+  "[매일] 바른목장 요구르트",
+  "[롯데] 가나 초콜릿",
+  "[농심] 너구리 5입",
+  "[삼립] 호빵 4입",
+  "[CJ] 비비고 만두",
+  "[동원] 양반김 10봉",
+  "[오리온] 초코파이 12입",
+  "[롯데] 칸cho 72g",
+  "[빙그레] 바나나맛우유",
+] as const;
+
+const MOCK_PROMO_TYPES: AdminPromoType[] = ["bundle", "onePlusOne", "discount"];
+
+function buildMockPromoProducts(count = 20): AdminPromoProduct[] {
+  return Array.from({ length: count }, (_, index) => {
+    const rank = index + 1;
+    const promoType = MOCK_PROMO_TYPES[index % MOCK_PROMO_TYPES.length]!;
+    const selectionRate = 72 - (index % 6) * 3;
+    const purchaseRate = 42 - (index % 5) * 2;
+
+    return {
+      rank,
+      name: MOCK_PROMO_NAMES[index % MOCK_PROMO_NAMES.length]!,
+      productId: `promo-${String(rank).padStart(3, "0")}`,
+      promoType,
+      selectionRate,
+      purchaseRate,
+    };
+  });
+}
+
 export function getAdminDashboardMock(_range: AdminDateRange): AdminDashboardData {
   return {
     insight:
@@ -202,48 +245,7 @@ export function getAdminDashboardMock(_range: AdminDateRange): AdminDashboardDat
       { label: "3. 대체 상품 구매", percent: 43 },
     ],
     finalConversionRate: "15.2%",
-    promoProducts: [
-      {
-        rank: 1,
-        name: "[농심] 사리곰탕 소컵 6입",
-        productId: "fdsdf-001",
-        promoType: "bundle",
-        selectionRate: 64,
-        purchaseRate: 35,
-      },
-      {
-        rank: 2,
-        name: "[농심] 사리곰탕 소컵 6입",
-        productId: "fdsdf-002",
-        promoType: "onePlusOne",
-        selectionRate: 64,
-        purchaseRate: 35,
-      },
-      {
-        rank: 3,
-        name: "[농심] 사리곰탕 소컵 6입",
-        productId: "fdsdf-003",
-        promoType: "discount",
-        selectionRate: 64,
-        purchaseRate: 35,
-      },
-      {
-        rank: 4,
-        name: "[농심] 사리곰탕 소컵 6입",
-        productId: "fdsdf-004",
-        promoType: "bundle",
-        selectionRate: 64,
-        purchaseRate: 35,
-      },
-      {
-        rank: 5,
-        name: "[농심] 사리곰탕 소컵 6입",
-        productId: "fdsdf-005",
-        promoType: "bundle",
-        selectionRate: 64,
-        purchaseRate: 35,
-      },
-    ],
+    promoProducts: buildMockPromoProducts(20),
   };
 }
 
