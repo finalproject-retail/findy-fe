@@ -20,7 +20,10 @@ import {
   type PropsWithChildren,
 } from "react";
 
+export type ShoppingLineItemType = "PRODUCT" | "CATEGORY";
+
 export type CartLineItem = {
+  itemType?: ShoppingLineItemType;
   productId: string;
   product: Product;
   quantity: number;
@@ -29,6 +32,12 @@ export type CartLineItem = {
   shoppingListItemId?: string;
   scannedQuantity?: number;
   scanStatus?: string;
+  checked?: boolean;
+  category?: {
+    categoryId: number;
+    categoryName: string;
+    gridId?: number | null;
+  };
 };
 
 export type CartContextValue = {

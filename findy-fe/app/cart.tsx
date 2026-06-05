@@ -8,20 +8,22 @@ import {
   CartSoldOutItemRow,
   CartZoneItemRow,
   cartToShoppingMapItems,
-  zonesToShoppingMapItems,
 } from "@/components/cart";
 import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart, type CartLineItem } from "@/contexts/CartContext";
+import { useToast } from "@/contexts/ToastContext";
+import { getApiErrorMessage } from "@/lib/api";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { removeCartItem } from "@/lib/shopping/api";
 import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
-import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 import {
-  dedupeDestinationGridIds,
-  destinationGridIdsFromMapItems,
-} from "@/lib/map/pathUtils";
+  categoryLineItemsToMapItems,
+  mapShoppingListApiToLineItems,
+} from "@/lib/shopping/mappers";
+import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { pretendard } from "@/utils/pretendard";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
 import { type Href, useRouter } from "expo-router";
@@ -29,6 +31,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function CartScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { startShoppingTrip } = useMapNavigation();
   const {
     availableItems,
@@ -67,51 +70,44 @@ export default function CartScreen() {
     try {
       let shoppingListLines: CartLineItem[] = [];
       let activeShoppingListId: number | null = null;
-      let productDestinationGridIds: number[] = [];
+      let serverDestinationGridIds: number[] = [];
 
-      if (hasSelectedProducts) {
+      if (hasSelectedProducts || hasSelectedZones) {
         const shoppingList = await createShoppingListFromCart(
           availableItems,
           selectedLines,
+          hasSelectedZones ? zoneItems : [],
         );
         shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
         activeShoppingListId = shoppingList.shoppingListId;
-        productDestinationGridIds = shoppingList.destinationGridIds ?? [];
+        serverDestinationGridIds = shoppingList.destinationGridIds ?? [];
 
-        await Promise.all(
-          selectedLines
-            .filter((line) => line.cartItemId)
-            .map((line) => removeCartItem(line.cartItemId!)),
-        );
-        await refreshCart();
+        if (hasSelectedProducts) {
+          await Promise.all(
+            selectedLines
+              .filter((line) => line.cartItemId)
+              .map((line) => removeCartItem(line.cartItemId!)),
+          );
+          await refreshCart();
+        }
       }
 
-      const productMapItems = hasSelectedProducts
-        ? cartToShoppingMapItems(shoppingListLines)
-        : [];
-      const zoneMapItems = hasSelectedZones
-        ? zonesToShoppingMapItems(zoneItems)
-        : [];
-      const mapItems = [...productMapItems, ...zoneMapItems].map(
+      const productMapItems = cartToShoppingMapItems(
+        shoppingListLines
+          .filter(isProductLineItem)
+          .map((item) => ({ ...item, selected: true })),
+      );
+      const categoryMapItems = categoryLineItemsToMapItems(shoppingListLines);
+      const mapItems = [...productMapItems, ...categoryMapItems].map(
         (item, index) => ({
           ...item,
           visitOrder: index + 1,
         }),
       );
 
-      const productDestinationIds = hasSelectedProducts
-        ? productDestinationGridIds
-        : [];
-      const zoneDestinationGridIds = hasSelectedZones
-        ? destinationGridIdsFromMapItems(zoneMapItems, GRID_COLS)
-        : [];
-      const allDestinationGridIds = dedupeDestinationGridIds([
-        ...productDestinationIds,
-        ...zoneDestinationGridIds,
-      ]);
       const resolvedDestinationGridIds =
-        allDestinationGridIds.length > 0
-          ? allDestinationGridIds
+        serverDestinationGridIds.length > 0
+          ? serverDestinationGridIds
           : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
 
       startShoppingTrip(
@@ -128,6 +124,9 @@ export default function CartScreen() {
       router.push("/route-generating");
     } catch (error) {
       console.error(error);
+      showToast(
+        getApiErrorMessage(error) || "쇼핑을 시작하지 못했어요. 다시 시도해 주세요.",
+      );
     }
   };
 

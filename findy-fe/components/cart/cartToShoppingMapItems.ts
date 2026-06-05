@@ -7,6 +7,11 @@ import type {
 } from "@/components/store-map/overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
+import { categoryLineItemsToMapItems } from "@/lib/shopping/mappers";
+import {
+  isCategoryLineItem,
+  isProductLineItem,
+} from "@/lib/shopping/shoppingListItemUtils";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 
 /** 목 데이터 — 상품별 선호 매대 위치 */
@@ -111,7 +116,17 @@ export function cartToShoppingMapItems(
 export function tripLineItemsToShoppingMapItems(
   items: CartLineItem[],
 ): ShoppingMapItem[] {
-  return cartToShoppingMapItems(
-    items.map((item) => ({ ...item, selected: true })),
+  const productItems = cartToShoppingMapItems(
+    items
+      .filter(isProductLineItem)
+      .map((item) => ({ ...item, selected: true })),
   );
+  const categoryItems = categoryLineItemsToMapItems(
+    items.filter(isCategoryLineItem),
+  );
+
+  return [...productItems, ...categoryItems].map((item, index) => ({
+    ...item,
+    visitOrder: index + 1,
+  }));
 }

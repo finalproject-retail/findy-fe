@@ -2,6 +2,7 @@ import { getUnitPrice } from "@/components/cart/cartItemUtils";
 import { formatPrice, isOutOfStock } from "@/components/product";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { CartLineItem } from "@/contexts/CartContext";
+import { isCategoryLineItem, isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import { pretendard } from "@/utils/pretendard";
 import { StyleSheet, Text, View } from "react-native";
 import { MapShoppingSheetFooterButton } from "./MapShoppingSheetFooterButton";
@@ -21,18 +22,19 @@ export function MapShoppingSheetFooter({
   onFinishShopping,
   bottomInset = 0,
 }: MapShoppingSheetFooterProps) {
-  const purchasableItems = tripLineItems.filter(
-    (item) => !isOutOfStock(item.product),
+  const productItems = tripLineItems.filter(
+    (item) => isProductLineItem(item) && !isOutOfStock(item.product),
   );
-  const totalQuantity = purchasableItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0,
-  );
-  const pickedQuantity = purchasableItems.reduce(
-    (sum, item) => sum + (pickedQuantityByProductId[item.productId] ?? 0),
-    0,
-  );
-  const totalPrice = purchasableItems.reduce(
+  const categoryItems = tripLineItems.filter(isCategoryLineItem);
+  const totalQuantity =
+    productItems.reduce((sum, item) => sum + item.quantity, 0) +
+    categoryItems.length;
+  const pickedQuantity =
+    productItems.reduce(
+      (sum, item) => sum + (pickedQuantityByProductId[item.productId] ?? 0),
+      0,
+    ) + categoryItems.filter((item) => item.checked ?? false).length;
+  const totalPrice = productItems.reduce(
     (sum, item) => sum + getUnitPrice(item.product) * item.quantity,
     0,
   );

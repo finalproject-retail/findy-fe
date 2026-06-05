@@ -1,5 +1,4 @@
 import { Header } from "@/components/common";
-import { zonesToShoppingMapItems } from "@/components/cart";
 import {
   CATEGORY_TREE,
   buildCartZoneItem,
@@ -15,6 +14,13 @@ import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { GRID_COLS } from "@/components/store-map/grid/layout";
+import { createShoppingListFromZones } from "@/lib/shopping/createShoppingListFromCart";
+import {
+  categoryLineItemsToMapItems,
+  mapShoppingListApiToLineItems,
+} from "@/lib/shopping/mappers";
+import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { useToast } from "@/contexts/ToastContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -127,10 +133,28 @@ export default function PickZonesScreen() {
       return;
     }
 
-    const mapItems = zonesToShoppingMapItems(zones);
-    startShoppingTrip([], mapItems);
-    showToast(`${zones.length}개 구역을 담았어요`);
-    router.push("/route-generating");
+    void (async () => {
+      try {
+        const shoppingList = await createShoppingListFromZones(zones);
+        const lineItems = mapShoppingListApiToLineItems(shoppingList);
+        const mapItems = categoryLineItemsToMapItems(lineItems);
+        const destinationGridIds =
+          shoppingList.destinationGridIds?.length
+            ? shoppingList.destinationGridIds
+            : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
+        startShoppingTrip(
+          lineItems,
+          mapItems,
+          shoppingList.shoppingListId,
+          destinationGridIds,
+        );
+        showToast(`${zones.length}개 구역을 담았어요`);
+        router.push("/route-generating");
+      } catch (error) {
+        console.error(error);
+        showToast("구역을 담지 못했어요. 다시 시도해 주세요.");
+      }
+    })();
   };
 
   return (
