@@ -57,7 +57,7 @@ function resolveCellType(x: number, y: number, shelfCells: Map<string, StoreCell
 }
 
 export function buildGridCellsFromShelfRects(
-  shelfRects: Array<{
+  shelfRects: {
     x: number;
     y: number;
     width: number;
@@ -65,7 +65,7 @@ export function buildGridCellsFromShelfRects(
     shelfNumber?: string;
     category?: string;
     faceId: string;
-  }>
+  }[]
 ): StoreCellMapping[] {
   const shelfMap = new Map<string, StoreCellMapping>();
 

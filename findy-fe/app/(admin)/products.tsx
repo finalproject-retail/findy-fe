@@ -1,5 +1,4 @@
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { AdminShell } from "@/components/admin/AdminShell";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
 import { getDefaultAdminDateRange, type AdminDateRange } from "@/lib/admin/mockDashboardData";
