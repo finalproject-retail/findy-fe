@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
-import axios from "axios";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -233,14 +232,7 @@ export default function LoginScreen() {
         } as unknown as Href);
       }
     } catch (error: unknown) {
-      let errorMsg = getApiErrorMessage(error);
-      if (axios.isAxiosError(error) && error.response?.data) {
-        const message = (error.response.data as { message?: string | string[] })
-          .message;
-        if (typeof message === "string") errorMsg = message;
-        else if (Array.isArray(message)) errorMsg = message.join("\n");
-      }
-      Alert.alert("에러", errorMsg);
+      Alert.alert("에러", getApiErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

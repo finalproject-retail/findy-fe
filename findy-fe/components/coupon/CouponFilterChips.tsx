@@ -9,7 +9,7 @@ const CHIP_PADDING_HORIZONTAL = 15;
 const FILTER_OPTIONS: { key: CouponFilter; label: string }[] = [
   { key: "all", label: "전체" },
   { key: "product", label: "상품" },
-  { key: "unlimited", label: "무제한" },
+  { key: "membership", label: "멤버십" },
   { key: "brand", label: "브랜드" },
 ];
 
@@ -20,10 +20,7 @@ type CouponFilterChipsProps = {
 
 export function CouponFilterChips({ value, onChange }: CouponFilterChipsProps) {
   return (
-    <View
-      className="flex-row flex-wrap"
-      style={{ gap: SPACING.sm }}
-    >
+    <View className="flex-row flex-wrap" style={{ gap: SPACING.sm }}>
       {FILTER_OPTIONS.map((option) => {
         const selected = value === option.key;
         return (

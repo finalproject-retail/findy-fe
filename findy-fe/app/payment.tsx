@@ -1,15 +1,20 @@
 import { Header } from "@/components/common";
 import { SquareButton } from "@/components/common/SquareButton";
 import { getUnitPrice } from "@/components/cart";
-import { MOCK_COUPONS } from "@/components/coupon";
 import { formatPrice, hasProductDiscount } from "@/components/product";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { usePoints } from "@/contexts/PointsContext";
+import { useOrderCoupons } from "@/hooks/useOrderCoupons";
+import {
+  getCouponDiscountAmount,
+  getCouponDiscountLabel,
+  isCouponSelectable,
+} from "@/lib/coupon/couponDiscount";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -47,7 +52,15 @@ export default function PaymentScreen() {
     selectedCoupon,
     usedPoints,
     setUsedPoints,
+    setSelectedCoupon,
   } = useCheckout();
+  const { coupons, reload: reloadOrderCoupons } = useOrderCoupons();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadOrderCoupons();
+    }, [reloadOrderCoupons]),
+  );
 
   const subtotal = useMemo(
     () =>
@@ -58,17 +71,27 @@ export default function PaymentScreen() {
     [checkoutItems],
   );
 
-  const couponDiscount = useMemo(() => {
-    if (!selectedCoupon) return 0;
-    if (subtotal < selectedCoupon.minPurchaseAmount) return 0;
-    return Math.min(selectedCoupon.discountAmount, subtotal);
-  }, [selectedCoupon, subtotal]);
+  const couponDiscount = useMemo(
+    () =>
+      selectedCoupon
+        ? getCouponDiscountAmount(selectedCoupon, subtotal)
+        : 0,
+    [selectedCoupon, subtotal],
+  );
   const eligibleCouponCount = useMemo(
     () =>
-      MOCK_COUPONS.filter((coupon) => subtotal >= coupon.minPurchaseAmount)
-        .length,
-    [subtotal],
+      coupons.filter((coupon) => isCouponSelectable(coupon, subtotal)).length,
+    [coupons, subtotal],
   );
+
+  useEffect(() => {
+    if (
+      selectedCoupon &&
+      !isCouponSelectable(selectedCoupon, subtotal)
+    ) {
+      setSelectedCoupon(null);
+    }
+  }, [selectedCoupon, setSelectedCoupon, subtotal]);
 
   const maxUsablePoints = useMemo(
     () => Math.max(0, Math.min(balance, subtotal - couponDiscount)),
@@ -205,7 +228,7 @@ export default function PaymentScreen() {
                     numberOfLines={1}
                   >
                     {selectedCoupon
-                      ? `${selectedCoupon.discountAmount.toLocaleString("ko-KR")}원 할인`
+                      ? getCouponDiscountLabel(selectedCoupon)
                       : `사용 가능 ${eligibleCouponCount}장`}
                   </Text>
                 </Pressable>

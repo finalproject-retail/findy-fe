@@ -10,12 +10,14 @@ const ACTION_WIDTH = 56;
 type DownloadableCouponCardProps = {
   coupon: Coupon;
   downloaded: boolean;
+  downloading?: boolean;
   onDownload: () => void;
 };
 
 export function DownloadableCouponCard({
   coupon,
   downloaded,
+  downloading = false,
   onDownload,
 }: DownloadableCouponCardProps) {
   return (
@@ -45,13 +47,14 @@ export function DownloadableCouponCard({
       >
         <Pressable
           onPress={onDownload}
-          disabled={downloaded}
+          disabled={downloaded || downloading}
           accessibilityRole="button"
           accessibilityLabel={
             downloaded ? "다운로드 완료" : "쿠폰 다운로드"
           }
-          accessibilityState={{ disabled: downloaded }}
+          accessibilityState={{ disabled: downloaded || downloading }}
           hitSlop={8}
+          style={{ opacity: downloading ? 0.5 : 1 }}
         >
           {downloaded ? (
             <RedCheckIcon width={28} height={28} />

@@ -12,7 +12,10 @@ export function CouponCardContent({
   coupon,
   showDiscountChevron = true,
 }: CouponCardContentProps) {
-  const discountLabel = `${coupon.discountAmount.toLocaleString("ko-KR")}원 할인`;
+  const discountLabel =
+    coupon.discountType === "percent"
+      ? `${coupon.discountAmount}% 할인`
+      : `${coupon.discountAmount.toLocaleString("ko-KR")}원 할인`;
 
   return (
     <View style={{ gap: SPACING.xs, flex: 1 }}>
@@ -32,9 +35,11 @@ export function CouponCardContent({
       >
         {coupon.name}
       </Text>
-      <Text className="text-sm text-text-sub2" style={pretendard(400)}>
-        {coupon.minPurchaseAmount.toLocaleString("ko-KR")}원 이상 구매 시
-      </Text>
+      {coupon.minPurchaseAmount > 0 ? (
+        <Text className="text-sm text-text-sub2" style={pretendard(400)}>
+          {coupon.minPurchaseAmount.toLocaleString("ko-KR")}원 이상 구매 시
+        </Text>
+      ) : null}
       <Text className="text-sm text-text-sub2" style={pretendard(400)}>
         {coupon.expiresAtLabel}
       </Text>
