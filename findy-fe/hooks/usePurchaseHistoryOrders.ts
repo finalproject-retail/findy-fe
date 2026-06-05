@@ -8,6 +8,7 @@ import type {
 import { fetchOrderDetailsBatch } from "@/lib/orders/fetchOrderDetailsBatch";
 import { enrichOrderSummaryFromDetail } from "@/lib/orders/mapOrderFromApi";
 import { periodToApiDateRange } from "@/lib/orders/periodToApiRange";
+import { filterOrdersByPeriod } from "@/lib/orders/purchaseHistoryUtils";
 import { useCallback, useState } from "react";
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -46,19 +47,20 @@ export function usePurchaseHistoryOrders() {
           page: 0,
           size: DEFAULT_PAGE_SIZE,
         });
-        setOrders(data);
+        const filtered = filterOrdersByPeriod(data, period);
 
-        if (data.length === 0) {
+        if (filtered.length === 0) {
+          setOrders([]);
           setOrderDetails(new Map());
           return;
         }
 
         const details = await fetchOrderDetailsBatch(
-          data.map((order) => order.orderId),
+          filtered.map((order) => order.orderId),
         );
         setOrderDetails(details);
         setOrders(
-          data.map((order) => {
+          filtered.map((order) => {
             const detail = details.get(order.orderId);
             return detail
               ? enrichOrderSummaryFromDetail(order, detail)
