@@ -4,9 +4,7 @@ import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { saveUserPreferences } from "@/lib/api/preferences";
 import { extractAccessToken, postLogin } from "@/lib/auth/api/login";
-import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -179,7 +177,7 @@ const styles = StyleSheet.create({
 export default function LoginScreen() {
   const router = useRouter();
   const { name: signupName } = useLocalSearchParams<{ name?: string }>();
-  const { signIn, signOut } = useAuth();
+  const { signIn, signOut, refreshProfile } = useAuth();
   const [tab, setTab] = useState<LoginTab>("general");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -220,12 +218,16 @@ export default function LoginScreen() {
         return;
       }
 
+      const profile = await refreshProfile();
+
       if (profile.isFirstLogin) {
         router.replace({
           pathname: "/onboarding",
           params: {
             email: profile.email,
-            name: profile.name || (typeof signupName === "string" ? signupName : ""),
+            name:
+              profile.name ||
+              (typeof signupName === "string" ? signupName : ""),
           },
         } as unknown as Href);
       } else {

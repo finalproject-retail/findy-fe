@@ -11,7 +11,7 @@ const ADMIN_HOME_HREF = "/(admin)" as Href;
  * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
-  const { isLoggedIn, isLoading, isAdminSession } = useAuth();
+  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -47,7 +47,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
     if (inAuthGroup) {
       router.replace(isAdminSession ? ADMIN_HOME_HREF : USER_HOME_HREF);
     }
-  }, [isAdminSession, isLoading, isLoggedIn, router, segments]);
+  }, [isAdminSession, isLoading, isLoggedIn, isProfileLoading, router, segments]);
 
   return children;
 }
