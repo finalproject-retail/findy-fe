@@ -16,9 +16,9 @@ export async function createShoppingListFromCart(
     throw new Error("쇼핑리스트에 담을 상품이 없습니다.");
   }
 
-  await syncCartSelectionToServer(allCartLines);
-
+  // 취소가 cart.uncheckAllItems()를 호출하므로, 선택 동기화는 취소 이후에 해야 함
   await cancelActiveShoppingListIfExists();
+  await syncCartSelectionToServer(allCartLines);
 
   let shoppingList = await createShoppingList();
 
