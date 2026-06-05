@@ -1,17 +1,30 @@
 import { COLORS, LAYOUT, RADIUS, SPACING } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { usePathname, useRouter, type Href } from "expo-router";
+import { useRouter, useSegments, type Href } from "expo-router";
 import { Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BUTTON_SIZE = 55;
 
+const HIDDEN_ROOT_SEGMENTS = new Set(["(admin)", "(auth)", "onboarding"]);
+
 export function FloatingChatbotButton() {
   const router = useRouter();
-  const pathname = usePathname();
+  const segments = useSegments();
   const insets = useSafeAreaInsets();
+  const rootSegment = segments[0];
 
-  if (pathname !== "/") {
+  if (rootSegment != null && HIDDEN_ROOT_SEGMENTS.has(rootSegment)) {
+    return null;
+  }
+
+  // 일반 사용자 홈 탭에서만 표시 (관리자 홈도 pathname이 "/"일 수 있음)
+  const tabSegment = segments[1];
+  const onUserHome =
+    rootSegment === "(tabs)" &&
+    (tabSegment == null || tabSegment === "index");
+
+  if (!onUserHome) {
     return null;
   }
 

@@ -1,3 +1,4 @@
+import { AdminContentFrame } from "@/components/admin/AdminContentFrame";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminOperationsSummary } from "@/components/admin/AdminOperationsSummary";
 import { AdminProductFunnel } from "@/components/admin/AdminProductFunnel";
@@ -61,13 +62,14 @@ export default function AdminDashboardScreen() {
         paddingBottom: Math.max(insets.bottom, 24) + (isWide ? 0 : 72),
       }}
     >
-      <AdminHeader
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        showTitle={!isWide}
-      />
+      <AdminContentFrame>
+        <AdminHeader
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          showTitle={!isWide}
+        />
 
-      <View style={{ paddingHorizontal: 20, gap: 28, paddingTop: 8 }}>
+        <View style={{ paddingHorizontal: 20, gap: 28, paddingTop: 8 }}>
         <DashboardRow isWide={isWide}>
           <DashboardSection isWide={isWide}>
             <AdminOperationsSummary
@@ -95,7 +97,8 @@ export default function AdminDashboardScreen() {
             <AdminPromoProductList products={data.promoProducts} stretch={isWide} />
           </DashboardSection>
         </DashboardRow>
-      </View>
+        </View>
+      </AdminContentFrame>
     </ScrollView>
   );
 }
