@@ -7,6 +7,7 @@ import {
   type CouponFilter,
   type CouponTab,
 } from "@/components/coupon";
+import { excludeAlreadyDownloadedCoupons } from "@/lib/coupon/filterCoupons";
 import { useMypageProfile } from "@/components/mypage";
 import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
 import { LAYOUT } from "@/constants/theme";
@@ -48,13 +49,11 @@ export default function CouponScreen() {
   useFocusEffect(
     useCallback(() => {
       void reloadProfile();
+      void reloadMyCoupons();
 
-      if (activeTab === "my") {
-        void reloadMyCoupons();
-        return;
+      if (activeTab === "get") {
+        void reloadAvailableCoupons();
       }
-
-      void reloadAvailableCoupons();
     }, [activeTab, reloadAvailableCoupons, reloadMyCoupons, reloadProfile]),
   );
 
@@ -64,8 +63,16 @@ export default function CouponScreen() {
   );
 
   const availableCoupons = useMemo(
-    () => filterCoupons(availableCouponsFromApi, filter, userGrade),
-    [availableCouponsFromApi, filter, userGrade],
+    () =>
+      filterCoupons(
+        excludeAlreadyDownloadedCoupons(
+          availableCouponsFromApi,
+          myCouponsFromApi,
+        ),
+        filter,
+        userGrade,
+      ),
+    [availableCouponsFromApi, myCouponsFromApi, filter, userGrade],
   );
 
   const handleDownload = async (couponId: string) => {

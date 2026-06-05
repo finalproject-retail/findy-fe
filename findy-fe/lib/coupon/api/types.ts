@@ -35,11 +35,16 @@ export type AvailableOrderCouponApiDto = {
 };
 
 /** GET /api/v1/coupons/me */
-export type UserCouponApiDto = CouponApiBase & {
+export type UserCouponApiDto = Omit<CouponApiBase, "endAt"> & {
   userCouponId: number;
   isUsed: boolean;
   downloadedAt: string;
   isDownloaded?: boolean;
+  /** 보유 쿠폰 실제 만료 시각 */
+  expiresAt: string;
+  endAt?: string | null;
+  isExpired?: boolean;
+  usedAt?: string | null;
 };
 
 /** GET /api/v1/coupons/available, /{couponId} */

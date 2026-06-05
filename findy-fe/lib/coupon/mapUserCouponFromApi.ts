@@ -5,8 +5,14 @@ import { normalizeCouponType } from "@/lib/coupon/filterCoupons";
 import { mapCouponDiscountType } from "@/lib/coupon/mapCouponFields";
 import { resolveCouponMembershipGrade } from "@/lib/coupon/membershipGrade";
 
+function resolveUserCouponExpiresAt(dto: UserCouponApiDto): string {
+  const raw = dto.expiresAt ?? dto.endAt;
+  return typeof raw === "string" ? raw.trim() : "";
+}
+
 export function mapUserCouponFromApi(dto: UserCouponApiDto): Coupon {
   const discountType = mapCouponDiscountType(dto.couponName, dto.discountType);
+  const expiresAt = resolveUserCouponExpiresAt(dto);
 
   return {
     id: String(dto.userCouponId),
@@ -18,10 +24,12 @@ export function mapUserCouponFromApi(dto: UserCouponApiDto): Coupon {
     discountType,
     name: dto.couponName,
     minPurchaseAmount: dto.minOrderAmount ?? 0,
-    expiresAtLabel: formatCouponExpireLabel(dto.endAt),
+    expiresAtLabel: expiresAt
+      ? formatCouponExpireLabel(expiresAt)
+      : "유효기간 정보 없음",
     isUsed: dto.isUsed,
     downloadedAt: dto.downloadedAt,
-    expiresAt: dto.endAt,
+    expiresAt: expiresAt || undefined,
     isDownloaded: dto.isDownloaded ?? true,
   };
 }
