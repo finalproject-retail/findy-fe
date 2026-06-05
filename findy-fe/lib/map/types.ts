@@ -44,6 +44,21 @@ export type ApiEnvelope<T> = {
   data?: T;
 };
 
+/** map-service POST /api/v1/path */
+export type PathLegApi = {
+  fromGridId: number;
+  toGridId: number;
+  pathGridIds: number[];
+};
+
+export type PathNavigationApi = {
+  storeId: number;
+  currentGridId: number;
+  destinationGridIds: number[];
+  legs: PathLegApi[];
+  fullPathGridIds: number[];
+};
+
 /** map-service stores/{storeId}/navigation/path */
 export type PathLegApi = {
   fromGridId: number;

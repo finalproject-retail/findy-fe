@@ -1,3 +1,5 @@
+import { tripLineItemsToShoppingMapItems } from "@/components/cart/cartToShoppingMapItems";
+import type { CartLineItem } from "@/contexts/CartContext";
 import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 
@@ -41,6 +43,63 @@ export function destinationGridIdsFromMapItems(
 ): number[] {
   return dedupeDestinationGridIds(
     items.map((item) => resolveShoppingItemGridId(item, gridCols)),
+  );
+}
+
+/** 담은 수량을 전부 스캔한 상품만 경로 목적지에서 제외 */
+export function remainingTripLineItems(
+  lineItems: CartLineItem[],
+  pickedQuantityByProductId: Record<string, number>,
+): CartLineItem[] {
+  return lineItems.filter((item) => {
+    const picked = pickedQuantityByProductId[item.productId] ?? 0;
+    return picked < item.quantity;
+  });
+}
+
+/** 현재 쇼핑 리스트 기준 경로 API destinationGridIds (추가·삭제·새로고침 반영) */
+export function destinationGridIdsFromTripLineItems(
+  lineItems: CartLineItem[],
+  gridCols: number,
+  apiDestinationGridIds?: number[],
+): number[] {
+  if (apiDestinationGridIds != null && apiDestinationGridIds.length > 0) {
+    const fromLineItems = destinationGridIdsFromTripLineItems(
+      lineItems,
+      gridCols,
+    );
+    const remainingSet = new Set(fromLineItems);
+    return dedupeDestinationGridIds(
+      apiDestinationGridIds.filter((gridId) => remainingSet.has(gridId)),
+    );
+  }
+
+  const fromProducts: number[] = [];
+  let previous: number | null = null;
+
+  for (const item of lineItems) {
+    const gridId = item.product.gridId;
+    if (gridId == null) {
+      continue;
+    }
+    if (gridId === previous) {
+      continue;
+    }
+    fromProducts.push(gridId);
+    previous = gridId;
+  }
+
+  if (fromProducts.length > 0) {
+    return fromProducts;
+  }
+
+  if (lineItems.length === 0) {
+    return [];
+  }
+
+  return destinationGridIdsFromMapItems(
+    tripLineItemsToShoppingMapItems(lineItems),
+    gridCols,
   );
 }
 

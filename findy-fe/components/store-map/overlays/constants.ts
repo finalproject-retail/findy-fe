@@ -13,7 +13,7 @@ export const MAP_USER_DOT_SIZE_BASE = 11;
 export const MAP_USER_PING_SIZE_BASE = 20;
 
 export const MAP_PATH_SOLID_COLOR = "#2F7FE8";
-export const MAP_PATH_DASH_COLOR = "#6DB4FA";
+export const MAP_PATH_DASH_COLOR = COLORS.subText;
 export const MAP_PATH_STROKE_WIDTH = 3.5;
 export const MAP_PATH_DASH_ARRAY = "6 5";
 

@@ -109,12 +109,16 @@ export default function CartScreen() {
         ...productDestinationIds,
         ...zoneDestinationGridIds,
       ]);
+      const resolvedDestinationGridIds =
+        allDestinationGridIds.length > 0
+          ? allDestinationGridIds
+          : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
 
       startShoppingTrip(
         shoppingListLines,
         mapItems,
         activeShoppingListId,
-        allDestinationGridIds,
+        resolvedDestinationGridIds,
       );
 
       if (hasSelectedZones) {

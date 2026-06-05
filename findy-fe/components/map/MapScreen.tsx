@@ -169,6 +169,7 @@ export function MapScreen() {
             routeSnapshot={routeSnapshot}
             navigationRefreshKey={navigationRefreshKey}
             pickedMarkerIds={pickedMarkerIds}
+            pickedQuantityByProductId={pickedQuantityByProductId}
             selectedMarkerProductId={selectedMarkerProductId}
             tripLineItems={tripLineItems}
             recommendedProductsById={recommendedProductsById}

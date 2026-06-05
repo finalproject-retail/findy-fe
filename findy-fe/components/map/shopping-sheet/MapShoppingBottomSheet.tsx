@@ -49,9 +49,11 @@ import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
+import { getApiErrorMessage } from "@/lib/api";
 import { scanShoppingListItem, decreaseShoppingListItemByScan } from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
 import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 
 const SNAP_MS = 260;
@@ -412,7 +414,11 @@ export function MapShoppingBottomSheet({
           const canceledProductName = cancelModal.productName;
           const shoppingList = await decreaseShoppingListItemByScan(barcode, 1);
           const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-          syncShoppingTrip(nextLineItems);
+          syncShoppingTrip(
+            nextLineItems,
+            shoppingList.shoppingListId,
+            shoppingList.destinationGridIds,
+          );
           setCancelScanModal(null);
 
           if (cancelToastTimerRef.current) {
@@ -441,7 +447,11 @@ export function MapShoppingBottomSheet({
       try {
         const shoppingList = await scanShoppingListItem(barcode, 1);
         const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-        syncShoppingTrip(nextLineItems, shoppingList.shoppingListId);
+        syncShoppingTrip(
+          nextLineItems,
+          shoppingList.shoppingListId,
+          shoppingList.destinationGridIds,
+        );
 
         const lineAfter = nextLineItems.find(
           (item) => item.product.barcode === barcode,
@@ -523,6 +533,44 @@ export function MapShoppingBottomSheet({
     setCancelScanModal(null);
   }, []);
 
+  const handleTripItemQuantityChange = useCallback(
+    async (item: CartLineItem, nextQuantity: number) => {
+      const latestItem =
+        tripLineItems.find((line) => line.productId === item.productId) ?? item;
+
+      try {
+        const { item: serverItem } = await findShoppingListItemByProductId(
+          latestItem.productId,
+        );
+        const serverScanned = serverItem.scannedQuantity;
+        const currentQuantity = serverItem.quantity;
+        const isDecrease = nextQuantity < currentQuantity;
+        const needsBarcodeCancel =
+          isDecrease &&
+          serverScanned > 0 &&
+          (nextQuantity < serverScanned ||
+            serverScanned >= currentQuantity);
+
+        if (needsBarcodeCancel) {
+          setCancelScanModal({
+            productId: latestItem.productId,
+            productName: latestItem.product.name,
+            quantity: currentQuantity,
+          });
+          return;
+        }
+
+        await setTripItemQuantity(latestItem, nextQuantity);
+      } catch (error) {
+        showToast(
+          getApiErrorMessage(error) ||
+            "수량을 변경하지 못했어요. 다시 시도해 주세요.",
+        );
+      }
+    },
+    [tripLineItems, setTripItemQuantity, showToast],
+  );
+
   return (
     <>
     <GestureDetector gesture={panGesture}>
@@ -560,7 +608,7 @@ export function MapShoppingBottomSheet({
                       }
                       onRemove={() => handleRemoveItem(item)}
                       onQuantityChange={(qty) =>
-                        setTripItemQuantity(item.productId, qty)
+                        void handleTripItemQuantityChange(item, qty)
                       }
                     />
                   ))}

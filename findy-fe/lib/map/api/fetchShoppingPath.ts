@@ -2,6 +2,8 @@ import { MAP_API_URL } from "@/constants/beacon";
 import { getAccessToken } from "@/lib/api/client";
 import type { ApiEnvelope, PathNavigationApi } from "@/lib/map/types";
 
+const PATH_API_URL = `${MAP_API_URL}/api/v1/path`;
+
 function resolveAuthToken(): string | null {
   const fromMemory = getAccessToken();
   if (fromMemory) {
@@ -11,30 +13,7 @@ function resolveAuthToken(): string | null {
   return fromEnv || null;
 }
 
-function navigationPathUrl(storeId: number): string {
-  return `${MAP_API_URL}/api/v1/stores/${storeId}/navigation/path`;
-}
-
-function authHeaders(token: string): HeadersInit {
-  return {
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-}
-
-async function parsePathResponse(
-  response: Response,
-): Promise<PathNavigationApi> {
-  const json = (await response.json().catch(() => null)) as ApiEnvelope<PathNavigationApi> | null;
-
-  if (!response.ok || !json?.success || !json.data) {
-    throw new Error(json?.message ?? `navigation/path HTTP ${response.status}`);
-  }
-
-  return json.data;
-}
-
-/** 경로 생성·재탐색 — POST /api/v1/stores/{storeId}/navigation/path */
+/** 경로 생성·재탐색 — POST /api/v1/path */
 export async function createShoppingPath(
   storeId: number,
   destinationGridIds: number[],
@@ -48,31 +27,24 @@ export async function createShoppingPath(
     throw new Error("경로 목적지가 없습니다.");
   }
 
-  const response = await fetch(navigationPathUrl(storeId), {
+  const response = await fetch(PATH_API_URL, {
     method: "POST",
     headers: {
-      ...authHeaders(token),
+      Accept: "application/json",
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ destinationGridIds }),
+    body: JSON.stringify({ storeId, destinationGridIds }),
   });
 
-  return parsePathResponse(response);
-}
+  const json = (await response.json().catch(() => null)) as ApiEnvelope<PathNavigationApi> | null;
 
-/** 저장된 경로 조회 — GET /api/v1/stores/{storeId}/navigation/path */
-export async function getShoppingPath(storeId: number): Promise<PathNavigationApi> {
-  const token = resolveAuthToken();
-  if (!token) {
-    throw new Error("로그인 토큰이 없습니다. 로그인 후 경로를 이용해 주세요.");
+  if (!response.ok || !json?.success || !json.data) {
+    const detail = json?.message ?? json?.code ?? `HTTP ${response.status}`;
+    throw new Error(`${detail} (${response.status})`);
   }
 
-  const response = await fetch(navigationPathUrl(storeId), {
-    method: "GET",
-    headers: authHeaders(token),
-  });
-
-  return parsePathResponse(response);
+  return json.data;
 }
 
 /** @deprecated createShoppingPath 사용 */

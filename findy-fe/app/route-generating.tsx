@@ -4,7 +4,7 @@ import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Text, View } from "react-native";
 
 const ROUTE_GENERATION_MS = 1200;
@@ -13,6 +13,8 @@ export default function RouteGeneratingScreen() {
   const router = useRouter();
   const { generateShoppingPath } = useMapNavigation();
   const { storeId, storeMapConfig } = useStoreMapConfig();
+  const generateShoppingPathRef = useRef(generateShoppingPath);
+  generateShoppingPathRef.current = generateShoppingPath;
 
   useEffect(() => {
     let cancelled = false;
@@ -23,7 +25,7 @@ export default function RouteGeneratingScreen() {
       });
 
       await Promise.all([
-        generateShoppingPath(storeId, storeMapConfig.cols),
+        generateShoppingPathRef.current(storeId, storeMapConfig.cols),
         minDelay,
       ]);
 
@@ -35,7 +37,10 @@ export default function RouteGeneratingScreen() {
     return () => {
       cancelled = true;
     };
-  }, [generateShoppingPath, router, storeId, storeMapConfig.cols]);
+    // 경로 API 성공 시 context state 변경으로 generateShoppingPath 참조가 바뀌면
+    // effect가 재실행되며 cancelled=true가 되어 화면 전환이 막히므로 1회만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, storeId, storeMapConfig.cols]);
 
   return (
     <SafeView className="flex-1 bg-white">

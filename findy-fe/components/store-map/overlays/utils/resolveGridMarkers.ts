@@ -83,3 +83,16 @@ export function locationMatchesShoppingStop(
 ): boolean {
   return location.gridX === item.gridX && location.gridY === item.gridY;
 }
+
+/** 구역은 비콘 도착 시 leg 진행(지나온 구간 점선). 상품은 스캔 시 점선, 경로 재생성은 새로고침에서만 */
+export function isRoutingLegComplete(
+  location: MapGridPoint,
+  target: MapGridPoint & { id: string },
+  _pickedQuantityByProductId: Record<string, number>,
+): boolean {
+  if (!target.id.startsWith("zone-")) {
+    return false;
+  }
+
+  return locationMatchesShoppingStop(location, target);
+}
