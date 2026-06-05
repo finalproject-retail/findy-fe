@@ -45,12 +45,22 @@ import { orderShoppingMinimumRoute } from "@/components/store-map/overlays/utils
 import { ScanBarcodeRequiredModal } from "@/components/map/ScanBarcodeRequiredModal";
 import { MapShoppingSheetEmpty } from "./MapShoppingSheetEmpty";
 import { MapShoppingSheetFooter } from "./MapShoppingSheetFooter";
+import { MapShoppingSheetCategoryItem } from "./MapShoppingSheetCategoryItem";
 import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
+import {
+  categoryLineItemKey,
+  isCategoryLineItem,
+} from "@/lib/shopping/shoppingListItemUtils";
 import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { getApiErrorMessage } from "@/lib/api";
-import { scanShoppingListItem, decreaseShoppingListItemByScan } from "@/lib/shopping/api";
+import {
+  changeShoppingListItemChecked,
+  decreaseShoppingListItemByScan,
+  removeShoppingListItem,
+  scanShoppingListItem,
+} from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
@@ -354,16 +364,24 @@ export function MapShoppingBottomSheet({
       return;
     }
 
-    const totalPicked = tripLineItems.reduce(
-      (sum, line) => sum + (pickedQuantityByProductId[line.productId] ?? 0),
-      0,
+    const hasProductItems = tripLineItems.some(
+      (line) => !isCategoryLineItem(line),
     );
-    if (totalPicked === 0) {
+    const totalPicked = tripLineItems.reduce((sum, line) => {
+      if (isCategoryLineItem(line)) {
+        return sum;
+      }
+      return sum + (pickedQuantityByProductId[line.productId] ?? 0);
+    }, 0);
+    if (hasProductItems && totalPicked === 0) {
       setScanBarcodeModalVisible(true);
       return;
     }
 
     const hasUnpicked = tripLineItems.some((line) => {
+      if (isCategoryLineItem(line)) {
+        return !(line.checked ?? false);
+      }
       const picked = pickedQuantityByProductId[line.productId] ?? 0;
       return picked < line.quantity;
     });
@@ -491,8 +509,55 @@ export function MapShoppingBottomSheet({
     onScan: handleScannerScan,
   });
 
+  const handleRemoveCategoryItem = useCallback(
+    async (item: CartLineItem) => {
+      if (!item.shoppingListItemId) {
+        removeTripItem(item.productId);
+        return;
+      }
+
+      try {
+        const shoppingList = await removeShoppingListItem(item.shoppingListItemId);
+        syncShoppingTrip(
+          mapShoppingListApiToLineItems(shoppingList),
+          shoppingList.shoppingListId,
+          shoppingList.destinationGridIds,
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [removeTripItem, syncShoppingTrip],
+  );
+
+  const handleToggleCategoryChecked = useCallback(
+    async (item: CartLineItem, checked: boolean) => {
+      if (!item.shoppingListItemId) return;
+
+      try {
+        const shoppingList = await changeShoppingListItemChecked(
+          item.shoppingListItemId,
+          checked,
+        );
+        syncShoppingTrip(
+          mapShoppingListApiToLineItems(shoppingList),
+          shoppingList.shoppingListId,
+          shoppingList.destinationGridIds,
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [syncShoppingTrip],
+  );
+
   const handleRemoveItem = useCallback(
     async (item: CartLineItem) => {
+      if (isCategoryLineItem(item)) {
+        await handleRemoveCategoryItem(item);
+        return;
+      }
+
       const picked = pickedQuantityByProductId[item.productId] ?? 0;
       const isFullyPicked = picked >= item.quantity;
 
@@ -512,7 +577,12 @@ export function MapShoppingBottomSheet({
         console.error(error);
       }
     },
-    [addToCart, pickedQuantityByProductId, removeTripItem],
+    [
+      addToCart,
+      handleRemoveCategoryItem,
+      pickedQuantityByProductId,
+      removeTripItem,
+    ],
   );
 
   useEffect(() => {
@@ -542,7 +612,7 @@ export function MapShoppingBottomSheet({
         const { item: serverItem } = await findShoppingListItemByProductId(
           latestItem.productId,
         );
-        const serverScanned = serverItem.scannedQuantity;
+        const serverScanned = serverItem.scannedQuantity ?? 0;
         const currentQuantity = serverItem.quantity;
         const isDecrease = nextQuantity < currentQuantity;
         const needsBarcodeCancel =
@@ -599,19 +669,30 @@ export function MapShoppingBottomSheet({
                   contentContainerStyle={styles.scrollContent}
                   nestedScrollEnabled
                 >
-                  {sortedTripLineItems.map((item) => (
-                    <MapShoppingSheetItem
-                      key={item.productId}
-                      item={item}
-                      pickedQuantity={
-                        pickedQuantityByProductId[item.productId] ?? 0
-                      }
-                      onRemove={() => handleRemoveItem(item)}
-                      onQuantityChange={(qty) =>
-                        void handleTripItemQuantityChange(item, qty)
-                      }
-                    />
-                  ))}
+                  {sortedTripLineItems.map((item) =>
+                    isCategoryLineItem(item) ? (
+                      <MapShoppingSheetCategoryItem
+                        key={categoryLineItemKey(item)}
+                        item={item}
+                        onToggleChecked={(checked) =>
+                          void handleToggleCategoryChecked(item, checked)
+                        }
+                        onRemove={() => void handleRemoveItem(item)}
+                      />
+                    ) : (
+                      <MapShoppingSheetItem
+                        key={categoryLineItemKey(item)}
+                        item={item}
+                        pickedQuantity={
+                          pickedQuantityByProductId[item.productId] ?? 0
+                        }
+                        onRemove={() => void handleRemoveItem(item)}
+                        onQuantityChange={(qty) =>
+                          void handleTripItemQuantityChange(item, qty)
+                        }
+                      />
+                    ),
+                  )}
                 </AnimatedScrollView>
               ) : (
                 <MapShoppingSheetEmpty />

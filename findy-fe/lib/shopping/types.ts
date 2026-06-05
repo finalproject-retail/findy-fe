@@ -69,15 +69,25 @@ export type ShoppingListScanStatus =
   | "PARTIALLY_SCANNED"
   | "SCANNED";
 
+export type ShoppingListItemType = "PRODUCT" | "CATEGORY";
+
+export type CategoryShoppingListItemApi = {
+  categoryId: number | null;
+  categoryName: string;
+  gridId: number | null;
+};
+
 export type ShoppingListItemApi = {
   shoppingListItemId: number;
-  productId: number;
-  product: ShoppingProductSummaryApi;
+  itemType?: ShoppingListItemType;
+  product?: ShoppingProductSummaryApi | null;
+  category?: CategoryShoppingListItemApi | null;
   quantity: number;
-  scannedQuantity: number;
+  scannedQuantity?: number | null;
+  checked: boolean;
   scanStatus: ShoppingListScanStatus;
-  itemTotalAmount: number;
-  scannedAmount: number;
+  itemTotalAmount?: number | null;
+  scannedAmount?: number | null;
 };
 
 export type ShoppingListApi = {

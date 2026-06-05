@@ -1,5 +1,6 @@
 import { isOutOfStock } from "@/components/product";
 import type { CartLineItem } from "@/contexts/CartContext";
+import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
 
 function routeRank(productId: string, routeProductIds: readonly string[]) {
   const index = routeProductIds.indexOf(productId);
@@ -15,6 +16,17 @@ export function sortTripLineItemsForChecklist(
   return items
     .map((item, index) => ({ item, index }))
     .sort((a, b) => {
+      const aCategory = isCategoryLineItem(a.item);
+      const bCategory = isCategoryLineItem(b.item);
+      if (aCategory !== bCategory) return aCategory ? 1 : -1;
+
+      if (aCategory && bCategory) {
+        const aDone = a.item.checked ?? false;
+        const bDone = b.item.checked ?? false;
+        if (aDone !== bDone) return aDone ? 1 : -1;
+        return a.index - b.index;
+      }
+
       const aSoldOut = isOutOfStock(a.item.product);
       const bSoldOut = isOutOfStock(b.item.product);
       if (aSoldOut !== bSoldOut) return aSoldOut ? -1 : 1;

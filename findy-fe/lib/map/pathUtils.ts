@@ -2,6 +2,7 @@ import { tripLineItemsToShoppingMapItems } from "@/components/cart/cartToShoppin
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
 
 export function gridPointToGridId(
   gridX: number,
@@ -52,6 +53,9 @@ export function remainingTripLineItems(
   pickedQuantityByProductId: Record<string, number>,
 ): CartLineItem[] {
   return lineItems.filter((item) => {
+    if (isCategoryLineItem(item)) {
+      return !(item.checked ?? false);
+    }
     const picked = pickedQuantityByProductId[item.productId] ?? 0;
     return picked < item.quantity;
   });
@@ -78,7 +82,9 @@ export function destinationGridIdsFromTripLineItems(
   let previous: number | null = null;
 
   for (const item of lineItems) {
-    const gridId = item.product.gridId;
+    const gridId = isCategoryLineItem(item)
+      ? item.category?.gridId ?? item.product.gridId
+      : item.product.gridId;
     if (gridId == null) {
       continue;
     }

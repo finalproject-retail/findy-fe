@@ -501,7 +501,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
               (item) => item.productId === lineItem.productId,
             ) ?? lineItem;
 
-          const serverScannedQty = serverItem.scannedQuantity;
+          const serverScannedQty = serverItem.scannedQuantity ?? 0;
           const currentQuantity = serverItem.quantity;
           const minQty = Math.max(1, serverScannedQty);
           const nextQty = Math.max(quantity, minQty);

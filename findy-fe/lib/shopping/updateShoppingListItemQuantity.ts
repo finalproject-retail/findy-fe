@@ -80,7 +80,7 @@ export async function updateShoppingListItemQuantity(
     return {
       shoppingListItemId: item.shoppingListItemId,
       currentQuantity: item.quantity,
-      scannedQuantity: item.scannedQuantity,
+      scannedQuantity: item.scannedQuantity ?? 0,
     };
   };
 
@@ -102,7 +102,7 @@ export async function updateShoppingListItemQuantity(
     const freshSnapshot: ResolvedShoppingListItem = {
       shoppingListItemId: fresh.item.shoppingListItemId,
       currentQuantity: fresh.item.quantity,
-      scannedQuantity: fresh.item.scannedQuantity,
+      scannedQuantity: fresh.item.scannedQuantity ?? 0,
     };
     return applyQuantityChange(
       freshSnapshot.shoppingListItemId,
