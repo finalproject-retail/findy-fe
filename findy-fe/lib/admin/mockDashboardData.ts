@@ -11,13 +11,11 @@ export type AdminStatCard = {
 };
 
 export type AdminZoneKey =
-  | "produce"
-  | "bakery"
-  | "seafood"
-  | "petGarden"
-  | "processed"
-  | "kitchen"
-  | "meat";
+  | "fresh"
+  | "processedFrozen"
+  | "bakeryDeli"
+  | "beverageAlcohol"
+  | "lifestyle";
 
 export type AdminZoneTraffic = {
   total: number;
@@ -60,23 +58,19 @@ export type AdminDashboardData = {
 };
 
 export const ADMIN_ZONE_LABELS: Record<AdminZoneKey, string> = {
-  produce: "농산물",
-  bakery: "베이커리",
-  seafood: "수산물",
-  petGarden: "애완·원예",
-  processed: "조리·가공식품",
-  kitchen: "주방·욕실",
-  meat: "축산물",
+  fresh: "신선 식품",
+  processedFrozen: "가공/냉동 식품",
+  bakeryDeli: "베이커리/델리",
+  beverageAlcohol: "음료/주류",
+  lifestyle: "라이프 스타일",
 };
 
 export const ADMIN_ZONE_ORDER: AdminZoneKey[] = [
-  "produce",
-  "bakery",
-  "seafood",
-  "petGarden",
-  "processed",
-  "kitchen",
-  "meat",
+  "fresh",
+  "processedFrozen",
+  "bakeryDeli",
+  "beverageAlcohol",
+  "lifestyle",
 ];
 
 function traffic(
@@ -180,62 +174,49 @@ export function getAdminDashboardMock(_range: AdminDateRange): AdminDashboardDat
       },
     ],
     zones: {
-      produce: {
-        visitors: traffic(239, 66, 73),
+      fresh: {
+        visitors: traffic(312, 68, 71),
         flows: {
-          bakery: traffic(28, 12, 64),
-          seafood: traffic(19, 8, 58),
-          petGarden: traffic(12, 5, 50),
-          processed: traffic(35, 15, 71),
-          kitchen: traffic(81, 34, 69),
-          meat: traffic(22, 9, 55),
+          processedFrozen: traffic(58, 19, 74),
+          bakeryDeli: traffic(42, 13, 63),
+          beverageAlcohol: traffic(28, 9, 58),
+          lifestyle: traffic(64, 21, 69),
         },
       },
-      bakery: {
-        visitors: traffic(112, 31, 62),
+      processedFrozen: {
+        visitors: traffic(198, 43, 78),
         flows: {
-          produce: traffic(41, 37, 66),
-          processed: traffic(38, 34, 74),
-          kitchen: traffic(21, 19, 57),
+          fresh: traffic(72, 36, 75),
+          bakeryDeli: traffic(31, 16, 70),
+          beverageAlcohol: traffic(48, 24, 82),
+          lifestyle: traffic(35, 18, 77),
         },
       },
-      seafood: {
-        visitors: traffic(98, 27, 68),
+      bakeryDeli: {
+        visitors: traffic(156, 34, 64),
         flows: {
-          produce: traffic(44, 45, 70),
-          meat: traffic(31, 32, 65),
-          kitchen: traffic(15, 15, 60),
+          fresh: traffic(54, 35, 68),
+          processedFrozen: traffic(38, 24, 72),
+          beverageAlcohol: traffic(22, 14, 61),
+          lifestyle: traffic(18, 12, 55),
         },
       },
-      petGarden: {
-        visitors: traffic(76, 21, 55),
+      beverageAlcohol: {
+        visitors: traffic(124, 27, 66),
         flows: {
-          produce: traffic(29, 38, 62),
-          kitchen: traffic(18, 24, 56),
+          fresh: traffic(19, 15, 58),
+          processedFrozen: traffic(41, 33, 80),
+          bakeryDeli: traffic(24, 19, 62),
+          lifestyle: traffic(28, 23, 71),
         },
       },
-      processed: {
-        visitors: traffic(140, 39, 86),
+      lifestyle: {
+        visitors: traffic(186, 41, 73),
         flows: {
-          produce: traffic(84, 60, 90),
-          bakery: traffic(22, 16, 77),
-          kitchen: traffic(19, 14, 84),
-        },
-      },
-      kitchen: {
-        visitors: traffic(158, 44, 75),
-        flows: {
-          produce: traffic(52, 33, 71),
-          processed: traffic(41, 26, 80),
-          meat: traffic(28, 18, 68),
-        },
-      },
-      meat: {
-        visitors: traffic(124, 34, 70),
-        flows: {
-          produce: traffic(48, 39, 73),
-          seafood: traffic(26, 21, 65),
-          kitchen: traffic(31, 25, 71),
+          fresh: traffic(48, 26, 70),
+          processedFrozen: traffic(52, 28, 79),
+          bakeryDeli: traffic(21, 11, 57),
+          beverageAlcohol: traffic(33, 18, 68),
         },
       },
     },

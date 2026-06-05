@@ -1,6 +1,6 @@
 import { ADMIN_ZONE_ORDER } from "@/lib/admin/mockDashboardData";
 
-export const ADMIN_ZONE_TABLE_HEADER_HEIGHT = 40;
+export const ADMIN_ZONE_TABLE_HEADER_HEIGHT = 48;
 export const ADMIN_ZONE_TABLE_ROW_HEIGHT = 72;
 
 /** 구역별 방문율 카드 본문 높이 — 행사 상품 목록과 동일하게 맞춤 */
