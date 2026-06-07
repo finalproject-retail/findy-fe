@@ -3,8 +3,8 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminOperationsSummary } from "@/components/admin/AdminOperationsSummary";
 import { AdminProductFunnel } from "@/components/admin/AdminProductFunnel";
 import { AdminPromoProductList } from "@/components/admin/AdminPromoProductList";
+import { AdminScrollView } from "@/components/admin/AdminScrollView";
 import { AdminZoneVisitHeatmap } from "@/components/admin/AdminZoneVisitHeatmap";
-import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
 import {
   getAdminDashboardMock,
@@ -12,7 +12,7 @@ import {
   type AdminDateRange,
 } from "@/lib/admin/mockDashboardData";
 import { useMemo, useState, type ReactNode } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function DashboardRow({
@@ -56,8 +56,7 @@ export default function AdminDashboardScreen() {
   const data = useMemo(() => getAdminDashboardMock(dateRange), [dateRange]);
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: ADMIN_COLORS.pageBg }}
+    <AdminScrollView
       contentContainerStyle={{
         paddingBottom: Math.max(insets.bottom, 24) + (isWide ? 0 : 72),
       }}
@@ -99,6 +98,6 @@ export default function AdminDashboardScreen() {
         </DashboardRow>
         </View>
       </AdminContentFrame>
-    </ScrollView>
+    </AdminScrollView>
   );
 }
