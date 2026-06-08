@@ -258,14 +258,14 @@ function ProductPerformanceMobileRow({
   );
 }
 
-const TABLE_HEADERS = ["상품명", "기간 조회수", "구매 전환율"] as const;
+const TABLE_HEADERS = ["상품명", "조회수", "구매 전환율"] as const;
 
 function tableColumnStyle(header: (typeof TABLE_HEADERS)[number], stretch: boolean) {
   if (stretch) {
     switch (header) {
       case "상품명":
         return { flex: 3 };
-      case "기간 조회수":
+      case "조회수":
       case "구매 전환율":
         return { flex: 1 };
     }
@@ -335,7 +335,7 @@ function ProductPerformanceTableRow({
 
       <Text
         style={{
-          ...tableColumnStyle("기간 조회수", stretch),
+          ...tableColumnStyle("조회수", stretch),
           textAlign: "center",
           ...pretendard(700),
           fontSize: 14,
