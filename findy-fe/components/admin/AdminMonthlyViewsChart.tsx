@@ -16,9 +16,12 @@ import Svg, {
 type AdminMonthlyViewsChartProps = {
   points: AdminMonthlyViewPoint[];
   height?: number;
+  /** 2열 그리드에서 옆 카드와 동일 높이로 맞출 때 */
+  stretch?: boolean;
 };
 
 const CHART_HEIGHT = 220;
+const DETAIL_TITLE_BLOCK_MIN_HEIGHT = 44;
 const PADDING_LEFT = 36;
 const PADDING_RIGHT = 12;
 const PADDING_TOP = 12;
@@ -78,6 +81,7 @@ function buildAreaPath(
 export function AdminMonthlyViewsChart({
   points,
   height = CHART_HEIGHT,
+  stretch = false,
 }: AdminMonthlyViewsChartProps) {
   const chartWidth = 320;
   const values = points.map((point) => point.value);
@@ -101,19 +105,28 @@ export function AdminMonthlyViewsChart({
   const stepX = values.length > 1 ? plotWidth / (values.length - 1) : 0;
 
   return (
-    <View style={{ gap: 12 }}>
-      <Text style={{ ...pretendard(700), fontSize: 16, color: ADMIN_COLORS.navy }}>
-        월별 조회수 분석
-      </Text>
+    <View style={{ gap: 12, flex: stretch ? 1 : undefined, alignSelf: "stretch" }}>
+      <View
+        style={{
+          minHeight: stretch ? DETAIL_TITLE_BLOCK_MIN_HEIGHT : undefined,
+          justifyContent: stretch ? "flex-end" : undefined,
+        }}
+      >
+        <Text style={{ ...pretendard(700), fontSize: 16, color: ADMIN_COLORS.navy }}>
+          월별 조회수 분석
+        </Text>
+      </View>
 
       <View
         style={{
+          flex: stretch ? 1 : undefined,
           backgroundColor: ADMIN_COLORS.cardBg,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: ADMIN_COLORS.border,
           paddingVertical: 16,
           paddingHorizontal: 8,
+          justifyContent: "center",
         }}
       >
         <Svg width="100%" height={height} viewBox={`0 0 ${chartWidth} ${height}`}>

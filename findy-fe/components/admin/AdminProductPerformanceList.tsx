@@ -247,7 +247,7 @@ function ProductPerformanceMobileRow({
           numberOfLines={1}
           style={{ ...pretendard(500), fontSize: 12, lineHeight: 17, color: ADMIN_COLORS.navyLight }}
         >
-          기간 조회수: {formatAdminMetricNumber(product.views)} | 구매 전환율: {product.conversionRate}%
+          조회수: {formatAdminMetricNumber(product.views)} | 구매 전환율: {product.conversionRate}%
         </Text>
       </View>
 
