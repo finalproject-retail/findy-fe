@@ -100,9 +100,8 @@ export default function CartScreen() {
         tripZoneLines = zoneLines;
         if (shoppingListWithZones != null) {
           activeShoppingListId = shoppingListWithZones.shoppingListId;
-          if (!hasSelectedProducts) {
-            serverDestinationGridIds =
-              shoppingListWithZones.destinationGridIds ?? [];
+          if (shoppingListWithZones.destinationGridIds?.length) {
+            serverDestinationGridIds = shoppingListWithZones.destinationGridIds;
           }
         }
       }

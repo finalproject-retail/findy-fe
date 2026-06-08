@@ -1,9 +1,18 @@
+import MicIcon from "@/assets/icons/mic-icon.svg";
+import { ChatbotSpeechNativeBridge } from "@/components/chatbot/ChatbotSpeechNativeBridge";
+import { VoiceWaveform } from "@/components/chatbot/VoiceWaveform";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
+import { useToast } from "@/contexts/ToastContext";
+import { useChatbot } from "@/hooks/useChatbot";
+import { useChatbotSpeechRecognition } from "@/hooks/useChatbotSpeechRecognition";
+import type { ChatMessage } from "@/lib/chatbot/types";
 import { pretendard } from "@/utils/pretendard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  KeyboardAvoidingView,
+  ActivityIndicator,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -12,25 +21,7 @@ import {
   View,
   type ScrollView as ScrollViewType,
 } from "react-native";
-
-type ChatMessage = {
-  id: string;
-  sender: "bot" | "user";
-  text: string;
-};
-
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: "bot-welcome",
-    sender: "bot",
-    text: "안녕하세요. 핀디 챗봇입니다.",
-  },
-  {
-    id: "bot-guide",
-    sender: "bot",
-    text: "궁금한 내용을 입력하거나 아래 빠른 질문을 선택해주세요.",
-  },
-];
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const QUICK_QUESTIONS = [
   "상품 위치 찾기",
@@ -38,28 +29,6 @@ const QUICK_QUESTIONS = [
   "쿠폰 적용 확인",
   "장바구니 안내",
 ];
-
-function buildBotReply(question: string) {
-  const normalized = question.replace(/\s/g, "");
-
-  if (normalized.includes("상품") || normalized.includes("위치")) {
-    return "찾고 싶은 상품명을 알려주시면 매장 지도에서 가까운 위치를 기준으로 안내해드릴게요.";
-  }
-
-  if (normalized.includes("포인트")) {
-    return "포인트는 결제 단계에서 보유 포인트를 확인한 뒤 사용할 수 있어요. 마이핀디의 포인트 메뉴에서도 내역을 볼 수 있습니다.";
-  }
-
-  if (normalized.includes("쿠폰")) {
-    return "사용 가능한 쿠폰은 쿠폰 탭과 결제 쿠폰 선택 화면에서 확인할 수 있어요. 상품 조건과 유효기간을 함께 확인해 주세요.";
-  }
-
-  if (normalized.includes("장바구니")) {
-    return "장바구니에 담은 상품은 쇼핑 경로와 함께 확인할 수 있어요. 품절 상품은 별도 영역에 표시됩니다.";
-  }
-
-  return "문의 내용을 확인했어요. 현재는 화면 목업 응답으로 안내 중이며, 상담 API가 연결되면 더 정확한 답변을 드릴 수 있습니다.";
-}
 
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.sender === "user";
@@ -103,41 +72,141 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
 export function ChatbotScreen() {
   const scrollViewRef = useRef<ScrollViewType | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const insets = useSafeAreaInsets();
+  const { storeId } = useStoreMapConfig();
+  const { showToast } = useToast();
   const [draft, setDraft] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const {
+    messages,
+    loading,
+    sending,
+    error,
+    sendMessage,
+    sendVoiceMessage,
+  } = useChatbot(storeId);
 
-  const canSend = draft.trim().length > 0;
+  const canSend = draft.trim().length > 0 && !sending;
   const quickQuestions = useMemo(() => QUICK_QUESTIONS, []);
 
-  const handleSend = (text = draft) => {
-    const trimmed = text.trim();
+  const handleSend = useCallback(
+    async (text = draft) => {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        return;
+      }
 
-    if (!trimmed) {
-      return;
-    }
+      try {
+        await sendMessage(trimmed);
+        setDraft("");
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "챗봇 메시지 전송에 실패했습니다.",
+        );
+      }
+    },
+    [draft, sendMessage, showToast],
+  );
 
-    const createdAt = Date.now();
-    const userMessage: ChatMessage = {
-      id: `user-${createdAt}`,
-      sender: "user",
-      text: trimmed,
+  const handleVoiceFallback = useCallback(
+    async (text: string) => {
+      try {
+        await sendMessage(text);
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "음성 메시지 전송에 실패했습니다.",
+        );
+      }
+    },
+    [sendMessage, showToast],
+  );
+
+  const handleVoiceRecordingComplete = useCallback(
+    async (fileUri: string) => {
+      try {
+        await sendVoiceMessage(fileUri);
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "음성 메시지 전송에 실패했습니다.",
+        );
+      }
+    },
+    [sendVoiceMessage, showToast],
+  );
+
+  const speechOptions = useMemo(
+    () => ({
+      enabled: !sending && !loading,
+      onFinalTranscript: (text: string) => {
+        void handleVoiceFallback(text);
+      },
+      onVoiceRecordingComplete: (uri: string) => {
+        void handleVoiceRecordingComplete(uri);
+      },
+      onRecognitionEmpty: () => {
+        showToast("음성을 인식하지 못했습니다. 다시 말씀해 주세요.");
+      },
+      onSpeechError: (message: string) => {
+        showToast(message);
+      },
+    }),
+    [
+      handleVoiceFallback,
+      handleVoiceRecordingComplete,
+      loading,
+      sending,
+      showToast,
+    ],
+  );
+
+  const { isListening, volume, interimTranscript, toggleListening, bridgeProps } =
+    useChatbotSpeechRecognition(speechOptions);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      });
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
     };
-    const botMessage: ChatMessage = {
-      id: `bot-${createdAt}`,
-      sender: "bot",
-      text: buildBotReply(trimmed),
-    };
+  }, []);
 
-    setMessages((current) => [...current, userMessage, botMessage]);
-    setDraft("");
-  };
+  const inputBottomInset =
+    keyboardHeight > 0 ? SPACING.md : Math.max(insets.bottom, SPACING.md);
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color={COLORS.main} />
+      </View>
+    );
+  }
 
   return (
-    <KeyboardAvoidingView
+    <View
       className="flex-1 bg-white"
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+      style={{ paddingBottom: keyboardHeight }}
     >
+      <ChatbotSpeechNativeBridge {...bridgeProps} />
       <View className="flex-1">
         <ScrollView
           ref={scrollViewRef}
@@ -171,16 +240,34 @@ export function ChatbotScreen() {
             </Text>
           </View>
 
+          {error ? (
+            <Text
+              className="mb-md text-sm text-text-red"
+              style={pretendard(400)}
+            >
+              {error}
+            </Text>
+          ) : null}
+
           {messages.map((message) => (
             <ChatBubble key={message.id} message={message} />
           ))}
+
+          {sending ? (
+            <View className="flex-row items-center gap-2 py-sm">
+              <ActivityIndicator size="small" color={COLORS.main} />
+              <Text className="text-sm text-text-sub" style={pretendard(400)}>
+                답변 생성 중...
+              </Text>
+            </View>
+          ) : null}
         </ScrollView>
 
         <View
           className="border-t-thin border-light-gray bg-white px-screen"
           style={{
             paddingTop: SPACING.md,
-            paddingBottom: SPACING.md,
+            paddingBottom: inputBottomInset,
             gap: SPACING.sm,
           }}
         >
@@ -193,10 +280,12 @@ export function ChatbotScreen() {
             {quickQuestions.map((question) => (
               <Pressable
                 key={question}
-                onPress={() => handleSend(question)}
+                onPress={() => void handleSend(question)}
+                disabled={sending}
                 accessibilityRole="button"
                 accessibilityLabel={question}
                 className="rounded-full border-base border-gray bg-white px-md py-sm"
+                style={{ opacity: sending ? 0.6 : 1 }}
               >
                 <Text className="text-sm text-charcoal" style={pretendard(500)}>
                   {question}
@@ -204,6 +293,16 @@ export function ChatbotScreen() {
               </Pressable>
             ))}
           </ScrollView>
+
+          {isListening && interimTranscript.trim().length > 0 ? (
+            <Text
+              className="text-sm text-text-sub"
+              numberOfLines={2}
+              style={pretendard(400)}
+            >
+              {interimTranscript}
+            </Text>
+          ) : null}
 
           <View
             className="flex-row items-center rounded-full bg-light-gray"
@@ -214,34 +313,66 @@ export function ChatbotScreen() {
               gap: SPACING.sm,
             }}
           >
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              onSubmitEditing={() => handleSend()}
-              returnKeyType="send"
-              placeholder="궁금한 내용을 입력하세요"
-              placeholderTextColor={COLORS.subText}
-              className="min-w-0 flex-1 text-md text-text-main"
-              style={pretendard(400)}
-            />
+            {isListening ? (
+              <View
+                className="min-w-0 flex-1 items-center justify-center"
+                style={{ minHeight: 34 }}
+              >
+                <VoiceWaveform volume={volume} active={isListening} />
+              </View>
+            ) : (
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                onFocus={() => {
+                  requestAnimationFrame(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  });
+                }}
+                onSubmitEditing={() => void handleSend()}
+                returnKeyType="send"
+                editable={!sending}
+                placeholder="궁금한 내용을 입력하세요"
+                placeholderTextColor={COLORS.subText}
+                className="min-w-0 flex-1 text-md text-text-main"
+                style={pretendard(400)}
+              />
+            )}
+
             <Pressable
-              onPress={() => handleSend()}
-              disabled={!canSend}
+              onPress={() => void toggleListening()}
+              disabled={sending}
               accessibilityRole="button"
-              accessibilityLabel="메시지 보내기"
-              accessibilityState={{ disabled: !canSend }}
-              className="items-center justify-center rounded-full"
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: canSend ? COLORS.main : COLORS.gray,
-              }}
+              accessibilityLabel={isListening ? "음성 입력 중지" : "음성 입력"}
+              accessibilityState={{ selected: isListening, disabled: sending }}
+              className="items-center justify-center"
+              style={{ width: 40, height: 40, opacity: sending ? 0.5 : 1 }}
             >
-              <Ionicons name="send" size={18} color={COLORS.white} />
+              <MicIcon
+                width={22}
+                height={22}
+                fill={isListening ? COLORS.main : COLORS.gray}
+              />
             </Pressable>
+
+            {canSend ? (
+              <Pressable
+                onPress={() => void handleSend()}
+                accessibilityRole="button"
+                accessibilityLabel="메시지 보내기"
+                className="items-center justify-center rounded-full"
+                style={{
+                  width: 40,
+                  height: 40,
+                  backgroundColor: COLORS.main,
+                }}
+              >
+                <Ionicons name="send" size={18} color={COLORS.white} />
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

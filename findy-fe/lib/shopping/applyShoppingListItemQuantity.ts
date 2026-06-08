@@ -70,11 +70,13 @@ async function decreaseViaRemoveAndReadd(
     } catch (restoreError) {
       if (__DEV__) {
         console.warn(
-          "[shopping] quantity decrease restore failed",
+          "[shopping] decrease restore failed after DELETE",
           restoreError,
         );
       }
-      throw addError;
+      throw new Error(
+        "수량을 줄이는 중 오류가 났어요. 쇼핑리스트에서 상품이 사라졌을 수 있으니 새로고침 후 다시 담아 주세요.",
+      );
     }
   }
 }

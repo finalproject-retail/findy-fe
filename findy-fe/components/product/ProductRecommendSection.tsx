@@ -1,33 +1,58 @@
-import { getInStockProducts } from "@/components/home/mockProducts";
 import { RecommendedProductCard } from "@/components/product/detail/RecommendedProductCard";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import {
+  useProductRecommendations,
+  type ProductRecommendationVariant,
+} from "@/hooks/useProductRecommendations";
 import { pretendard } from "@/utils/pretendard";
-import { FlatList, Text, View } from "react-native";
-import type { Product } from "./types";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 
-const MAX_RECOMMENDED = 9;
 const CARD_GAP = 12;
 
 type ProductRecommendSectionProps = {
   productId: string;
   cardWidth: number;
   shoppingListAddMode?: boolean;
+  variant?: ProductRecommendationVariant;
+  enabled?: boolean;
 };
 
-function getRecommendedProducts(productId: string): Product[] {
-  return getInStockProducts()
-    .filter((item) => item.id !== productId)
-    .slice(0, MAX_RECOMMENDED);
+function resolveSectionTitle(variant: ProductRecommendationVariant) {
+  return variant === "substitute" ? "대체 상품 추천" : "이 상품은 어때요?";
 }
 
 export function ProductRecommendSection({
   productId,
   cardWidth,
   shoppingListAddMode = false,
+  variant = "related",
+  enabled = true,
 }: ProductRecommendSectionProps) {
-  const recommended = getRecommendedProducts(productId);
+  const { products, loading } = useProductRecommendations({
+    productId,
+    variant,
+    enabled,
+  });
 
-  if (recommended.length === 0) {
+  if (!enabled) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          paddingTop: SPACING.lg,
+          paddingBottom: SPACING.lg,
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator color={COLORS.main} />
+      </View>
+    );
+  }
+
+  if (products.length === 0) {
     return null;
   }
 
@@ -43,31 +68,33 @@ export function ProductRecommendSection({
     >
       <View className="flex-row items-center justify-between">
         <Text className="text-lg text-text-main" style={pretendard(700)}>
-          이 상품은 어때요?
+          {resolveSectionTitle(variant)}
         </Text>
-        <View
-          style={{
-            paddingHorizontal: SPACING.sm,
-            paddingVertical: 3,
-            borderRadius: RADIUS.md,
-            backgroundColor: COLORS.lightGray,
-          }}
-        >
-          <Text
+        {variant === "related" ? (
+          <View
             style={{
-              ...pretendard(400),
-              fontSize: TYPOGRAPHY.size.xs,
-              color: COLORS.subText2,
+              paddingHorizontal: SPACING.sm,
+              paddingVertical: 3,
+              borderRadius: RADIUS.md,
+              backgroundColor: COLORS.lightGray,
             }}
           >
-            광고
-          </Text>
-        </View>
+            <Text
+              style={{
+                ...pretendard(400),
+                fontSize: TYPOGRAPHY.size.xs,
+                color: COLORS.subText2,
+              }}
+            >
+              광고
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <FlatList
-        data={recommended}
-        keyExtractor={(item) => `recommend-${productId}-${item.id}`}
+        data={products}
+        keyExtractor={(item) => `${variant}-${productId}-${item.id}`}
         horizontal
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}

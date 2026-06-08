@@ -1,3 +1,4 @@
+import { DEFAULT_API_STORE_ID } from "@/components/home/storeOptions";
 import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
 import type { StoreMapConfig } from "@/components/store-map/types";
 import { MINOR_TO_GRID_ID } from "@/constants/beacon";
@@ -16,8 +17,6 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-
-const DEFAULT_STORE_ID = 1;
 
 type StoreMapConfigContextValue = {
   storeId: number;
@@ -55,12 +54,14 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
     setIsLoading(true);
     setError(null);
     try {
-      const api = await fetchStoreMapConfig(DEFAULT_STORE_ID);
+      const api = await fetchStoreMapConfig(DEFAULT_API_STORE_ID);
       setStoreMapConfig(buildStoreMapConfigFromApi(api, localFallback));
       setMinorToGridId(buildMinorToGridIdFromBeacons(api.beacons));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "매장 지도 설정을 불러오지 못했습니다.";
+        err instanceof Error
+          ? err.message
+          : "매장 지도 설정을 불러오지 못했습니다.";
       setError(message);
       setStoreMapConfig(localFallback);
       setMinorToGridId(MINOR_TO_GRID_ID);
@@ -78,7 +79,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
 
   const value = useMemo(
     () => ({
-      storeId: DEFAULT_STORE_ID,
+      storeId: DEFAULT_API_STORE_ID,
       storeMapConfig,
       minorToGridId,
       isLoading,
@@ -98,7 +99,9 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
 export function useStoreMapConfig() {
   const context = useContext(StoreMapConfigContext);
   if (!context) {
-    throw new Error("useStoreMapConfig must be used within StoreMapConfigProvider");
+    throw new Error(
+      "useStoreMapConfig must be used within StoreMapConfigProvider",
+    );
   }
   return context;
 }

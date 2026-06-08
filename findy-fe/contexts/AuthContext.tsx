@@ -4,8 +4,10 @@ import {
   saveAdminSession,
 } from "@/lib/admin/adminSession";
 import { setAccessToken } from "@/lib/api/client";
+import { setUnauthorizedSessionHandler } from "@/lib/api/unauthorizedSession";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { clearAccountCache } from "@/lib/auth/clearAccountCache";
+import { isInvalidStoredSessionError } from "@/lib/auth/isInvalidStoredSessionError";
 import {
   resolveNeedsOnboarding,
   withOnboardingFlag,
@@ -75,10 +77,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setNeedsOnboarding(needs);
 
       return withOnboardingFlag(profile, needs);
-    } catch {
+    } catch (error) {
       setIsAdminUser(false);
       setIsAdminSession(false);
       setNeedsOnboarding(false);
+      if (isInvalidStoredSessionError(error)) {
+        throw error;
+      }
       throw new Error("회원 정보를 불러오지 못했습니다.");
     } finally {
       setIsProfileLoading(false);
@@ -86,6 +91,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const markOnboardingComplete = useCallback(() => {
+    setNeedsOnboarding(false);
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await clearAccountCache();
+    await clearAdminSession();
+    setAccessToken(null);
+    setAccessTokenState(null);
+    setIsLoggedIn(false);
+    setIsAdminSession(false);
+    setIsAdminUser(false);
     setNeedsOnboarding(false);
   }, []);
 
@@ -106,8 +122,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
           try {
             await syncProfileStatus();
-          } catch {
-            // 세션 복원 시 프로필 조회 실패는 로그인 화면에서 재시도
+          } catch (error) {
+            if (isInvalidStoredSessionError(error)) {
+              await signOut();
+            }
           }
         }
       } finally {
@@ -122,7 +140,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       cancelled = true;
     };
-  }, [syncProfileStatus]);
+  }, [signOut, syncProfileStatus]);
 
   const signIn = useCallback(
     async (
@@ -149,16 +167,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  const signOut = useCallback(async () => {
-    await clearAccountCache();
-    await clearAdminSession();
-    setAccessToken(null);
-    setAccessTokenState(null);
-    setIsLoggedIn(false);
-    setIsAdminSession(false);
-    setIsAdminUser(false);
-    setNeedsOnboarding(false);
-  }, []);
+  useEffect(() => {
+    setUnauthorizedSessionHandler(signOut);
+    return () => {
+      setUnauthorizedSessionHandler(null);
+    };
+  }, [signOut]);
 
   const value = useMemo(
     () => ({

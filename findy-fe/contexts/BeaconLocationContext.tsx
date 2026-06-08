@@ -59,6 +59,7 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
   });
   const stopScanRef = useRef<(() => void) | null>(null);
   const scanLogRef = useRef<BeaconScanLogRow[]>([]);
+  const lastAppliedGridIdRef = useRef<number | null>(null);
   const minorToGridIdRef = useRef(minorToGridId);
   const storeIdRef = useRef(storeId);
   const gridColsRef = useRef(storeMapConfig.cols);
@@ -120,8 +121,13 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
     (gridId: number | null) => {
       setCurrentGridId(gridId);
       if (gridId == null) {
+        lastAppliedGridIdRef.current = null;
         return;
       }
+      if (gridId === lastAppliedGridIdRef.current) {
+        return;
+      }
+      lastAppliedGridIdRef.current = gridId;
       const { gridX, gridY } = gridIdToGridPoint(gridId, gridColsRef.current);
       patchNavigationData({
         currentLocation: { gridX, gridY },
@@ -193,6 +199,7 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
 
     filterRef.current.reset();
     clearScanLog();
+    lastAppliedGridIdRef.current = null;
     zoneRef.current = {
       lastSentGridId: null,
       pendingGridId: null,

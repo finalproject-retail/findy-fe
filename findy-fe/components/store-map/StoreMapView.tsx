@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, Platform, StyleSheet, View } from "react-native";
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   clamp,
   runOnJS,
@@ -144,12 +140,19 @@ export function StoreMapView({
   const hasSelectedMarkerSv = useSharedValue(Boolean(selectedMarkerProductId));
 
   const scaleRef = useRef(fitScale);
+  const navigationDataRef = useRef(navigationData);
+  const followUserRef = useRef(true);
+  const lastFollowedGridKeyRef = useRef<string | null>(null);
+  const lastAutoFocusRefreshKeyRef = useRef<number | null>(null);
+  const hasInitialAutoFocusRef = useRef(false);
   const [renderScale, setRenderScale] = useState(fitScale);
   const [shelfGapPx, setShelfGapPx] = useState(() =>
     shelfGapFromScale(fitScale, fitScale)
   );
 
   const cellPx = BASE_CELL_PX * renderScale;
+
+  navigationDataRef.current = navigationData;
 
   const syncRenderFromScale = useCallback(
     (s: number) => {
@@ -326,65 +329,135 @@ export function StoreMapView({
     ]
   );
 
-  const focusOnUserLocation = useCallback(() => {
-    const location = navigationData?.currentLocation;
-    if (!location || viewportSize.width <= 0 || viewportSize.height <= 0) {
-      return;
-    }
+  const panToUserAtScale = useCallback(
+    (targetScale: number) => {
+      const location = navigationDataRef.current?.currentLocation;
+      if (!location || viewportSize.width <= 0 || viewportSize.height <= 0) {
+        return;
+      }
 
+      const effectiveVh = viewportSize.height - contentBottomInset;
+      const scaledW = mapWidth * targetScale;
+      const scaledH = mapHeight * targetScale;
+      const center = gridCellCenterToPixel(
+        location.gridX,
+        location.gridY,
+        BASE_CELL_PX * targetScale,
+      );
+
+      const next = clampPanPosition(
+        viewportSize.width / 2 - center.x,
+        effectiveVh / 2 - center.y,
+        viewportSize.width,
+        effectiveVh,
+        scaledW,
+        scaledH,
+        { contentBottomInset },
+      );
+      panX.value = next.x;
+      panY.value = next.y;
+      savedPanX.value = next.x;
+      savedPanY.value = next.y;
+    },
+    [
+      contentBottomInset,
+      mapHeight,
+      mapWidth,
+      panX,
+      panY,
+      savedPanX,
+      savedPanY,
+      viewportSize.height,
+      viewportSize.width,
+    ],
+  );
+
+  const focusOnUserLocation = useCallback(() => {
     const targetScale = clamp(
       fitScale * USER_LOCATION_FOCUS_ZOOM_FACTOR,
       minZoom,
       maxZoom,
     );
     applyScaleState(targetScale);
-
-    const effectiveVh = viewportSize.height - contentBottomInset;
-    const scaledW = mapWidth * targetScale;
-    const scaledH = mapHeight * targetScale;
-    const center = gridCellCenterToPixel(
-      location.gridX,
-      location.gridY,
-      BASE_CELL_PX * targetScale,
-    );
-
-    const next = clampPanPosition(
-      viewportSize.width / 2 - center.x,
-      effectiveVh / 2 - center.y,
-      viewportSize.width,
-      effectiveVh,
-      scaledW,
-      scaledH,
-      { contentBottomInset },
-    );
-    panX.value = next.x;
-    panY.value = next.y;
-    savedPanX.value = next.x;
-    savedPanY.value = next.y;
+    panToUserAtScale(targetScale);
+    const location = navigationDataRef.current?.currentLocation;
+    if (location) {
+      lastFollowedGridKeyRef.current = `${location.gridX},${location.gridY}`;
+    }
   }, [
     applyScaleState,
-    contentBottomInset,
     fitScale,
-    mapHeight,
-    mapWidth,
     maxZoom,
     minZoom,
-    navigationData?.currentLocation,
-    panX,
-    panY,
-    savedPanX,
-    savedPanY,
-    viewportSize.height,
-    viewportSize.width,
+    panToUserAtScale,
   ]);
 
+  const centerOnUserAtCurrentZoom = useCallback(() => {
+    panToUserAtScale(scaleRef.current);
+    const location = navigationDataRef.current?.currentLocation;
+    if (location) {
+      lastFollowedGridKeyRef.current = `${location.gridX},${location.gridY}`;
+    }
+  }, [panToUserAtScale]);
+
+  const markMapManuallyAdjusted = useCallback(() => {
+    followUserRef.current = false;
+  }, []);
+
+  const focusOnUserLocationRef = useRef(focusOnUserLocation);
+  focusOnUserLocationRef.current = focusOnUserLocation;
+
+  const centerOnUserAtCurrentZoomRef = useRef(centerOnUserAtCurrentZoom);
+  centerOnUserAtCurrentZoomRef.current = centerOnUserAtCurrentZoom;
+
+  /** 최초 진입·새로고침: 내 위치 추적 모드 + 초점 맞춤 */
   useEffect(() => {
-    focusOnUserLocation();
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) {
+      return;
+    }
+
+    const isRefresh = lastAutoFocusRefreshKeyRef.current !== navigationRefreshKey;
+    const isInitial = !hasInitialAutoFocusRef.current;
+    if (!isInitial && !isRefresh) {
+      return;
+    }
+
+    followUserRef.current = true;
+    lastFollowedGridKeyRef.current = null;
+    focusOnUserLocationRef.current();
+    hasInitialAutoFocusRef.current = true;
+    lastAutoFocusRefreshKeyRef.current = navigationRefreshKey;
+  }, [navigationRefreshKey, viewportSize.height, viewportSize.width]);
+
+  /** 추적 모드일 때만 비콘 위치에 맞춰 지도 중심 이동 (확대 배율 유지) */
+  useEffect(() => {
+    if (!followUserRef.current) {
+      return;
+    }
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) {
+      return;
+    }
+
+    const location = navigationData?.currentLocation;
+    if (!location) {
+      return;
+    }
+
+    const gridKey = `${location.gridX},${location.gridY}`;
+    if (lastFollowedGridKeyRef.current === gridKey) {
+      return;
+    }
+
+    if (!hasInitialAutoFocusRef.current) {
+      return;
+    }
+
+    centerOnUserAtCurrentZoomRef.current();
   }, [
-    focusOnUserLocation,
-    navigationRefreshKey,
     navigationData?.currentLocation.gridX,
     navigationData?.currentLocation.gridY,
+    viewportSize.height,
+    viewportSize.width,
   ]);
 
   useEffect(() => {
@@ -405,7 +478,9 @@ export function StoreMapView({
   };
 
   const pinch = Gesture.Pinch()
+    .shouldCancelWhenOutside(false)
     .onStart(() => {
+      runOnJS(markMapManuallyAdjusted)();
       savedScale.value = scale.value;
       savedPanX.value = panX.value;
       savedPanY.value = panY.value;
@@ -447,7 +522,9 @@ export function StoreMapView({
 
   const pan = Gesture.Pan()
     .minDistance(4)
+    .shouldCancelWhenOutside(false)
     .onStart(() => {
+      runOnJS(markMapManuallyAdjusted)();
       if (hasSelectedMarkerSv.value && onDismissMarkerCallout) {
         runOnJS(onDismissMarkerCallout)();
       }
@@ -511,6 +588,7 @@ export function StoreMapView({
       ? {
           onWheel: (e: { preventDefault?: () => void; deltaY: number }) => {
             e.preventDefault?.();
+            markMapManuallyAdjusted();
             const delta = e.deltaY > 0 ? -ZOOM_STEP * fitScale : ZOOM_STEP * fitScale;
             applyScaleState(scaleRef.current + delta);
           },
@@ -518,7 +596,7 @@ export function StoreMapView({
       : {};
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <View style={styles.root}>
       <View
         style={[styles.viewport, { paddingBottom: contentBottomInset }]}
         onLayout={(e) => {
@@ -530,9 +608,16 @@ export function StoreMapView({
         {...webWheelProps}
       >
         <GestureDetector gesture={composed}>
-          <View style={styles.gestureSurface}>
-            <Animated.View style={animatedMapStyle}>
-              <View style={{ width: config.cols * cellPx, height: config.rows * cellPx }}>
+          <Animated.View
+            style={styles.gestureSurface}
+            collapsable={false}
+            {...(Platform.OS === "android" ? { needsOffscreenAlphaCompositing: true } : {})}
+          >
+            <Animated.View style={animatedMapStyle} pointerEvents="box-none">
+              <View
+                pointerEvents="box-none"
+                style={{ width: config.cols * cellPx, height: config.rows * cellPx }}
+              >
                 <StoreMapFloorBackground
                   width={config.cols * cellPx}
                   height={config.rows * cellPx}
@@ -574,10 +659,10 @@ export function StoreMapView({
                 />
               </View>
             </Animated.View>
-          </View>
+          </Animated.View>
         </GestureDetector>
       </View>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 

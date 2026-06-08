@@ -20,7 +20,9 @@ function rewriteLocalhostForAndroid(url: string) {
 
 /** user-service API base URL routed by ALB Ingress */
 export function getUserApiBaseUrl() {
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+  const fromEnv =
+    process.env.EXPO_PUBLIC_USER_API_URL?.trim() ||
+    process.env.EXPO_PUBLIC_API_URL?.trim();
   const url = fromEnv ? stripTrailingSlash(fromEnv) : DEFAULT_USER_API_URL;
   return rewriteLocalhostForAndroid(url);
 }
