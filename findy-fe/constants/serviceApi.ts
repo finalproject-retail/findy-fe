@@ -33,8 +33,17 @@ function resolveRecommendationUrl() {
   return resolveServiceUrl();
 }
 
+function resolveAnalyticsUrl() {
+  const dedicated = process.env.EXPO_PUBLIC_ANALYTICS_API_URL?.trim();
+  if (dedicated) {
+    return rewriteLocalhostForAndroid(stripTrailingSlash(dedicated));
+  }
+  return resolveServiceUrl();
+}
+
 export const SHOPPING_API_URL = resolveServiceUrl();
 export const RECOMMENDATION_API_URL = resolveRecommendationUrl();
+export const ANALYTICS_API_URL = resolveAnalyticsUrl();
 
 export function getShoppingApiBaseUrl() {
   return SHOPPING_API_URL;
@@ -42,4 +51,8 @@ export function getShoppingApiBaseUrl() {
 
 export function getRecommendationApiBaseUrl() {
   return RECOMMENDATION_API_URL;
+}
+
+export function getAnalyticsApiBaseUrl() {
+  return ANALYTICS_API_URL;
 }

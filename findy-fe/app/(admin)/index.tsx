@@ -5,14 +5,16 @@ import { AdminProductFunnel } from "@/components/admin/AdminProductFunnel";
 import { AdminPromoProductList } from "@/components/admin/AdminPromoProductList";
 import { AdminZoneVisitHeatmap } from "@/components/admin/AdminZoneVisitHeatmap";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
+import { useAdminPromotionAnalytics } from "@/hooks/useAdminPromotionAnalytics";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
 import {
   getAdminDashboardMock,
   getDefaultAdminDateRange,
   type AdminDateRange,
 } from "@/lib/admin/mockDashboardData";
+import { pretendard } from "@/utils/pretendard";
 import { useMemo, useState, type ReactNode } from "react";
-import { ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function DashboardRow({
@@ -54,6 +56,13 @@ export default function AdminDashboardScreen() {
   const isWide = useAdminWideLayout();
   const [dateRange, setDateRange] = useState<AdminDateRange>(getDefaultAdminDateRange);
   const data = useMemo(() => getAdminDashboardMock(dateRange), [dateRange]);
+  const {
+    funnel,
+    finalConversionRate,
+    promoProducts,
+    loading: promoLoading,
+    error: promoError,
+  } = useAdminPromotionAnalytics(dateRange);
 
   return (
     <ScrollView
@@ -80,13 +89,28 @@ export default function AdminDashboardScreen() {
           </DashboardSection>
 
           <DashboardSection isWide={isWide}>
-            <AdminProductFunnel
-              steps={data.funnel}
-              finalConversionRate={data.finalConversionRate}
-              stretch={isWide}
-            />
+            {promoLoading ? (
+              <View className="items-center py-10">
+                <ActivityIndicator color={ADMIN_COLORS.navy} />
+              </View>
+            ) : (
+              <AdminProductFunnel
+                steps={funnel}
+                finalConversionRate={finalConversionRate}
+                stretch={isWide}
+              />
+            )}
           </DashboardSection>
         </DashboardRow>
+
+        {promoError ? (
+          <Text
+            className="text-sm text-text-red"
+            style={{ ...pretendard(400), paddingHorizontal: 4 }}
+          >
+            {promoError}
+          </Text>
+        ) : null}
 
         <DashboardRow isWide={isWide}>
           <DashboardSection isWide={isWide}>
@@ -94,7 +118,13 @@ export default function AdminDashboardScreen() {
           </DashboardSection>
 
           <DashboardSection isWide={isWide}>
-            <AdminPromoProductList products={data.promoProducts} stretch={isWide} />
+            {promoLoading ? (
+              <View className="items-center py-10">
+                <ActivityIndicator color={ADMIN_COLORS.navy} />
+              </View>
+            ) : (
+              <AdminPromoProductList products={promoProducts} stretch={isWide} />
+            )}
           </DashboardSection>
         </DashboardRow>
         </View>
