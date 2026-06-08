@@ -2,12 +2,14 @@ import { Header } from "@/components/common";
 import { PaymentQrPlaceholder } from "@/components/payment/PaymentQrPlaceholder";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY, BORDER } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { usePoints } from "@/contexts/PointsContext";
 import { useToast } from "@/contexts/ToastContext";
+import { getAppliedRewardPoints } from "@/lib/checkout/getAppliedRewardPoints";
 import { getApiErrorMessage } from "@/lib/api";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   SafeAreaView,
@@ -43,8 +45,21 @@ function PaymentCancelButton({ onPress }: PaymentCancelButtonProps) {
 export default function PaymentQrScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { checkoutItems } = useCheckout();
+  const { checkoutItems, selectedCoupon, usedPoints, setLastCreatedOrder } =
+    useCheckout();
+  const { balance } = usePoints();
   const { showToast } = useToast();
+
+  const appliedRewardPoints = useMemo(
+    () =>
+      getAppliedRewardPoints({
+        checkoutItems,
+        selectedCoupon,
+        usedPoints,
+        balance,
+      }),
+    [balance, checkoutItems, selectedCoupon, usedPoints],
+  );
 
   useEffect(() => {
     if (checkoutItems.length === 0) {
@@ -58,7 +73,12 @@ export default function PaymentQrScreen() {
 
   const handleMockQrScan = async () => {
     try {
-      await createOrder();
+      const order = await createOrder(selectedCoupon?.userCouponId ?? undefined);
+      setLastCreatedOrder({
+        orderId: order.orderId,
+        finalAmount: order.finalAmount,
+        usedRewardAmount: appliedRewardPoints,
+      });
       router.replace("/payment-complete");
     } catch (error) {
       const message =
