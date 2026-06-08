@@ -15,6 +15,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Image, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -101,28 +102,30 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <CartProvider>
-        <RecentSearchProvider>
-          <CheckoutProvider>
-            <PointsProvider>
-              <StoreMapConfigProvider>
-                <MapNavigationProvider>
-                  <BeaconLocationProvider>
-                    <MapShoppingNotificationProvider>
-                      <ToastProvider>
-                        <AuthGuard>
-                          <RootLayoutNav />
-                        </AuthGuard>
-                      </ToastProvider>
-                    </MapShoppingNotificationProvider>
-                  </BeaconLocationProvider>
-                </MapNavigationProvider>
-              </StoreMapConfigProvider>
-            </PointsProvider>
-          </CheckoutProvider>
-        </RecentSearchProvider>
-      </CartProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <CartProvider>
+          <RecentSearchProvider>
+            <CheckoutProvider>
+              <PointsProvider>
+                <StoreMapConfigProvider>
+                  <MapNavigationProvider>
+                    <BeaconLocationProvider>
+                      <MapShoppingNotificationProvider>
+                        <ToastProvider>
+                          <AuthGuard>
+                            <RootLayoutNav />
+                          </AuthGuard>
+                        </ToastProvider>
+                      </MapShoppingNotificationProvider>
+                    </BeaconLocationProvider>
+                  </MapNavigationProvider>
+                </StoreMapConfigProvider>
+              </PointsProvider>
+            </CheckoutProvider>
+          </RecentSearchProvider>
+        </CartProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

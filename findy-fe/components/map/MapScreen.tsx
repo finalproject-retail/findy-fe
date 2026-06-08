@@ -7,7 +7,6 @@ import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { type Href, useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SHOPPING_NOTIFICATION_MIN_INTERVAL_MS } from "./constants";
 import { MapOverlayControls } from "./MapOverlayControls";
@@ -200,14 +199,14 @@ export function MapScreen() {
         ) : null}
       </View>
 
-      <GestureHandlerRootView style={styles.sheetHost} pointerEvents="box-none">
+      <View style={styles.sheetHost} pointerEvents="box-none">
         <MapShoppingBottomSheet
           peekHeight={collapsedPeekHeight}
           collapsedBottomLift={collapsedBottomLift}
           onVisibleHeightChange={setSheetVisibleHeight}
           onDismissProductCallout={handleDismissMarkerCallout}
         />
-      </GestureHandlerRootView>
+      </View>
 
       <View style={styles.mapOverlayHost} pointerEvents="box-none">
         <MapOverlayControls {...mapOverlayControlProps} />
