@@ -1,19 +1,8 @@
 import { getAccessToken } from "@/lib/api/client";
+import { isPublicAuthRequest } from "@/lib/api/isPublicAuthRequest";
+import { handleUnauthorizedApiError } from "@/lib/api/unauthorizedSession";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-
-/** 로그인·회원가입 등 인증 없이 호출하는 경로 */
-const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/users/signup"] as const;
-
-function isPublicAuthRequest(url?: string) {
-  if (!url) {
-    return false;
-  }
-  const path = url.split("?")[0] ?? url;
-  return PUBLIC_AUTH_PATHS.some(
-    (publicPath) => path === publicPath || path.endsWith(publicPath),
-  );
-}
 
 function stripAuthorizationHeader(config: InternalAxiosRequestConfig) {
   if (config.headers) {
@@ -31,8 +20,16 @@ function attachUserIdHeaders(config: InternalAxiosRequestConfig, token: string) 
   config.headers["X-USER-ID"] = userId;
 }
 
-/** axios 인스턴스 요청마다 JWT + X-User-Id 자동 첨부 (공개 auth API 제외) */
+/** axios 인스턴스 — JWT 첨부 + 인증 만료(401/403) 시 전역 로그아웃 */
 export function attachAuthInterceptor(client: AxiosInstance) {
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      await handleUnauthorizedApiError(error);
+      return Promise.reject(error);
+    },
+  );
+
   client.interceptors.request.use((config) => {
     if (isPublicAuthRequest(config.url)) {
       stripAuthorizationHeader(config);

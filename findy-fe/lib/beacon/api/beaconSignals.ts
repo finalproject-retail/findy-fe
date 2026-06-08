@@ -1,5 +1,6 @@
 import { MAP_API_URL } from "@/constants/beacon";
 import { getAccessToken } from "@/lib/api/client";
+import { handleUnauthorizedHttpResponse } from "@/lib/api/unauthorizedSession";
 import { buildPayload } from "@/lib/beacon/utils/beaconLogic";
 import type { BeaconScan } from "@/lib/beacon/types";
 
@@ -25,7 +26,8 @@ export async function sendBeaconGridChange(
   }
 
   const payload = buildPayload(storeId, scan, nearestGridId);
-  const response = await fetch(`${MAP_API_URL}/api/v1/beacon-signals`, {
+  const url = `${MAP_API_URL}/api/v1/beacon-signals`;
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -33,6 +35,8 @@ export async function sendBeaconGridChange(
     },
     body: JSON.stringify(payload),
   });
+
+  await handleUnauthorizedHttpResponse(response, url);
 
   const json = (await response.json().catch(() => null)) as ApiEnvelope<BeaconSignalResponse> | null;
 

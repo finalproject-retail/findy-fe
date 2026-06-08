@@ -1,5 +1,6 @@
 import { MAP_API_URL } from "@/constants/beacon";
 import { getAccessToken } from "@/lib/api/client";
+import { handleUnauthorizedHttpResponse } from "@/lib/api/unauthorizedSession";
 import type { ApiEnvelope, GridCongestionListApi } from "@/lib/map/types";
 
 function resolveAuthToken(): string | null {
@@ -34,16 +35,16 @@ export async function fetchGridCongestion(
   }
 
   const query = params.toString();
-  const response = await fetch(
-    `${MAP_API_URL}/api/v1/stores/${storeId}/grids/congestion${query ? `?${query}` : ""}`,
-    {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+  const url = `${MAP_API_URL}/api/v1/stores/${storeId}/grids/congestion${query ? `?${query}` : ""}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
     },
-  );
+  });
+
+  await handleUnauthorizedHttpResponse(response, url);
 
   const json = (await response.json().catch(() => null)) as ApiEnvelope<GridCongestionListApi> | null;
 
