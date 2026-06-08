@@ -1,24 +1,24 @@
-import type { Product } from "@/components/product";
-import type { ProductSpec } from "@/components/product/types";
 import { buildCartZoneItem } from "@/components/category";
 import { zonesToShoppingMapItems } from "@/components/cart/zonesToShoppingMapItems";
+import type { Product } from "@/components/product";
+import type { ProductSpec } from "@/components/product/types";
 import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
 import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import {
+  DEFAULT_PRODUCT_PLACEHOLDER,
+  resolveProductImageSource,
+} from "@/lib/products/resolveProductImage";
+import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import type {
   CartApi,
   ShoppingListApi,
   ShoppingListItemApi,
   ShoppingProductApi,
   ShoppingProductSummaryApi,
+  TripZoneLineItem,
 } from "@/lib/shopping/types";
-import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
-import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
-
-import {
-  DEFAULT_PRODUCT_PLACEHOLDER,
-  resolveProductImageSource,
-} from "@/lib/products/resolveProductImage";
 
 function toNumber(value: number | string | null | undefined, fallback = 0) {
   if (value == null) return fallback;
@@ -26,7 +26,9 @@ function toNumber(value: number | string | null | undefined, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function buildProductName(product: Pick<ShoppingProductSummaryApi, "brandName" | "productName">) {
+function buildProductName(
+  product: Pick<ShoppingProductSummaryApi, "brandName" | "productName">,
+) {
   if (!product.brandName) return product.productName;
   if (product.productName.includes(product.brandName)) return product.productName;
   return `[${product.brandName}] ${product.productName}`;
@@ -58,7 +60,7 @@ export function mapShoppingProductToProduct(
 
   return {
     id: String(product.productId),
-    barcode: "barcode" in product ? product.barcode ?? null : null,
+    barcode: "barcode" in product ? (product.barcode ?? null) : null,
     name: buildProductName(product),
     image: resolveProductImageSource(product.imageUrl),
     discountPercent,
@@ -77,12 +79,54 @@ export function mapShoppingProductToProduct(
 
 export function mapCartApiToLineItems(cart: CartApi): CartLineItem[] {
   return cart.items.map((item) => ({
+    itemType: "PRODUCT" as const,
     productId: String(item.productId),
     cartItemId: String(item.cartItemId),
     product: mapShoppingProductToProduct(item.product),
     quantity: item.quantity,
     selected: item.checked,
   }));
+}
+
+/** API 응답을 반영하되, 기존 장바구니 표시 순서를 유지합니다. */
+export function mergeCartApiIntoLineItems(
+  previous: ReadonlyArray<CartLineItem>,
+  cart: CartApi,
+): CartLineItem[] {
+  const mapped = mapCartApiToLineItems(cart);
+  const byCartItemId = new Map(
+    mapped
+      .filter((item) => item.cartItemId)
+      .map((item) => [item.cartItemId!, item] as const),
+  );
+  const byProductId = new Map(
+    mapped.map((item) => [item.productId, item] as const),
+  );
+
+  const seen = new Set<string>();
+  const ordered: CartLineItem[] = [];
+
+  for (const prev of previous) {
+    const updated =
+      (prev.cartItemId ? byCartItemId.get(prev.cartItemId) : undefined) ??
+      byProductId.get(prev.productId);
+    if (!updated) {
+      continue;
+    }
+
+    const key = updated.cartItemId ?? updated.productId;
+    ordered.push(updated);
+    seen.add(key);
+  }
+
+  for (const item of mapped) {
+    const key = item.cartItemId ?? item.productId;
+    if (!seen.has(key)) {
+      ordered.push(item);
+    }
+  }
+
+  return ordered;
 }
 
 function buildCategoryPlaceholderProduct(
@@ -161,6 +205,38 @@ export function mapShoppingListApiToLineItems(
   shoppingList: ShoppingListApi,
 ): CartLineItem[] {
   return shoppingList.items.map(mapShoppingListItemApiToLineItem);
+}
+
+export function mapShoppingListApiToCategoryLineItems(
+  shoppingList: ShoppingListApi,
+): TripZoneLineItem[] {
+  return shoppingList.items.flatMap((item) => {
+    if (!isCategoryShoppingListItem(item) || item.category == null) {
+      return [];
+    }
+
+    const categoryId = item.category.categoryId;
+    if (categoryId == null) {
+      return [];
+    }
+
+    const fromCatalog = buildCartZoneItem(categoryId);
+    const zone: TripZoneLineItem = fromCatalog ?? {
+      categoryId,
+      label: item.category.categoryName,
+      path: item.category.categoryName,
+      topLabel: "",
+      middleLabel: "",
+      emoji: "📍",
+    };
+
+    return [
+      {
+        ...zone,
+        shoppingListItemId: String(item.shoppingListItemId),
+      },
+    ];
+  });
 }
 
 export function categoryLineItemsToMapItems(

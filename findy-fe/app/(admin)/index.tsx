@@ -3,6 +3,7 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminOperationsSummary } from "@/components/admin/AdminOperationsSummary";
 import { AdminProductFunnel } from "@/components/admin/AdminProductFunnel";
 import { AdminPromoProductList } from "@/components/admin/AdminPromoProductList";
+import { AdminScrollView } from "@/components/admin/AdminScrollView";
 import { AdminZoneVisitHeatmap } from "@/components/admin/AdminZoneVisitHeatmap";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminPromotionAnalytics } from "@/hooks/useAdminPromotionAnalytics";
@@ -14,7 +15,7 @@ import {
 } from "@/lib/admin/mockDashboardData";
 import { pretendard } from "@/utils/pretendard";
 import { useMemo, useState, type ReactNode } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function DashboardRow({
@@ -54,7 +55,9 @@ function DashboardSection({
 export default function AdminDashboardScreen() {
   const insets = useSafeAreaInsets();
   const isWide = useAdminWideLayout();
-  const [dateRange, setDateRange] = useState<AdminDateRange>(getDefaultAdminDateRange);
+  const [dateRange, setDateRange] = useState<AdminDateRange>(
+    getDefaultAdminDateRange,
+  );
   const data = useMemo(() => getAdminDashboardMock(dateRange), [dateRange]);
   const {
     funnel,
@@ -65,8 +68,7 @@ export default function AdminDashboardScreen() {
   } = useAdminPromotionAnalytics(dateRange);
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: ADMIN_COLORS.pageBg }}
+    <AdminScrollView
       contentContainerStyle={{
         paddingBottom: Math.max(insets.bottom, 24) + (isWide ? 0 : 72),
       }}
@@ -79,56 +81,59 @@ export default function AdminDashboardScreen() {
         />
 
         <View style={{ paddingHorizontal: 20, gap: 28, paddingTop: 8 }}>
-        <DashboardRow isWide={isWide}>
-          <DashboardSection isWide={isWide}>
-            <AdminOperationsSummary
-              insight={data.insight}
-              stats={data.stats}
-              stretch={isWide}
-            />
-          </DashboardSection>
-
-          <DashboardSection isWide={isWide}>
-            {promoLoading ? (
-              <View className="items-center py-10">
-                <ActivityIndicator color={ADMIN_COLORS.navy} />
-              </View>
-            ) : (
-              <AdminProductFunnel
-                steps={funnel}
-                finalConversionRate={finalConversionRate}
+          <DashboardRow isWide={isWide}>
+            <DashboardSection isWide={isWide}>
+              <AdminOperationsSummary
+                insight={data.insight}
+                stats={data.stats}
                 stretch={isWide}
               />
-            )}
-          </DashboardSection>
-        </DashboardRow>
+            </DashboardSection>
 
-        {promoError ? (
-          <Text
-            className="text-sm text-text-red"
-            style={{ ...pretendard(400), paddingHorizontal: 4 }}
-          >
-            {promoError}
-          </Text>
-        ) : null}
+            <DashboardSection isWide={isWide}>
+              {promoLoading ? (
+                <View className="items-center py-10">
+                  <ActivityIndicator color={ADMIN_COLORS.navy} />
+                </View>
+              ) : (
+                <AdminProductFunnel
+                  steps={funnel}
+                  finalConversionRate={finalConversionRate}
+                  stretch={isWide}
+                />
+              )}
+            </DashboardSection>
+          </DashboardRow>
 
-        <DashboardRow isWide={isWide}>
-          <DashboardSection isWide={isWide}>
-            <AdminZoneVisitHeatmap zones={data.zones} stretch={isWide} />
-          </DashboardSection>
+          {promoError ? (
+            <Text
+              className="text-sm text-text-red"
+              style={{ ...pretendard(400), paddingHorizontal: 4 }}
+            >
+              {promoError}
+            </Text>
+          ) : null}
 
-          <DashboardSection isWide={isWide}>
-            {promoLoading ? (
-              <View className="items-center py-10">
-                <ActivityIndicator color={ADMIN_COLORS.navy} />
-              </View>
-            ) : (
-              <AdminPromoProductList products={promoProducts} stretch={isWide} />
-            )}
-          </DashboardSection>
-        </DashboardRow>
+          <DashboardRow isWide={isWide}>
+            <DashboardSection isWide={isWide}>
+              <AdminZoneVisitHeatmap zones={data.zones} stretch={isWide} />
+            </DashboardSection>
+
+            <DashboardSection isWide={isWide}>
+              {promoLoading ? (
+                <View className="items-center py-10">
+                  <ActivityIndicator color={ADMIN_COLORS.navy} />
+                </View>
+              ) : (
+                <AdminPromoProductList
+                  products={promoProducts}
+                  stretch={isWide}
+                />
+              )}
+            </DashboardSection>
+          </DashboardRow>
         </View>
       </AdminContentFrame>
-    </ScrollView>
+    </AdminScrollView>
   );
 }

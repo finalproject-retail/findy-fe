@@ -148,6 +148,23 @@ export function MapScreen() {
     router,
   ]);
 
+  const mapOverlayControlProps = {
+    onSearchPress: () =>
+      router.push({
+        pathname: "/search",
+        params: { addMode: SEARCH_ADD_MODE_SHOPPING_LIST },
+      } as Href),
+    onBellPress: () => router.push("/notifications" as Href),
+    showCongestion,
+    showRoute,
+    onToggleCongestion: () => setShowCongestion((v) => !v),
+    onToggleRoute: () => setShowRoute((v) => !v),
+    onRefreshPress: () => {
+      handleDismissMarkerCallout();
+      void refreshNavigationOverlay(storeId, storeMapConfig.cols);
+    },
+  };
+
   return (
     <View style={styles.root}>
       <View
@@ -181,23 +198,6 @@ export function MapScreen() {
             showRoute={showRoute}
           />
         ) : null}
-        <MapOverlayControls
-          onSearchPress={() =>
-            router.push({
-              pathname: "/search",
-              params: { addMode: SEARCH_ADD_MODE_SHOPPING_LIST },
-            } as Href)
-          }
-          onBellPress={() => router.push("/notifications" as Href)}
-          showCongestion={showCongestion}
-          showRoute={showRoute}
-          onToggleCongestion={() => setShowCongestion((v) => !v)}
-          onToggleRoute={() => setShowRoute((v) => !v)}
-          onRefreshPress={() => {
-            handleDismissMarkerCallout();
-            void refreshNavigationOverlay(storeId, storeMapConfig.cols);
-          }}
-        />
       </View>
 
       <GestureHandlerRootView style={styles.sheetHost} pointerEvents="box-none">
@@ -208,6 +208,10 @@ export function MapScreen() {
           onDismissProductCallout={handleDismissMarkerCallout}
         />
       </GestureHandlerRootView>
+
+      <View style={styles.mapOverlayHost} pointerEvents="box-none">
+        <MapOverlayControls {...mapOverlayControlProps} />
+      </View>
 
       {activeToast ? (
         <MapShoppingToast
@@ -270,6 +274,11 @@ const styles = StyleSheet.create({
   },
   sheetHost: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+  },
+  mapOverlayHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
   },
   devBeaconHost: {
     position: "absolute",

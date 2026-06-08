@@ -15,11 +15,8 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
-import { createShoppingListFromZones } from "@/lib/shopping/createShoppingListFromCart";
-import {
-  categoryLineItemsToMapItems,
-  mapShoppingListApiToLineItems,
-} from "@/lib/shopping/mappers";
+import { zonesToShoppingMapItems } from "@/components/cart";
+import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
 import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { useToast } from "@/contexts/ToastContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -135,18 +132,21 @@ export default function PickZonesScreen() {
 
     void (async () => {
       try {
-        const shoppingList = await createShoppingListFromZones(zones);
-        const lineItems = mapShoppingListApiToLineItems(shoppingList);
-        const mapItems = categoryLineItemsToMapItems(lineItems);
+        const { shoppingList, zoneLines } = await addZonesToShoppingList(
+          zones,
+          null,
+        );
+        const mapItems = zonesToShoppingMapItems(zones);
         const destinationGridIds =
-          shoppingList.destinationGridIds?.length
+          shoppingList?.destinationGridIds?.length
             ? shoppingList.destinationGridIds
             : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
         startShoppingTrip(
-          lineItems,
+          [],
           mapItems,
-          shoppingList.shoppingListId,
+          shoppingList?.shoppingListId ?? null,
           destinationGridIds,
+          zoneLines,
         );
         showToast(`${zones.length}개 구역을 담았어요`);
         router.push("/route-generating");

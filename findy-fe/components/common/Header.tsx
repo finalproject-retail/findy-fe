@@ -60,7 +60,9 @@ export function Header({
     }
     if (router.canGoBack()) {
       router.back();
+      return;
     }
+    router.replace("/(tabs)");
   };
 
   const renderRightIcon = (icon: HeaderRightIcon) => {

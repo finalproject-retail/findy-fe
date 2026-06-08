@@ -1,46 +1,55 @@
 import { AdminContentFrame } from "@/components/admin/AdminContentFrame";
-import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminProductPerformanceList } from "@/components/admin/AdminProductPerformanceList";
+import { AdminScrollView } from "@/components/admin/AdminScrollView";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
+import { useAdminProductPerformanceList } from "@/hooks/useAdminProductPerformanceList";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
-import { getDefaultAdminDateRange, type AdminDateRange } from "@/lib/admin/mockDashboardData";
+import { getDefaultAdminDateRange } from "@/lib/admin/mockDashboardData";
 import { pretendard } from "@/utils/pretendard";
-import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AdminProductsScreen() {
   const insets = useSafeAreaInsets();
   const isWide = useAdminWideLayout();
-  const [dateRange, setDateRange] = useState<AdminDateRange>(getDefaultAdminDateRange);
+  const dateRange = getDefaultAdminDateRange();
+  const { products, isLoading, error, reload } = useAdminProductPerformanceList(dateRange);
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: ADMIN_COLORS.pageBg }}
+    <AdminScrollView
       contentContainerStyle={{
         paddingBottom: Math.max(insets.bottom, 24) + (isWide ? 0 : 72),
         flexGrow: 1,
       }}
     >
       <AdminContentFrame>
-        <AdminHeader
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-          showTitle={!isWide}
-        />
         <View
           style={{
-            flex: 1,
             paddingHorizontal: 20,
-            paddingTop: 40,
-            alignItems: "center",
-            justifyContent: "center",
+            paddingTop: isWide ? 24 : Math.max(insets.top, 12) + 8,
+            paddingBottom: 24,
           }}
         >
-          <Text style={{ ...pretendard(600), fontSize: 16, color: ADMIN_COLORS.navyMuted }}>
-            상품 별 성과 화면은 준비 중입니다.
-          </Text>
+          {isLoading ? (
+            <View style={{ paddingVertical: 80, alignItems: "center" }}>
+              <ActivityIndicator color={ADMIN_COLORS.navActive} />
+            </View>
+          ) : error ? (
+            <View style={{ paddingVertical: 48, alignItems: "center", gap: 12 }}>
+              <Text style={{ ...pretendard(500), fontSize: 14, color: ADMIN_COLORS.navyMuted }}>
+                {error}
+              </Text>
+              <Pressable onPress={() => void reload()}>
+                <Text style={{ ...pretendard(600), fontSize: 14, color: ADMIN_COLORS.navActive }}>
+                  다시 시도
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <AdminProductPerformanceList products={products} stretch={isWide} />
+          )}
         </View>
       </AdminContentFrame>
-    </ScrollView>
+    </AdminScrollView>
   );
 }
