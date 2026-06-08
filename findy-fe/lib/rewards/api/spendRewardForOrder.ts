@@ -4,7 +4,7 @@ import { buildUserApiHeaders } from "@/lib/auth/api/userApiHeaders";
 import type { ApiEnvelope } from "@/lib/auth/types";
 import type { UseRewardApiDto, UseRewardResult } from "@/lib/rewards/api/types";
 
-export type UseRewardForOrderParams = {
+export type SpendRewardForOrderParams = {
   orderId: number;
   usedAmount: number;
 };
@@ -18,8 +18,8 @@ function mapUseRewardFromApi(dto: UseRewardApiDto): UseRewardResult {
 }
 
 /** POST /api/v1/users/me/rewards/use — 주문 결제 시 포인트 사용 */
-export async function useRewardForOrder(
-  params: UseRewardForOrderParams,
+export async function spendRewardForOrder(
+  params: SpendRewardForOrderParams,
 ): Promise<UseRewardResult> {
   try {
     const response = await authenticatedUserApiClient.post<
