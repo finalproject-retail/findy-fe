@@ -9,6 +9,7 @@ import {
 } from "@/lib/admin/mockProductPerformanceData";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
+import { useRouter, type Href } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Platform,
@@ -208,12 +209,15 @@ function ProductIdentity({
 function ProductPerformanceMobileRow({
   product,
   isLast,
+  onPress,
 }: {
   product: AdminProductPerformance;
   isLast: boolean;
+  onPress: () => void;
 }) {
   return (
     <Pressable
+      onPress={onPress}
       accessibilityRole="button"
       style={{
         flexDirection: "row",
@@ -243,7 +247,7 @@ function ProductPerformanceMobileRow({
           numberOfLines={1}
           style={{ ...pretendard(500), fontSize: 12, lineHeight: 17, color: ADMIN_COLORS.navyLight }}
         >
-          조회수: {formatAdminMetricNumber(product.views)} | 구매 전환율: {product.conversionRate}%
+          기간 조회수: {formatAdminMetricNumber(product.views)} | 구매 전환율: {product.conversionRate}%
         </Text>
       </View>
 
@@ -254,14 +258,14 @@ function ProductPerformanceMobileRow({
   );
 }
 
-const TABLE_HEADERS = ["상품명", "조회수", "구매 전환율"] as const;
+const TABLE_HEADERS = ["상품명", "기간 조회수", "구매 전환율"] as const;
 
 function tableColumnStyle(header: (typeof TABLE_HEADERS)[number], stretch: boolean) {
   if (stretch) {
     switch (header) {
       case "상품명":
         return { flex: 3 };
-      case "조회수":
+      case "기간 조회수":
       case "구매 전환율":
         return { flex: 1 };
     }
@@ -305,12 +309,15 @@ function ProductPerformanceTableHeader({ stretch }: { stretch: boolean }) {
 function ProductPerformanceTableRow({
   product,
   stretch,
+  onPress,
 }: {
   product: AdminProductPerformance;
   stretch: boolean;
+  onPress: () => void;
 }) {
   return (
     <Pressable
+      onPress={onPress}
       accessibilityRole="button"
       style={{
         flexDirection: "row",
@@ -328,7 +335,7 @@ function ProductPerformanceTableRow({
 
       <Text
         style={{
-          ...tableColumnStyle("조회수", stretch),
+          ...tableColumnStyle("기간 조회수", stretch),
           textAlign: "center",
           ...pretendard(700),
           fontSize: 14,
@@ -367,8 +374,16 @@ export function AdminProductPerformanceList({
   products,
   stretch = false,
 }: AdminProductPerformanceListProps) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<AdminProductCategoryFilter>("fresh");
+
+  const openProductDetail = (productId: string) => {
+    router.push({
+      pathname: "/(admin)/products/[id]",
+      params: { id: productId },
+    } as Href);
+  };
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -418,6 +433,7 @@ export function AdminProductPerformanceList({
                 key={product.productId}
                 product={product}
                 stretch
+                onPress={() => openProductDetail(product.productId)}
               />
             ))
           ) : (
@@ -432,6 +448,7 @@ export function AdminProductPerformanceList({
                 key={product.productId}
                 product={product}
                 isLast={index === filteredProducts.length - 1}
+                onPress={() => openProductDetail(product.productId)}
               />
             ))
           ) : (
