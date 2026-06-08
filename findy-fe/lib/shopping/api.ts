@@ -130,19 +130,38 @@ export async function getShoppingList(
 }
 
 export async function addCategoryShoppingListItem(
-  categoryId: number,
-  categoryName?: string,
-  quantity = 1,
+  params: {
+    categoryId?: number;
+    categoryName?: string;
+    quantity?: number;
+  },
   userId?: number,
 ): Promise<ShoppingListApi> {
   try {
     const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
       "/api/v1/shopping-lists/items/categories",
       {
-        categoryId,
-        categoryName: categoryName ?? undefined,
-        quantity,
+        categoryId: params.categoryId ?? null,
+        categoryName: params.categoryName ?? null,
+        quantity: params.quantity ?? 1,
       },
+      { headers: userHeaders(userId) },
+    );
+    return unwrap(response.data);
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+export async function changeShoppingListItemChecked(
+  shoppingListItemId: string | number,
+  checked: boolean,
+  userId?: number,
+): Promise<ShoppingListApi> {
+  try {
+    const response = await shoppingApiClient.patch<ApiEnvelope<ShoppingListApi>>(
+      `/api/v1/shopping-lists/items/${shoppingListItemId}/checked`,
+      { checked },
       { headers: userHeaders(userId) },
     );
     return unwrap(response.data);

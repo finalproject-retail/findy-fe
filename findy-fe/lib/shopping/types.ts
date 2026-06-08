@@ -69,7 +69,9 @@ export type ShoppingListScanStatus =
   | "PARTIALLY_SCANNED"
   | "SCANNED";
 
-export type ShoppingListCategoryItemApi = {
+export type ShoppingListItemType = "PRODUCT" | "CATEGORY";
+
+export type CategoryShoppingListItemApi = {
   categoryId: number | null;
   categoryName: string;
   gridId?: number | null;
@@ -77,14 +79,14 @@ export type ShoppingListCategoryItemApi = {
 
 export type ShoppingListItemApi = {
   shoppingListItemId: number;
-  itemType?: "PRODUCT" | "CATEGORY";
+  itemType?: ShoppingListItemType;
   /** @deprecated API는 product.productId 사용 */
   productId?: number;
-  product: ShoppingProductSummaryApi | null;
-  category?: ShoppingListCategoryItemApi | null;
+  product?: ShoppingProductSummaryApi | null;
+  category?: CategoryShoppingListItemApi | null;
   quantity: number;
   scannedQuantity?: number | null;
-  checked?: boolean;
+  checked: boolean;
   scanStatus: ShoppingListScanStatus;
   itemTotalAmount?: number | null;
   scannedAmount?: number | null;

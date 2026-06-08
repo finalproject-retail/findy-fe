@@ -18,12 +18,33 @@ type CouponApiBase = {
   daysLimit?: number | null;
 };
 
-/** GET /api/v1/coupons/me, /available-for-order */
-export type UserCouponApiDto = CouponApiBase & {
+/** GET /api/v1/coupons/available-for-order */
+export type AvailableOrderCouponApiDto = {
+  userCouponId: number;
+  couponId: number;
+  couponName: string;
+  couponType: string;
+  discountType: string;
+  discountValue: number;
+  minOrderAmount: number;
+  expiresAt: string;
+  expectedDiscountAmount: number;
+  membershipGrade?: string | null;
+  grade?: string | null;
+  targetGrade?: string | null;
+};
+
+/** GET /api/v1/coupons/me */
+export type UserCouponApiDto = Omit<CouponApiBase, "endAt"> & {
   userCouponId: number;
   isUsed: boolean;
   downloadedAt: string;
   isDownloaded?: boolean;
+  /** 보유 쿠폰 실제 만료 시각 */
+  expiresAt: string;
+  endAt?: string | null;
+  isExpired?: boolean;
+  usedAt?: string | null;
 };
 
 /** GET /api/v1/coupons/available, /{couponId} */

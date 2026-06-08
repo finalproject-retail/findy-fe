@@ -14,19 +14,16 @@ import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart, type CartLineItem } from "@/contexts/CartContext";
-import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useToast } from "@/contexts/ToastContext";
 import { getApiErrorMessage } from "@/lib/api";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { removeCartItem } from "@/lib/shopping/api";
-import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
 import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
-import {
-  mapShoppingListApiToLineItems,
-} from "@/lib/shopping/mappers";
-import {
-  dedupeDestinationGridIds,
-  destinationGridIdsFromMapItems,
-} from "@/lib/map/pathUtils";
+import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
+import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
+import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { pretendard } from "@/utils/pretendard";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
 import { type Href, useRouter } from "expo-router";
@@ -72,9 +69,9 @@ export default function CartScreen() {
 
     try {
       let shoppingListLines: CartLineItem[] = [];
-      let tripZoneLines = zoneItems;
+      let tripZoneLines: TripZoneLineItem[] = [];
       let activeShoppingListId: number | null = null;
-      let productDestinationGridIds: number[] = [];
+      let serverDestinationGridIds: number[] = [];
       let shoppingListForZones = null;
 
       if (hasSelectedProducts) {
@@ -82,9 +79,11 @@ export default function CartScreen() {
           availableItems,
           selectedLines,
         );
-        shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
+        shoppingListLines = mapShoppingListApiToLineItems(shoppingList).filter(
+          isProductLineItem,
+        );
         activeShoppingListId = shoppingList.shoppingListId;
-        productDestinationGridIds = shoppingList.destinationGridIds ?? [];
+        serverDestinationGridIds = shoppingList.destinationGridIds ?? [];
         shoppingListForZones = shoppingList;
 
         await Promise.all(
@@ -102,14 +101,16 @@ export default function CartScreen() {
         if (shoppingListWithZones != null) {
           activeShoppingListId = shoppingListWithZones.shoppingListId;
           if (!hasSelectedProducts) {
-            productDestinationGridIds =
+            serverDestinationGridIds =
               shoppingListWithZones.destinationGridIds ?? [];
           }
         }
       }
 
       const productMapItems = hasSelectedProducts
-        ? cartToShoppingMapItems(shoppingListLines)
+        ? cartToShoppingMapItems(
+            shoppingListLines.map((item) => ({ ...item, selected: true })),
+          )
         : [];
       const zoneMapItems = hasSelectedZones
         ? zonesToShoppingMapItems(zoneItems)
@@ -121,19 +122,9 @@ export default function CartScreen() {
         }),
       );
 
-      const productDestinationIds = hasSelectedProducts
-        ? productDestinationGridIds
-        : [];
-      const zoneDestinationGridIds = hasSelectedZones
-        ? destinationGridIdsFromMapItems(zoneMapItems, GRID_COLS)
-        : [];
-      const allDestinationGridIds = dedupeDestinationGridIds([
-        ...productDestinationIds,
-        ...zoneDestinationGridIds,
-      ]);
       const resolvedDestinationGridIds =
-        allDestinationGridIds.length > 0
-          ? allDestinationGridIds
+        serverDestinationGridIds.length > 0
+          ? serverDestinationGridIds
           : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
 
       startShoppingTrip(
@@ -150,13 +141,13 @@ export default function CartScreen() {
 
       router.push("/route-generating");
     } catch (error) {
+      if (__DEV__) {
+        console.error(error);
+      }
       showToast(
         getApiErrorMessage(error) ||
           "쇼핑을 시작하지 못했어요. 다시 시도해 주세요.",
       );
-      if (__DEV__) {
-        console.error(error);
-      }
     }
   };
 

@@ -18,6 +18,7 @@ export type OrderItemApiDto = {
   productPrice: number;
   itemDiscountAmount: number;
   itemFinalAmount: number;
+  imageUrl?: string | null;
 };
 
 export type OrderDetailApiDto = {

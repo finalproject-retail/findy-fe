@@ -1,17 +1,24 @@
 import { buildCartZoneItem } from "@/components/category";
+import { zonesToShoppingMapItems } from "@/components/cart/zonesToShoppingMapItems";
 import type { Product } from "@/components/product";
 import type { ProductSpec } from "@/components/product/types";
+import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
+import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
+import type { CartLineItem } from "@/contexts/CartContext";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import {
+  DEFAULT_PRODUCT_PLACEHOLDER,
+  resolveProductImageSource,
+} from "@/lib/products/resolveProductImage";
+import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import type {
   CartApi,
-  ShoppingLineItem,
   ShoppingListApi,
+  ShoppingListItemApi,
   ShoppingProductApi,
   ShoppingProductSummaryApi,
   TripZoneLineItem,
 } from "@/lib/shopping/types";
-import { resolveShoppingListItemProductId } from "@/lib/shopping/types";
-
-import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
 
 function toNumber(value: number | string | null | undefined, fallback = 0) {
   if (value == null) return fallback;
@@ -19,7 +26,9 @@ function toNumber(value: number | string | null | undefined, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function buildProductName(product: Pick<ShoppingProductSummaryApi, "brandName" | "productName">) {
+function buildProductName(
+  product: Pick<ShoppingProductSummaryApi, "brandName" | "productName">,
+) {
   if (!product.brandName) return product.productName;
   if (product.productName.includes(product.brandName)) return product.productName;
   return `[${product.brandName}] ${product.productName}`;
@@ -51,7 +60,7 @@ export function mapShoppingProductToProduct(
 
   return {
     id: String(product.productId),
-    barcode: "barcode" in product ? product.barcode ?? null : null,
+    barcode: "barcode" in product ? (product.barcode ?? null) : null,
     name: buildProductName(product),
     image: resolveProductImageSource(product.imageUrl),
     discountPercent,
@@ -68,8 +77,9 @@ export function mapShoppingProductToProduct(
   };
 }
 
-export function mapCartApiToLineItems(cart: CartApi): ShoppingLineItem[] {
+export function mapCartApiToLineItems(cart: CartApi): CartLineItem[] {
   return cart.items.map((item) => ({
+    itemType: "PRODUCT" as const,
     productId: String(item.productId),
     cartItemId: String(item.cartItemId),
     product: mapShoppingProductToProduct(item.product),
@@ -80,9 +90,9 @@ export function mapCartApiToLineItems(cart: CartApi): ShoppingLineItem[] {
 
 /** API 응답을 반영하되, 기존 장바구니 표시 순서를 유지합니다. */
 export function mergeCartApiIntoLineItems(
-  previous: ReadonlyArray<Pick<ShoppingLineItem, "productId" | "cartItemId">>,
+  previous: ReadonlyArray<CartLineItem>,
   cart: CartApi,
-): ShoppingLineItem[] {
+): CartLineItem[] {
   const mapped = mapCartApiToLineItems(cart);
   const byCartItemId = new Map(
     mapped
@@ -94,7 +104,7 @@ export function mergeCartApiIntoLineItems(
   );
 
   const seen = new Set<string>();
-  const ordered: ShoppingLineItem[] = [];
+  const ordered: CartLineItem[] = [];
 
   for (const prev of previous) {
     const updated =
@@ -119,37 +129,82 @@ export function mergeCartApiIntoLineItems(
   return ordered;
 }
 
-function isCategoryShoppingListItem(
-  item: ShoppingListApi["items"][number],
-): boolean {
-  return item.itemType === "CATEGORY" || item.category != null;
+function buildCategoryPlaceholderProduct(
+  categoryId: number,
+  categoryName: string,
+  gridId?: number | null,
+): Product {
+  return {
+    id: `zone-${categoryId || "custom"}`,
+    name: categoryName,
+    image: DEFAULT_PRODUCT_PLACEHOLDER,
+    discountPercent: 0,
+    price: 0,
+    originalPrice: 0,
+    couponPrice: 0,
+    stockCount: 1,
+    category: categoryName,
+    gridId: gridId ?? null,
+  };
+}
+
+function isCategoryShoppingListItem(item: ShoppingListItemApi): boolean {
+  if (item.itemType === "CATEGORY") {
+    return true;
+  }
+
+  return item.category != null && item.product == null;
+}
+
+function mapShoppingListItemApiToLineItem(
+  item: ShoppingListItemApi,
+): CartLineItem {
+  if (isCategoryShoppingListItem(item) && item.category) {
+    const categoryId = item.category.categoryId ?? 0;
+
+    return {
+      itemType: "CATEGORY",
+      productId: `zone-${categoryId || item.shoppingListItemId}`,
+      shoppingListItemId: String(item.shoppingListItemId),
+      product: buildCategoryPlaceholderProduct(
+        categoryId,
+        item.category.categoryName,
+        item.category.gridId,
+      ),
+      quantity: item.quantity,
+      selected: true,
+      checked: item.checked,
+      scanStatus: item.scanStatus,
+      category: {
+        categoryId,
+        categoryName: item.category.categoryName,
+        gridId: item.category.gridId,
+      },
+    };
+  }
+
+  const product = item.product;
+  if (!product) {
+    throw new Error("쇼핑리스트 항목을 불러오지 못했습니다.");
+  }
+
+  return {
+    itemType: "PRODUCT",
+    productId: String(product.productId),
+    shoppingListItemId: String(item.shoppingListItemId),
+    product: mapShoppingProductToProduct(product),
+    quantity: item.quantity,
+    selected: true,
+    scannedQuantity: item.scannedQuantity ?? 0,
+    scanStatus: item.scanStatus,
+    checked: item.checked,
+  };
 }
 
 export function mapShoppingListApiToLineItems(
   shoppingList: ShoppingListApi,
-): ShoppingLineItem[] {
-  return shoppingList.items.flatMap((item) => {
-    if (isCategoryShoppingListItem(item)) {
-      return [];
-    }
-
-    const productId = resolveShoppingListItemProductId(item);
-    if (productId == null || item.product == null) {
-      return [];
-    }
-
-    return [
-      {
-        productId: String(productId),
-        shoppingListItemId: String(item.shoppingListItemId),
-        product: mapShoppingProductToProduct(item.product),
-        quantity: item.quantity,
-        selected: true,
-        scannedQuantity: item.scannedQuantity ?? 0,
-        scanStatus: item.scanStatus,
-      },
-    ];
-  });
+): CartLineItem[] {
+  return shoppingList.items.map(mapShoppingListItemApiToLineItem);
 }
 
 export function mapShoppingListApiToCategoryLineItems(
@@ -181,5 +236,47 @@ export function mapShoppingListApiToCategoryLineItems(
         shoppingListItemId: String(item.shoppingListItemId),
       },
     ];
+  });
+}
+
+export function categoryLineItemsToMapItems(
+  items: CartLineItem[],
+): ShoppingMapItem[] {
+  const config = getEmartStoreMapConfig();
+
+  return items.filter(isCategoryLineItem).map((item, index) => {
+    const gridId = item.category?.gridId;
+    if (gridId != null) {
+      const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
+      return {
+        id: item.productId,
+        name: item.category?.categoryName ?? item.product.name,
+        gridX,
+        gridY,
+        gridId,
+        visitOrder: index + 1,
+      };
+    }
+
+    const zone =
+      item.category?.categoryId != null
+        ? buildCartZoneItem(item.category.categoryId)
+        : null;
+
+    if (zone) {
+      const [mapItem] = zonesToShoppingMapItems([zone]);
+      return {
+        ...mapItem,
+        visitOrder: index + 1,
+      };
+    }
+
+    return {
+      id: item.productId,
+      name: item.category?.categoryName ?? item.product.name,
+      gridX: 14,
+      gridY: 10,
+      visitOrder: index + 1,
+    };
   });
 }

@@ -48,12 +48,20 @@ import { MapShoppingSheetFooter } from "./MapShoppingSheetFooter";
 import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
 import { MapShoppingSheetZoneItem } from "./MapShoppingSheetZoneItem";
 import { buildTripSheetRows } from "./buildTripSheetRows";
+import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { getApiErrorMessage } from "@/lib/api";
-import { scanShoppingListItem, decreaseShoppingListItemByScan } from "@/lib/shopping/api";
+import {
+  decreaseShoppingListItemByScan,
+  scanShoppingListItem,
+} from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
-import { mapShoppingListApiToLineItems, mapShoppingListApiToCategoryLineItems } from "@/lib/shopping/mappers";
+import {
+  mapShoppingListApiToCategoryLineItems,
+  mapShoppingListApiToLineItems,
+} from "@/lib/shopping/mappers";
+import type { ShoppingListApi } from "@/lib/shopping/types";
 import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
 import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 
@@ -115,6 +123,18 @@ export function MapShoppingBottomSheet({
     syncShoppingTrip,
   } = useMapNavigation();
 
+  const syncFromShoppingList = useCallback(
+    (shoppingList: ShoppingListApi) => {
+      syncShoppingTrip(
+        mapShoppingListApiToLineItems(shoppingList).filter(isProductLineItem),
+        shoppingList.shoppingListId,
+        shoppingList.destinationGridIds,
+        mapShoppingListApiToCategoryLineItems(shoppingList),
+      );
+    },
+    [syncShoppingTrip],
+  );
+
   const routeProductIds = useMemo(() => {
     const config = getEmartStoreMapConfig();
     if (pathNavigation?.destinationGridIds.length) {
@@ -138,7 +158,7 @@ export function MapShoppingBottomSheet({
   const tripSheetRows = useMemo(
     () =>
       buildTripSheetRows(
-        tripLineItems,
+        tripLineItems.filter(isProductLineItem),
         tripZoneItems,
         pickedQuantityByProductId,
         routeProductIds,
@@ -358,7 +378,15 @@ export function MapShoppingBottomSheet({
       return;
     }
 
-    const totalPicked = tripLineItems.reduce(
+    const productItems = tripLineItems.filter(isProductLineItem);
+    const hasProductItems = productItems.length > 0;
+
+    if (!hasProductItems) {
+      setScanBarcodeModalVisible(true);
+      return;
+    }
+
+    const totalPicked = productItems.reduce(
       (sum, line) => sum + (pickedQuantityByProductId[line.productId] ?? 0),
       0,
     );
@@ -367,7 +395,7 @@ export function MapShoppingBottomSheet({
       return;
     }
 
-    const hasUnpicked = tripLineItems.some((line) => {
+    const hasUnpicked = productItems.some((line) => {
       const picked = pickedQuantityByProductId[line.productId] ?? 0;
       return picked < line.quantity;
     });
@@ -417,13 +445,7 @@ export function MapShoppingBottomSheet({
         try {
           const canceledProductName = cancelModal.productName;
           const shoppingList = await decreaseShoppingListItemByScan(barcode, 1);
-          const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-          syncShoppingTrip(
-            nextLineItems,
-            shoppingList.shoppingListId,
-            shoppingList.destinationGridIds,
-            mapShoppingListApiToCategoryLineItems(shoppingList),
-          );
+          syncFromShoppingList(shoppingList);
           setCancelScanModal(null);
 
           if (cancelToastTimerRef.current) {
@@ -451,12 +473,9 @@ export function MapShoppingBottomSheet({
 
       try {
         const shoppingList = await scanShoppingListItem(barcode, 1);
-        const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-        syncShoppingTrip(
-          nextLineItems,
-          shoppingList.shoppingListId,
-          shoppingList.destinationGridIds,
-          mapShoppingListApiToCategoryLineItems(shoppingList),
+        syncFromShoppingList(shoppingList);
+        const nextLineItems = mapShoppingListApiToLineItems(shoppingList).filter(
+          isProductLineItem,
         );
 
         const lineAfter = nextLineItems.find(
@@ -487,7 +506,7 @@ export function MapShoppingBottomSheet({
       pickedQuantityByProductId,
       presentCancelToast,
       notifyBarcodeScanPromoIfNeeded,
-      syncShoppingTrip,
+      syncFromShoppingList,
       tripLineItems,
     ],
   );
@@ -521,20 +540,6 @@ export function MapShoppingBottomSheet({
     [addToCart, pickedQuantityByProductId, removeTripItem],
   );
 
-  useEffect(() => {
-    if (cancelScanModal) {
-      cancelScanHandledRef.current = false;
-    }
-  }, [cancelScanModal]);
-
-  useEffect(() => {
-    return () => {
-      if (cancelToastTimerRef.current) {
-        clearTimeout(cancelToastTimerRef.current);
-      }
-    };
-  }, []);
-
   const handleRemoveZone = useCallback(
     async (categoryId: number) => {
       try {
@@ -548,6 +553,20 @@ export function MapShoppingBottomSheet({
     },
     [removeTripZoneItem, showToast],
   );
+
+  useEffect(() => {
+    if (cancelScanModal) {
+      cancelScanHandledRef.current = false;
+    }
+  }, [cancelScanModal]);
+
+  useEffect(() => {
+    return () => {
+      if (cancelToastTimerRef.current) {
+        clearTimeout(cancelToastTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleDismissCancelModal = useCallback(() => {
     setCancelScanModal(null);
@@ -633,7 +652,7 @@ export function MapShoppingBottomSheet({
                         pickedQuantity={
                           pickedQuantityByProductId[row.item.productId] ?? 0
                         }
-                        onRemove={() => handleRemoveItem(row.item)}
+                        onRemove={() => void handleRemoveItem(row.item)}
                         onQuantityChange={(qty) =>
                           void handleTripItemQuantityChange(row.item, qty)
                         }
@@ -648,6 +667,7 @@ export function MapShoppingBottomSheet({
               <View style={styles.bottomStack}>
                 <MapShoppingSheetFooter
                   tripLineItems={tripLineItems}
+                  tripZoneItems={tripZoneItems}
                   pickedQuantityByProductId={pickedQuantityByProductId}
                   onShopLater={handleShopLater}
                   onFinishShopping={handleFinishShopping}

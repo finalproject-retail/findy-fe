@@ -1,7 +1,9 @@
-import type { Product } from "@/components/product";
 import type { CartZoneItem } from "@/components/category";
+import type { Product } from "@/components/product";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAccessToken } from "@/lib/api/client";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
+import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import {
   addCartItem,
   changeCartItemChecked,
@@ -9,6 +11,11 @@ import {
   getCart,
   removeCartItem,
 } from "@/lib/shopping/api";
+import {
+  clearCartZoneItems,
+  loadCartZoneItems,
+  saveCartZoneItems,
+} from "@/lib/shopping/cartZoneStorage";
 import {
   mapCartApiToLineItems,
   mergeCartApiIntoLineItems,
@@ -19,11 +26,15 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
 
+export type ShoppingLineItemType = "PRODUCT" | "CATEGORY";
+
 export type CartLineItem = {
+  itemType?: ShoppingLineItemType;
   productId: string;
   product: Product;
   quantity: number;
@@ -32,6 +43,12 @@ export type CartLineItem = {
   shoppingListItemId?: string;
   scannedQuantity?: number;
   scanStatus?: string;
+  checked?: boolean;
+  category?: {
+    categoryId: number;
+    categoryName: string;
+    gridId?: number | null;
+  };
 };
 
 export type CartContextValue = {
@@ -64,11 +81,27 @@ function maxQuantityFor(product: Product) {
 export function CartProvider({ children }: PropsWithChildren) {
   const { isLoggedIn, isLoading } = useAuth();
   const [items, setItems] = useState<CartLineItem[]>([]);
-  const [zoneItems, setZoneItems] = useState<CartZoneItem[]>([]);
+  const [zoneItems, setZoneItemsState] = useState<CartZoneItem[]>([]);
+  const zoneUserIdRef = useRef<string | null>(null);
+
+  const persistZoneItems = useCallback(
+    async (nextItems: CartZoneItem[], userId = zoneUserIdRef.current) => {
+      setZoneItemsState(nextItems);
+      if (userId) {
+        await saveCartZoneItems(userId, nextItems);
+      }
+    },
+    [],
+  );
 
   const resetCartState = useCallback(() => {
     setItems([]);
-    setZoneItems([]);
+    setZoneItemsState([]);
+    const userId = zoneUserIdRef.current;
+    zoneUserIdRef.current = null;
+    if (userId) {
+      void clearCartZoneItems(userId);
+    }
   }, []);
 
   useEffect(
@@ -85,13 +118,20 @@ export function CartProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    getCart()
-      .then((cart) => {
-        setItems(mapCartApiToLineItems(cart));
-      })
-      .catch(() => {
-        resetCartState();
-      });
+    const userId = getUserIdFromAccessToken(getAccessToken());
+    zoneUserIdRef.current = userId;
+
+    void (async () => {
+      const [cart, storedZones] = await Promise.all([
+        getCart(),
+        userId ? loadCartZoneItems(userId) : Promise.resolve([]),
+      ]);
+
+      setItems(mapCartApiToLineItems(cart));
+      setZoneItemsState(storedZones);
+    })().catch(() => {
+      resetCartState();
+    });
   }, [isLoading, isLoggedIn, resetCartState]);
 
   const { availableItems, soldOutItems } = useMemo(() => {
@@ -202,7 +242,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       removeFromCart,
       removeFromCartMany,
       refreshCart,
-      setZoneItems,
+      setZoneItems: persistZoneItems,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
@@ -216,7 +256,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       removeFromCart,
       removeFromCartMany,
       refreshCart,
-      applyCartResponse,
+      persistZoneItems,
       setQuantity,
       toggleSelect,
       toggleSelectAll,

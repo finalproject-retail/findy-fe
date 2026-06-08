@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchAvailableCouponsForOrder } from "@/lib/coupon/api/coupons";
 import { useCallback, useState } from "react";
 
-export function useOrderCoupons() {
+export function useOrderCoupons(orderAmount: number) {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export function useOrderCoupons() {
     setError(null);
 
     try {
-      const data = await fetchAvailableCouponsForOrder();
+      const data = await fetchAvailableCouponsForOrder(orderAmount);
       setCoupons(data);
     } catch (err) {
       setCoupons([]);
@@ -37,7 +37,7 @@ export function useOrderCoupons() {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, isLoggedIn]);
+  }, [authLoading, isLoggedIn, orderAmount]);
 
   return { coupons, loading, error, reload };
 }

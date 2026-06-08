@@ -1,18 +1,12 @@
 import type { Coupon } from "@/components/coupon/types";
-import type { UserCouponApiDto } from "@/lib/coupon/api/types";
+import type { AvailableOrderCouponApiDto } from "@/lib/coupon/api/types";
 import { formatCouponExpireLabel } from "@/lib/coupon/formatCouponExpireLabel";
 import { normalizeCouponType } from "@/lib/coupon/filterCoupons";
 import { mapCouponDiscountType } from "@/lib/coupon/mapCouponFields";
 import { resolveCouponMembershipGrade } from "@/lib/coupon/membershipGrade";
 
-function resolveUserCouponExpiresAt(dto: UserCouponApiDto): string {
-  const raw = dto.expiresAt ?? dto.endAt;
-  return typeof raw === "string" ? raw.trim() : "";
-}
-
-export function mapUserCouponFromApi(dto: UserCouponApiDto): Coupon {
+export function mapOrderCouponFromApi(dto: AvailableOrderCouponApiDto): Coupon {
   const discountType = mapCouponDiscountType(dto.couponName, dto.discountType);
-  const expiresAt = resolveUserCouponExpiresAt(dto);
 
   return {
     id: String(dto.userCouponId),
@@ -24,22 +18,20 @@ export function mapUserCouponFromApi(dto: UserCouponApiDto): Coupon {
     discountType,
     name: dto.couponName,
     minPurchaseAmount: dto.minOrderAmount ?? 0,
-    expiresAtLabel: expiresAt
-      ? formatCouponExpireLabel(expiresAt)
-      : "유효기간 정보 없음",
-    isUsed: dto.isUsed,
-    downloadedAt: dto.downloadedAt,
-    expiresAt: expiresAt || undefined,
-    isDownloaded: dto.isDownloaded ?? true,
+    expiresAtLabel: formatCouponExpireLabel(dto.expiresAt),
+    expiresAt: dto.expiresAt,
+    isUsed: false,
+    isDownloaded: true,
+    downloadedAt: dto.expiresAt,
   };
 }
 
-export function mapUserCouponsFromApi(
-  dtos: UserCouponApiDto[] | null | undefined,
+export function mapOrderCouponsFromApi(
+  dtos: AvailableOrderCouponApiDto[] | null | undefined,
 ): Coupon[] {
   if (!Array.isArray(dtos)) {
     return [];
   }
 
-  return dtos.map(mapUserCouponFromApi);
+  return dtos.map(mapOrderCouponFromApi);
 }

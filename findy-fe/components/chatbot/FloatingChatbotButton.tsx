@@ -20,7 +20,8 @@ export function FloatingChatbotButton() {
 
   const tabSegment = segments.at(1);
   const onUserHome =
-    rootSegment === "(tabs)" && (tabSegment == null || tabSegment === "index");
+    rootSegment === "(tabs)" &&
+    (tabSegment == null || String(tabSegment) === "index");
 
   if (!onUserHome) {
     return null;

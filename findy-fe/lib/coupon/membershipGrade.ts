@@ -1,5 +1,29 @@
 import type { Coupon } from "@/components/coupon/types";
-import type { MembershipGrade } from "@/components/mypage/mockUser";
+import {
+  getGradeConfig,
+  type MembershipGrade,
+} from "@/components/mypage/mockUser";
+
+const MEMBERSHIP_REWARD_RATE: Record<MembershipGrade, number> = {
+  bronze: 0.005,
+  silver: 0.01,
+  gold: 0.015,
+  vip: 0.02,
+};
+
+export function getMembershipRewardRate(grade: MembershipGrade): number {
+  return MEMBERSHIP_REWARD_RATE[grade];
+}
+
+export function getMembershipRewardRateLabel(grade: MembershipGrade): string {
+  const config = getGradeConfig(grade);
+  const ratePercent = MEMBERSHIP_REWARD_RATE[grade] * 100;
+  const rateText = Number.isInteger(ratePercent)
+    ? `${ratePercent}%`
+    : `${ratePercent}%`;
+
+  return `${config.label} 회원 적립 포인트 (${rateText})`;
+}
 
 export function normalizeMembershipGrade(
   raw?: string | null,

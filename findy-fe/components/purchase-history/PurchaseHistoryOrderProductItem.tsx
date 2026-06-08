@@ -5,7 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { addCartItem } from "@/lib/shopping/api";
 import type { OrderItemApiDto } from "@/lib/orders/api/types";
-import { DEFAULT_PRODUCT_PLACEHOLDER } from "@/lib/products/resolveProductImage";
+import { resolveProductImageSource } from "@/lib/products/resolveProductImage";
 import {
   getOrderItemDiscountPercent,
   getOrderItemUnitPrice,
@@ -57,7 +57,7 @@ export function PurchaseHistoryOrderProductItem({
           accessibilityLabel={`${item.productName} 상세 보기`}
         >
           <Image
-            source={DEFAULT_PRODUCT_PLACEHOLDER}
+            source={resolveProductImageSource(item.imageUrl)}
             style={{
               width: IMAGE_SIZE,
               height: IMAGE_SIZE,

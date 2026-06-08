@@ -1,5 +1,4 @@
 import { Header } from "@/components/common";
-import { zonesToShoppingMapItems } from "@/components/cart";
 import {
   CATEGORY_TREE,
   buildCartZoneItem,
@@ -15,6 +14,10 @@ import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { GRID_COLS } from "@/components/store-map/grid/layout";
+import { zonesToShoppingMapItems } from "@/components/cart";
+import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
+import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { useToast } from "@/contexts/ToastContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -127,10 +130,31 @@ export default function PickZonesScreen() {
       return;
     }
 
-    const mapItems = zonesToShoppingMapItems(zones);
-    startShoppingTrip([], mapItems);
-    showToast(`${zones.length}개 구역을 담았어요`);
-    router.push("/route-generating");
+    void (async () => {
+      try {
+        const { shoppingList, zoneLines } = await addZonesToShoppingList(
+          zones,
+          null,
+        );
+        const mapItems = zonesToShoppingMapItems(zones);
+        const destinationGridIds =
+          shoppingList?.destinationGridIds?.length
+            ? shoppingList.destinationGridIds
+            : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
+        startShoppingTrip(
+          [],
+          mapItems,
+          shoppingList?.shoppingListId ?? null,
+          destinationGridIds,
+          zoneLines,
+        );
+        showToast(`${zones.length}개 구역을 담았어요`);
+        router.push("/route-generating");
+      } catch (error) {
+        console.error(error);
+        showToast("구역을 담지 못했어요. 다시 시도해 주세요.");
+      }
+    })();
   };
 
   return (

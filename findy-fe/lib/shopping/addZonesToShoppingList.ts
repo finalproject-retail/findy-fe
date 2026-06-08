@@ -29,10 +29,11 @@ export async function addZonesToShoppingList(
 
   let shoppingList = existingShoppingList;
   for (const zone of zones) {
-    shoppingList = await addCategoryShoppingListItem(
-      zone.categoryId,
-      zone.label,
-    );
+    shoppingList = await addCategoryShoppingListItem({
+      categoryId: zone.categoryId,
+      categoryName: zone.label,
+      quantity: 1,
+    });
   }
 
   return {

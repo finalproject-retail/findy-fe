@@ -17,6 +17,30 @@ export function normalizeCouponType(raw?: string | null): CouponType {
   return "ALL";
 }
 
+/** 쿠폰 받기 탭 — 이미 보유한 쿠폰 제외 */
+export function excludeAlreadyDownloadedCoupons(
+  availableCoupons: Coupon[],
+  ownedCoupons: Coupon[],
+): Coupon[] {
+  const ownedCouponIds = new Set(
+    ownedCoupons
+      .map((coupon) => coupon.couponId)
+      .filter((id): id is number => id != null),
+  );
+
+  return availableCoupons.filter((coupon) => {
+    if (coupon.isDownloaded) {
+      return false;
+    }
+
+    if (coupon.couponId == null) {
+      return true;
+    }
+
+    return !ownedCouponIds.has(coupon.couponId);
+  });
+}
+
 export function filterCoupons(
   coupons: Coupon[],
   filter: CouponFilter,

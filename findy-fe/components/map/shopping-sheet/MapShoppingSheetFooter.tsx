@@ -2,12 +2,15 @@ import { getUnitPrice } from "@/components/cart/cartItemUtils";
 import { formatPrice, isOutOfStock } from "@/components/product";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { CartLineItem } from "@/contexts/CartContext";
+import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { pretendard } from "@/utils/pretendard";
 import { StyleSheet, Text, View } from "react-native";
 import { MapShoppingSheetFooterButton } from "./MapShoppingSheetFooterButton";
 
 type MapShoppingSheetFooterProps = {
   tripLineItems: CartLineItem[];
+  tripZoneItems?: TripZoneLineItem[];
   pickedQuantityByProductId: Record<string, number>;
   onShopLater: () => void;
   onFinishShopping: () => void;
@@ -16,27 +19,27 @@ type MapShoppingSheetFooterProps = {
 
 export function MapShoppingSheetFooter({
   tripLineItems,
+  tripZoneItems = [],
   pickedQuantityByProductId,
   onShopLater,
   onFinishShopping,
   bottomInset = 0,
 }: MapShoppingSheetFooterProps) {
-  const purchasableItems = tripLineItems.filter(
-    (item) => !isOutOfStock(item.product),
+  const productItems = tripLineItems.filter(
+    (item) => isProductLineItem(item) && !isOutOfStock(item.product),
   );
-  const totalQuantity = purchasableItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0,
-  );
-  const pickedQuantity = purchasableItems.reduce(
+  const totalQuantity =
+    productItems.reduce((sum, item) => sum + item.quantity, 0) +
+    tripZoneItems.length;
+  const pickedQuantity = productItems.reduce(
     (sum, item) => sum + (pickedQuantityByProductId[item.productId] ?? 0),
     0,
   );
-  const totalPrice = purchasableItems.reduce(
+  const totalPrice = productItems.reduce(
     (sum, item) => sum + getUnitPrice(item.product) * item.quantity,
     0,
   );
-  const hasTrip = tripLineItems.length > 0;
+  const hasTrip = productItems.length > 0 || tripZoneItems.length > 0;
 
   return (
     <View
