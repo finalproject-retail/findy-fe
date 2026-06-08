@@ -19,9 +19,9 @@ import { createShoppingPath } from "@/lib/map/api/fetchShoppingPath";
 import {
   applyGridIdToShoppingItem,
   destinationGridIdsFromMapItems,
-  destinationGridIdsFromTripLineItems,
   orderShoppingItemsByDestinationGridIds,
   remainingTripLineItems,
+  resolveTripDestinationGridIds,
 } from "@/lib/map/pathUtils";
 import type { PathNavigationApi } from "@/lib/map/types";
 import { addProductToShoppingList } from "@/lib/shopping/addProductToShoppingList";
@@ -263,21 +263,23 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       const pickedMap =
         options?.pickedQuantityByProductId ?? pickedQuantityByProductId;
 
-      const remainingLineItems = remainingTripLineItems(lineItems, pickedMap);
+      const remainingProducts = remainingTripLineItems(lineItems, pickedMap);
       const allMapItems = resolveTripMapItems(
         lineItems,
         zoneItems,
         navigationData.shoppingItems,
       );
 
-      const gridIdsToRequest =
-        remainingLineItems.length > 0
-          ? destinationGridIdsFromTripLineItems(
-              remainingLineItems,
-              gridCols,
-              options?.apiDestinationGridIds,
-            )
-          : [];
+      const apiDestinationGridIds =
+        options?.apiDestinationGridIds ??
+        (destinationGridIds.length > 0 ? destinationGridIds : undefined);
+
+      const gridIdsToRequest = resolveTripDestinationGridIds(
+        remainingProducts,
+        zoneItems,
+        gridCols,
+        apiDestinationGridIds,
+      );
 
       setDestinationGridIds(gridIdsToRequest);
 
@@ -307,6 +309,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     },
     [
       applyRouteFromPath,
+      destinationGridIds,
       navigationData.shoppingItems,
       pickedQuantityByProductId,
       tripLineItems,
@@ -354,12 +357,12 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       setTripZoneItems(zoneItems);
       setPickedQuantityByProductId(pickedQuantityMap);
       setDestinationGridIds(
-        shoppingList.destinationGridIds?.length
-          ? shoppingList.destinationGridIds
-          : destinationGridIdsFromTripLineItems(
-              remainingTripLineItems(lineItems, pickedQuantityMap),
-              GRID_COLS,
-            ),
+        resolveTripDestinationGridIds(
+          remainingTripLineItems(lineItems, pickedQuantityMap),
+          zoneItems,
+          GRID_COLS,
+          shoppingList.destinationGridIds,
+        ),
       );
       setNavigationData((prev) => ({
         ...prev,
@@ -468,8 +471,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
       setPickedQuantityByProductId(pickedQuantityMap);
       setDestinationGridIds(
-        destinationGridIdsFromTripLineItems(
+        resolveTripDestinationGridIds(
           remainingTripLineItems(productLines, pickedQuantityMap),
+          nextZoneItems,
           GRID_COLS,
           apiDestinationGridIds,
         ),
@@ -541,8 +545,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         delete nextPicked[productId];
 
         setDestinationGridIds(
-          destinationGridIdsFromTripLineItems(
+          resolveTripDestinationGridIds(
             remainingTripLineItems(next, nextPicked),
+            tripZoneItemsRef.current,
             GRID_COLS,
           ),
         );
