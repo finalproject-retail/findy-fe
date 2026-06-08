@@ -1,32 +1,28 @@
 import type { ChatbotSpeechBridgeProps } from "@/hooks/useChatbotSpeechRecognition";
+import { ensureMicrophonePermission } from "@/lib/chatbot/requestMicrophonePermission";
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
+import Constants from "expo-constants";
 import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { Alert, Linking, Platform } from "react-native";
 
-async function requestChatbotSpeechPermissions() {
-  if (Platform.OS === "android") {
-    return ExpoSpeechRecognitionModule.requestMicrophonePermissionsAsync();
-  }
-  return ExpoSpeechRecognitionModule.requestPermissionsAsync();
-}
-
-function showMicrophonePermissionAlert(canAskAgain: boolean) {
-  const message = canAskAgain
-    ? "음성 입력을 사용하려면 마이크 권한을 허용해 주세요."
-    : "마이크 권한이 거부되어 있습니다.\n설정 > 앱 > Findy > 권한에서 마이크를 허용해 주세요.";
-
-  Alert.alert("마이크 권한 필요", message, [
-    { text: "취소", style: "cancel" },
-    {
-      text: "설정 열기",
-      onPress: () => {
-        void Linking.openSettings();
+function showMicrophoneSettingsAlert() {
+  const appName = Constants.expoConfig?.name ?? "이 앱";
+  Alert.alert(
+    "마이크 권한 필요",
+    `마이크 권한이 꺼져 있습니다.\n설정 > 앱 > ${appName} > 권한에서 마이크를 허용해 주세요.\n\n권한 목록에 마이크가 없다면 Expo Go가 아닌 findy-fe 개발 빌드(APK)를 다시 설치해 주세요.`,
+    [
+      { text: "취소", style: "cancel" },
+      {
+        text: "설정 열기",
+        onPress: () => {
+          void Linking.openSettings();
+        },
       },
-    },
-  ]);
+    ],
+  );
 }
 
 function joinTranscriptResults(
@@ -160,9 +156,17 @@ export function ChatbotSpeechNativeBridgeImpl({
       return;
     }
 
-    const permission = await requestChatbotSpeechPermissions();
+    const permission = await ensureMicrophonePermission();
     if (!permission.granted) {
-      showMicrophonePermissionAlert(permission.canAskAgain);
+      if (permission.shouldOpenSettings) {
+        showMicrophoneSettingsAlert();
+      } else {
+        onSpeechErrorRef.current?.(
+          Platform.OS === "android"
+            ? "마이크 권한을 허용해야 음성 입력을 사용할 수 있습니다."
+            : "마이크 권한을 허용해 주세요.",
+        );
+      }
       return;
     }
 
@@ -181,8 +185,7 @@ export function ChatbotSpeechNativeBridgeImpl({
       },
       recordingOptions: {
         persist:
-          Platform.OS !== "web" &&
-          Boolean(onVoiceRecordingCompleteRef.current),
+          Platform.OS !== "web" && Boolean(onVoiceRecordingCompleteRef.current),
         outputFileName: "chatbot-recording.wav",
       },
     });
