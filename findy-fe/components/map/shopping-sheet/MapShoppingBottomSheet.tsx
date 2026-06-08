@@ -576,30 +576,31 @@ export function MapShoppingBottomSheet({
     async (item: CartLineItem, nextQuantity: number) => {
       const latestItem =
         tripLineItems.find((line) => line.productId === item.productId) ?? item;
+      const delta = nextQuantity - latestItem.quantity;
+
+      if (delta === 0) {
+        return;
+      }
 
       try {
-        const { item: serverItem } = await findShoppingListItemByProductId(
-          latestItem.productId,
-        );
-        const serverScanned = serverItem.scannedQuantity ?? 0;
-        const currentQuantity = serverItem.quantity;
-        const isDecrease = nextQuantity < currentQuantity;
-        const needsBarcodeCancel =
-          isDecrease &&
-          serverScanned > 0 &&
-          (nextQuantity < serverScanned ||
-            serverScanned >= currentQuantity);
+        if (delta < 0) {
+          const { item: serverItem } = await findShoppingListItemByProductId(
+            latestItem.productId,
+          );
+          const serverScanned = serverItem.scannedQuantity ?? 0;
+          const nextQty = serverItem.quantity + delta;
 
-        if (needsBarcodeCancel) {
-          setCancelScanModal({
-            productId: latestItem.productId,
-            productName: latestItem.product.name,
-            quantity: currentQuantity,
-          });
-          return;
+          if (serverScanned > 0 && nextQty < serverScanned) {
+            setCancelScanModal({
+              productId: latestItem.productId,
+              productName: latestItem.product.name,
+              quantity: serverItem.quantity,
+            });
+            return;
+          }
         }
 
-        await setTripItemQuantity(latestItem, nextQuantity);
+        await setTripItemQuantity(latestItem, delta);
       } catch (error) {
         showToast(
           getApiErrorMessage(error) ||
