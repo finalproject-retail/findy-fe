@@ -8,7 +8,10 @@ import {
   PopularProductsSection,
 } from "@/components/home";
 import { SafeView, TAB_SCREEN_EDGES } from "@/components/layout";
-import { HOME_STORE_OPTIONS } from "@/components/home/storeOptions";
+import {
+  DEFAULT_HOME_STORE_ID,
+  HOME_STORE_OPTIONS,
+} from "@/components/home/storeOptions";
 import { LAYOUT, SPACING } from "@/constants/theme";
 import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
@@ -22,7 +25,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const scrollBottomPadding = LAYOUT.tabBarTotalHeight + insets.bottom;
 
-  const [storeId, setStoreId] = useState(HOME_STORE_OPTIONS[0]!.id);
+  const [storeId, setStoreId] = useState(DEFAULT_HOME_STORE_ID);
 
   return (
     <SafeView edges={TAB_SCREEN_EDGES}>
