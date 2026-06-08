@@ -487,10 +487,14 @@ export function StoreMapView({
     const s = scale.value;
     return {
       position: "absolute",
-      left: panX.value,
-      top: panY.value,
+      left: 0,
+      top: 0,
       width: mapW.value * s,
       height: mapH.value * s,
+      transform: [
+        { translateX: panX.value },
+        { translateY: panY.value },
+      ],
     };
   });
 
