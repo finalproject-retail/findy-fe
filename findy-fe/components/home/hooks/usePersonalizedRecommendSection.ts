@@ -1,4 +1,5 @@
 import { HOME_SECTION_LIMITS } from "@/components/home/constants";
+import { resolveHomeApiStoreId } from "@/components/home/storeOptions";
 import { getInStockProducts } from "@/components/home/mockProducts";
 import type { Product } from "@/components/product";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,12 +49,12 @@ export function usePersonalizedRecommendSection({
 
     async function load() {
       setLoading(true);
-      void storeId;
+      const apiStoreId = resolveHomeApiStoreId(storeId);
 
       try {
         const [sectionTitle, recommendations] = await Promise.all([
           resolveSectionTitle(),
-          fetchPersonalizedRecommendationsInStock(limit),
+          fetchPersonalizedRecommendationsInStock(limit, apiStoreId),
         ]);
 
         if (cancelled) {

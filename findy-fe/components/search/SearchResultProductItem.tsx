@@ -41,6 +41,7 @@ export function SearchResultProductItem({
           productId={baseProductId}
           cardWidth={recommendCardWidth}
           shoppingListAddMode={shoppingListAddMode}
+          variant="substitute"
         />
       ) : null}
     </View>

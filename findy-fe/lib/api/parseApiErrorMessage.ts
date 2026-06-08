@@ -8,6 +8,9 @@ type ApiErrorPayload = {
 
 export function parseApiErrorMessage(error: unknown, fallback: string): string {
   if (isAxiosError(error)) {
+    if (error.response?.status === 401) {
+      return "로그인이 만료되었습니다. 다시 로그인해 주세요.";
+    }
     const data = error.response?.data as ApiErrorPayload | undefined;
     if (data?.errors?.length) {
       const lines = data.errors

@@ -1,4 +1,5 @@
 import { getAccessToken } from "@/lib/api/client";
+import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
 /** 로그인·회원가입 등 인증 없이 호출하는 경로 */
@@ -21,7 +22,16 @@ function stripAuthorizationHeader(config: InternalAxiosRequestConfig) {
   }
 }
 
-/** axios 인스턴스 요청마다 `Authorization: Bearer <token>` 자동 첨부 (공개 auth API 제외) */
+function attachUserIdHeaders(config: InternalAxiosRequestConfig, token: string) {
+  const userId = getUserIdFromAccessToken(token);
+  if (!userId || !config.headers) {
+    return;
+  }
+  config.headers["X-User-Id"] = userId;
+  config.headers["X-USER-ID"] = userId;
+}
+
+/** axios 인스턴스 요청마다 JWT + X-User-Id 자동 첨부 (공개 auth API 제외) */
 export function attachAuthInterceptor(client: AxiosInstance) {
   client.interceptors.request.use((config) => {
     if (isPublicAuthRequest(config.url)) {
@@ -32,7 +42,14 @@ export function attachAuthInterceptor(client: AxiosInstance) {
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      attachUserIdHeaders(config, token);
     }
+
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+      delete config.headers["content-type"];
+    }
+
     return config;
   });
 }

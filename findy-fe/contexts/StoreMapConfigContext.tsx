@@ -60,7 +60,9 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
       setMinorToGridId(buildMinorToGridIdFromBeacons(api.beacons));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "매장 지도 설정을 불러오지 못했습니다.";
+        err instanceof Error
+          ? err.message
+          : "매장 지도 설정을 불러오지 못했습니다.";
       setError(message);
       setStoreMapConfig(localFallback);
       setMinorToGridId(MINOR_TO_GRID_ID);
@@ -98,7 +100,9 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
 export function useStoreMapConfig() {
   const context = useContext(StoreMapConfigContext);
   if (!context) {
-    throw new Error("useStoreMapConfig must be used within StoreMapConfigProvider");
+    throw new Error(
+      "useStoreMapConfig must be used within StoreMapConfigProvider",
+    );
   }
   return context;
 }

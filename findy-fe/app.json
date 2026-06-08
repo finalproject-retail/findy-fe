@@ -33,6 +33,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "음성으로 챗봇에 질문하려면 마이크 접근 권한이 필요합니다.",
+          "speechRecognitionPermission": "음성 인식을 위해 음성 인식 권한이 필요합니다."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-logo.png",
