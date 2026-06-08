@@ -1,4 +1,5 @@
 import MicIcon from "@/assets/icons/mic-icon.svg";
+import { ChatbotSpeechNativeBridge } from "@/components/chatbot/ChatbotSpeechNativeBridge";
 import { VoiceWaveform } from "@/components/chatbot/VoiceWaveform";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
@@ -8,10 +9,10 @@ import { useChatbotSpeechRecognition } from "@/hooks/useChatbotSpeechRecognition
 import type { ChatMessage } from "@/lib/chatbot/types";
 import { pretendard } from "@/utils/pretendard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -20,6 +21,7 @@ import {
   View,
   type ScrollView as ScrollViewType,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const QUICK_QUESTIONS = [
   "상품 위치 찾기",
@@ -70,9 +72,11 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
 export function ChatbotScreen() {
   const scrollViewRef = useRef<ScrollViewType | null>(null);
+  const insets = useSafeAreaInsets();
   const { storeId } = useStoreMapConfig();
   const { showToast } = useToast();
   const [draft, setDraft] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const {
     messages,
     loading,
@@ -136,22 +140,58 @@ export function ChatbotScreen() {
     [sendVoiceMessage, showToast],
   );
 
-  const { isListening, volume, interimTranscript, toggleListening } =
-    useChatbotSpeechRecognition({
+  const speechOptions = useMemo(
+    () => ({
       enabled: !sending && !loading,
-      onFinalTranscript: (text) => {
+      onFinalTranscript: (text: string) => {
         void handleVoiceFallback(text);
       },
-      onVoiceRecordingComplete: (uri) => {
+      onVoiceRecordingComplete: (uri: string) => {
         void handleVoiceRecordingComplete(uri);
       },
       onRecognitionEmpty: () => {
         showToast("음성을 인식하지 못했습니다. 다시 말씀해 주세요.");
       },
-      onSpeechError: (message) => {
+      onSpeechError: (message: string) => {
         showToast(message);
       },
+    }),
+    [
+      handleVoiceFallback,
+      handleVoiceRecordingComplete,
+      loading,
+      sending,
+      showToast,
+    ],
+  );
+
+  const { isListening, volume, interimTranscript, toggleListening, bridgeProps } =
+    useChatbotSpeechRecognition(speechOptions);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      });
     });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const inputBottomInset =
+    keyboardHeight > 0 ? SPACING.md : Math.max(insets.bottom, SPACING.md);
 
   if (loading) {
     return (
@@ -162,11 +202,11 @@ export function ChatbotScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <View
       className="flex-1 bg-white"
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+      style={{ paddingBottom: keyboardHeight }}
     >
+      <ChatbotSpeechNativeBridge {...bridgeProps} />
       <View className="flex-1">
         <ScrollView
           ref={scrollViewRef}
@@ -227,7 +267,7 @@ export function ChatbotScreen() {
           className="border-t-thin border-light-gray bg-white px-screen"
           style={{
             paddingTop: SPACING.md,
-            paddingBottom: SPACING.md,
+            paddingBottom: inputBottomInset,
             gap: SPACING.sm,
           }}
         >
@@ -284,6 +324,11 @@ export function ChatbotScreen() {
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
+                onFocus={() => {
+                  requestAnimationFrame(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  });
+                }}
                 onSubmitEditing={() => void handleSend()}
                 returnKeyType="send"
                 editable={!sending}
@@ -328,6 +373,6 @@ export function ChatbotScreen() {
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

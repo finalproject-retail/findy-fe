@@ -68,7 +68,7 @@ export function MapScreen() {
   // map-config 로드 등으로 startTracking 참조가 바뀌어도 BLE를 끄지 않도록 deps 비움
   useFocusEffect(
     useCallback(() => {
-      void startTrackingRef.current().catch(() => {});
+      void startTrackingRef.current().catch(() => { });
       return () => {
         stopTrackingRef.current();
       };
@@ -201,14 +201,14 @@ export function MapScreen() {
         ) : null}
       </View>
 
-      <GestureHandlerRootView style={styles.sheetHost} pointerEvents="box-none">
+      <View style={styles.sheetHost} pointerEvents="box-none">
         <MapShoppingBottomSheet
           peekHeight={collapsedPeekHeight}
           collapsedBottomLift={collapsedBottomLift}
           onVisibleHeightChange={setSheetVisibleHeight}
           onDismissProductCallout={handleDismissMarkerCallout}
         />
-      </GestureHandlerRootView>
+      </View>
 
       <View style={styles.mapOverlayHost} pointerEvents="box-none">
         <MapOverlayControls {...mapOverlayControlProps} />

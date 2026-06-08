@@ -3,12 +3,12 @@ import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { AddToCartButton } from "./AddToCartButton";
-import { ProductDiscountPriceRow } from "./ProductDiscountPriceRow";
 import { isOutOfStock } from "./isOutOfStock";
+import { ProductDiscountPriceRow } from "./ProductDiscountPriceRow";
 import { ProductThumbnail } from "./ProductThumbnail";
 import type { Product } from "./types";
 
-const PRODUCT_NAME_LINE_HEIGHT = 20;
+const PRODUCT_NAME_LINE_HEIGHT = 21;
 /** 카드 높이 맞춤용 — 고정 height는 네이티브에서 2줄+ellipsis 버그 유발 */
 const PRODUCT_NAME_MIN_HEIGHT = PRODUCT_NAME_LINE_HEIGHT * 2;
 
