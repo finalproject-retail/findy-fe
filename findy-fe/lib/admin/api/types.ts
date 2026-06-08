@@ -1,3 +1,35 @@
+export type AdminAnalyticsApiEnvelope<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+};
+
+export type AdminShoppingProductDto = {
+  brandName?: string | null;
+  productName?: string | null;
+  categoryId?: number | null;
+  imageUrl?: string | null;
+};
+
+export type ProductPerformanceItemDto = {
+  productId: number;
+  productName?: string;
+  brandName?: string | null;
+  categoryId: number | null;
+  viewCount: number;
+  viewToPurchaseRate: number | string;
+};
+
+export type ProductPerformanceSummaryDto = {
+  period?: AdminAnalyticsPeriod;
+  products: ProductPerformanceItemDto[];
+};
+
+export type RecommendationDailyTrendDto = {
+  analysisDate: string;
+  impressionCount: number;
+};
+
 export type PromotionSelectRateApiDto = {
   promotionId?: number;
   promotionName?: string;
@@ -66,7 +98,14 @@ export type RecommendationPurchaseConversionData = {
   purchaseConversionRate: number;
   clickToPurchaseRate: number;
   products?: RecommendationPurchaseConversionProductDto[];
+  dailyTrends?: RecommendationDailyTrendDto[];
 };
+
+/** 상품 성과 상세 API 응답 (click-rate) */
+export type RecommendationClickRateDto = RecommendationClickRateData;
+
+/** 상품 성과 상세 API 응답 (purchase-conversion) */
+export type RecommendationPurchaseConversionDto = RecommendationPurchaseConversionData;
 
 export type FetchAdminRecommendationAnalyticsParams = {
   fromDate: string;
