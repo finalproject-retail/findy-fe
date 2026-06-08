@@ -6,7 +6,7 @@ import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { type Href, useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SHOPPING_NOTIFICATION_MIN_INTERVAL_MS } from "./constants";
@@ -97,6 +97,7 @@ export function MapScreen() {
   const [showCongestion, setShowCongestion] = useState(true);
   const [showRoute, setShowRoute] = useState(true);
   const mapContentBottomInset = Math.max(mapBottomInset, sheetVisibleHeight);
+  const showWebBlePanel = Platform.OS === "web";
 
   const suppressMapTapDismissRef = useRef(false);
 
@@ -213,6 +214,41 @@ export function MapScreen() {
         <MapOverlayControls {...mapOverlayControlProps} />
       </View>
 
+      {showWebBlePanel ? (
+        <View
+          style={[
+            styles.webBleHost,
+            { bottom: mapContentBottomInset + insets.bottom + 8 },
+          ]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.webBlePanel} pointerEvents="auto">
+            <Text style={styles.webBleStatus}>
+              BLE {isScanning ? "ON" : "OFF"} · grid {currentGridId ?? "-"}
+              {lastError ? `\n${lastError}` : ""}
+            </Text>
+            <Pressable
+              style={[
+                styles.webBleButton,
+                isScanning ? styles.webBleButtonStop : null,
+              ]}
+              onPress={() => {
+                if (isScanning) {
+                  stopTracking();
+                  return;
+                }
+                void startTracking();
+              }}
+              hitSlop={8}
+            >
+              <Text style={styles.webBleButtonText}>
+                {isScanning ? "BLE 중지" : "BLE 스캔 시작"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {activeToast ? (
         <MapShoppingToast
           notification={activeToast}
@@ -221,7 +257,7 @@ export function MapScreen() {
         />
       ) : null}
 
-      {__DEV__ ? (
+      {__DEV__ && !showWebBlePanel ? (
         <View
           style={[
             styles.devBeaconHost,
@@ -279,6 +315,41 @@ const styles = StyleSheet.create({
   mapOverlayHost: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
+  },
+  webBleHost: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    zIndex: 950,
+    elevation: 10,
+    alignItems: "flex-start",
+  },
+  webBlePanel: {
+    maxWidth: 360,
+    padding: 10,
+    gap: 8,
+    backgroundColor: "rgba(20,20,20,0.82)",
+    borderRadius: 8,
+  },
+  webBleStatus: {
+    color: "#fff",
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  webBleButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#15A06E",
+    borderRadius: 6,
+  },
+  webBleButtonStop: {
+    backgroundColor: "#D94A3A",
+  },
+  webBleButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
   devBeaconHost: {
     position: "absolute",
