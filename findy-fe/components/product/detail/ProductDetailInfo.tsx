@@ -2,6 +2,7 @@ import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Text, View, useWindowDimensions } from "react-native";
 import { ProductDiscountPriceRow } from "../ProductDiscountPriceRow";
+import { isOutOfStock } from "../isOutOfStock";
 import { hasProductDiscount } from "../productPricing";
 import { RemainingStockText } from "../RemainingStockText";
 import type { Product } from "../types";
@@ -28,6 +29,7 @@ export function ProductDetailInfo({
   const couponPrice = product.couponPrice ?? product.price;
   const showDiscount = hasProductDiscount(product);
   const stockCount = product.stockCount;
+  const soldOut = isOutOfStock(product);
 
   return (
     <View
@@ -80,6 +82,7 @@ export function ProductDetailInfo({
       <ProductDetailRecommend
         productId={product.id}
         cardWidth={recommendCardWidth}
+        variant={soldOut ? "substitute" : "related"}
       />
 
       <ProductDetailSpec product={product} />

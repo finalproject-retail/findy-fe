@@ -33,6 +33,7 @@ export function RecentlyViewedProductItem({
         <ProductRecommendSection
           productId={product.id}
           cardWidth={recommendCardWidth}
+          variant="substitute"
         />
       ) : null}
     </View>

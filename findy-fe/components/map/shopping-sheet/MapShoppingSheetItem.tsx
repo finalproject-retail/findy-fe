@@ -227,6 +227,8 @@ export function MapShoppingSheetItem({
             <ProductRecommendSection
               productId={product.id}
               cardWidth={recommendCardWidth}
+              variant="substitute"
+              enabled={showAlternatives}
             />
           </View>
         ) : null}

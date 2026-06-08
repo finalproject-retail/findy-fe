@@ -6,6 +6,7 @@ import {
   getInStockProducts,
   MOCK_POPULAR_PRODUCTS,
 } from "@/components/home/mockProducts";
+import { resolveHomeApiStoreId } from "@/components/home/storeOptions";
 import type { Product } from "@/components/product";
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import {
@@ -43,7 +44,10 @@ function getMockFallback(kind: HomeSectionProductKind, limit: number): Product[]
 async function fetchByKind(
   kind: HomeSectionProductKind,
   limit: number,
+  storeId: string,
 ): Promise<Product[]> {
+  const apiStoreId = resolveHomeApiStoreId(storeId);
+
   switch (kind) {
     case "new":
       return fetchNewProducts(limit);
@@ -52,7 +56,7 @@ async function fetchByKind(
     case "findy":
       return fetchFindyRecommendProducts(limit);
     case "personalized": {
-      const result = await fetchPersonalizedRecommendations(limit);
+      const result = await fetchPersonalizedRecommendations(limit, apiStoreId);
       return result.products;
     }
   }
@@ -89,9 +93,7 @@ export function useHomeSectionProducts({
       setUsingFallback(false);
 
       try {
-        // storeId: 백엔드 매장 필터 연동 전까지 UI 선택만 반영 (재요청 트리거)
-        void storeId;
-        const fetched = await fetchByKind(kind, resolvedLimit);
+        const fetched = await fetchByKind(kind, resolvedLimit, storeId);
         if (cancelled) {
           return;
         }
