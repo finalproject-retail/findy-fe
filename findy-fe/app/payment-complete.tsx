@@ -6,7 +6,7 @@ import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { useToast } from "@/contexts/ToastContext";
 import { earnPurchaseReward } from "@/lib/rewards/api/earnPurchaseReward";
-import { useRewardForOrder } from "@/lib/rewards/api/useRewardForOrder";
+import { spendRewardForOrder } from "@/lib/rewards/api/spendRewardForOrder";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -42,7 +42,7 @@ export default function PaymentCompleteScreen() {
       if (lastCreatedOrder) {
         try {
           if (lastCreatedOrder.usedRewardAmount >= 1) {
-            const useResult = await useRewardForOrder({
+            const useResult = await spendRewardForOrder({
               orderId: lastCreatedOrder.orderId,
               usedAmount: lastCreatedOrder.usedRewardAmount,
             });

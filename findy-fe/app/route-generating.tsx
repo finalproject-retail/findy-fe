@@ -37,9 +37,6 @@ export default function RouteGeneratingScreen() {
     return () => {
       cancelled = true;
     };
-    // 경로 API 성공 시 context state 변경으로 generateShoppingPath 참조가 바뀌면
-    // effect가 재실행되며 cancelled=true가 되어 화면 전환이 막히므로 1회만 실행
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, storeId, storeMapConfig.cols]);
 
   return (
