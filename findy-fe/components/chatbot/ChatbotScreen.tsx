@@ -1,4 +1,5 @@
 import MicIcon from "@/assets/icons/mic-icon.svg";
+import { ChatbotSpeechNativeBridge } from "@/components/chatbot/ChatbotSpeechNativeBridge";
 import { VoiceWaveform } from "@/components/chatbot/VoiceWaveform";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
@@ -136,22 +137,33 @@ export function ChatbotScreen() {
     [sendVoiceMessage, showToast],
   );
 
-  const { isListening, volume, interimTranscript, toggleListening } =
-    useChatbotSpeechRecognition({
+  const speechOptions = useMemo(
+    () => ({
       enabled: !sending && !loading,
-      onFinalTranscript: (text) => {
+      onFinalTranscript: (text: string) => {
         void handleVoiceFallback(text);
       },
-      onVoiceRecordingComplete: (uri) => {
+      onVoiceRecordingComplete: (uri: string) => {
         void handleVoiceRecordingComplete(uri);
       },
       onRecognitionEmpty: () => {
         showToast("음성을 인식하지 못했습니다. 다시 말씀해 주세요.");
       },
-      onSpeechError: (message) => {
+      onSpeechError: (message: string) => {
         showToast(message);
       },
-    });
+    }),
+    [
+      handleVoiceFallback,
+      handleVoiceRecordingComplete,
+      loading,
+      sending,
+      showToast,
+    ],
+  );
+
+  const { isListening, volume, interimTranscript, toggleListening, bridgeProps } =
+    useChatbotSpeechRecognition(speechOptions);
 
   if (loading) {
     return (
@@ -167,6 +179,7 @@ export function ChatbotScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
     >
+      <ChatbotSpeechNativeBridge {...bridgeProps} />
       <View className="flex-1">
         <ScrollView
           ref={scrollViewRef}
