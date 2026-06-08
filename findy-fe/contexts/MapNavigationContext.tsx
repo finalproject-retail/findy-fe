@@ -328,9 +328,18 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
   const refreshNavigationOverlay = useCallback(
     async (storeId: number, gridCols = GRID_COLS) => {
+      let beaconCongestion: Awaited<ReturnType<typeof fetchCongestionOnRefresh>> = [];
+      try {
+        beaconCongestion = await fetchCongestionOnRefresh({ storeId });
+      } catch (error) {
+        if (__DEV__) {
+          console.warn("Failed to refresh congestion overlay", error);
+        }
+      }
+
       setNavigationData((prev) => ({
         ...prev,
-        beaconCongestion: fetchCongestionOnRefresh(),
+        beaconCongestion,
       }));
       await generateShoppingPath(storeId, gridCols);
     },
