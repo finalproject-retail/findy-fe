@@ -1,3 +1,11 @@
+/** map-service GET /api/v1/stores */
+export type StoreApi = {
+  storeId: number;
+  storeName: string;
+  address: string;
+  status: string;
+};
+
 /** map-service GET /api/v1/stores/{storeId}/map-config */
 
 export type StoreMapConfigApi = {

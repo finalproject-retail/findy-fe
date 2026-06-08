@@ -1,7 +1,6 @@
 import {
   productToRecommendedMapItem,
 } from "@/components/cart/cartToShoppingMapItems";
-import { DEFAULT_API_STORE_ID } from "@/components/home/storeOptions";
 import type { Product } from "@/components/product";
 import { resolveCatalogProductId } from "@/components/product/resolveCatalogProductId";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
@@ -13,6 +12,7 @@ import type {
   StoreMapNavigationMock,
 } from "@/components/store-map/overlays/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
@@ -176,6 +176,7 @@ function mergeTripLineItems(
 
 export function MapNavigationProvider({ children }: PropsWithChildren) {
   const { isLoggedIn, isLoading } = useAuth();
+  const { storeId, isLoading: isStoreMapLoading } = useStoreMapConfig();
   const { clearPendingBarcodeRewards } = usePoints();
   const [navigationData, setNavigationData] =
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
@@ -365,7 +366,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         shoppingItems: buildTripShoppingMapItems(lineItems, zoneItems),
       }));
 
-      await generateShoppingPathRef.current(DEFAULT_API_STORE_ID, GRID_COLS, {
+      await generateShoppingPathRef.current(storeId, GRID_COLS, {
         lineItems,
         zoneItems,
         pickedQuantityByProductId: pickedQuantityMap,
@@ -374,7 +375,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     } catch {
       // 활성 쇼핑리스트 없음
     }
-  }, []);
+  }, [storeId]);
 
   const refreshNavigationOverlay = useCallback(
     async (storeId: number, gridCols = GRID_COLS) => {
@@ -513,11 +514,17 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   }, [endShoppingTrip, isLoading, isLoggedIn]);
 
   useEffect(() => {
-    if (isLoading || !isLoggedIn) {
+    if (isLoading || !isLoggedIn || isStoreMapLoading) {
       return;
     }
     void restoreActiveShoppingTrip();
-  }, [isLoading, isLoggedIn, restoreActiveShoppingTrip]);
+  }, [
+    isLoading,
+    isLoggedIn,
+    isStoreMapLoading,
+    storeId,
+    restoreActiveShoppingTrip,
+  ]);
 
   const markProductPicked = useCallback(
     (productId: string, amount = 1) => {
