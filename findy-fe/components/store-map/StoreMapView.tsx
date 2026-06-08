@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, Platform, StyleSheet, View } from "react-native";
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   clamp,
   runOnJS,
@@ -405,6 +401,7 @@ export function StoreMapView({
   };
 
   const pinch = Gesture.Pinch()
+    .shouldCancelWhenOutside(false)
     .onStart(() => {
       savedScale.value = scale.value;
       savedPanX.value = panX.value;
@@ -447,6 +444,7 @@ export function StoreMapView({
 
   const pan = Gesture.Pan()
     .minDistance(4)
+    .shouldCancelWhenOutside(false)
     .onStart(() => {
       if (hasSelectedMarkerSv.value && onDismissMarkerCallout) {
         runOnJS(onDismissMarkerCallout)();
@@ -518,7 +516,7 @@ export function StoreMapView({
       : {};
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <View style={styles.root}>
       <View
         style={[styles.viewport, { paddingBottom: contentBottomInset }]}
         onLayout={(e) => {
@@ -530,9 +528,16 @@ export function StoreMapView({
         {...webWheelProps}
       >
         <GestureDetector gesture={composed}>
-          <View style={styles.gestureSurface}>
-            <Animated.View style={animatedMapStyle}>
-              <View style={{ width: config.cols * cellPx, height: config.rows * cellPx }}>
+          <Animated.View
+            style={styles.gestureSurface}
+            collapsable={false}
+            {...(Platform.OS === "android" ? { needsOffscreenAlphaCompositing: true } : {})}
+          >
+            <Animated.View style={animatedMapStyle} pointerEvents="box-none">
+              <View
+                pointerEvents="box-none"
+                style={{ width: config.cols * cellPx, height: config.rows * cellPx }}
+              >
                 <StoreMapFloorBackground
                   width={config.cols * cellPx}
                   height={config.rows * cellPx}
@@ -574,10 +579,10 @@ export function StoreMapView({
                 />
               </View>
             </Animated.View>
-          </View>
+          </Animated.View>
         </GestureDetector>
       </View>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 

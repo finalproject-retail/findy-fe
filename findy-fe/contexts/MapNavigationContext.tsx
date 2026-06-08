@@ -1,6 +1,7 @@
 import {
   productToRecommendedMapItem,
 } from "@/components/cart/cartToShoppingMapItems";
+import { DEFAULT_API_STORE_ID } from "@/components/home/storeOptions";
 import type { Product } from "@/components/product";
 import { resolveCatalogProductId } from "@/components/product/resolveCatalogProductId";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
@@ -103,8 +104,6 @@ type MapNavigationContextValue = {
 const MapNavigationContext = createContext<MapNavigationContextValue | null>(
   null,
 );
-
-const DEFAULT_STORE_ID = 1;
 
 type GenerateShoppingPathOptions = {
   lineItems?: CartLineItem[];
@@ -369,7 +368,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         shoppingItems: buildTripShoppingMapItems(lineItems, zoneItems),
       }));
 
-      await generateShoppingPathRef.current(DEFAULT_STORE_ID, GRID_COLS, {
+      await generateShoppingPathRef.current(DEFAULT_API_STORE_ID, GRID_COLS, {
         lineItems,
         zoneItems,
         pickedQuantityByProductId: pickedQuantityMap,
