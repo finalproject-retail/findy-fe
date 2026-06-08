@@ -1,20 +1,20 @@
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { FloatingChatbotButton } from "@/components/chatbot";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { CartProvider } from "@/contexts/CartContext";
 import { BeaconLocationProvider } from "@/contexts/BeaconLocationContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { MapNavigationProvider } from "@/contexts/MapNavigationContext";
 import { MapShoppingNotificationProvider } from "@/contexts/MapShoppingNotificationContext";
 import { PointsProvider } from "@/contexts/PointsContext";
-import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { RecentSearchProvider } from "@/contexts/RecentSearchContext";
+import { StoreMapConfigProvider } from "@/contexts/StoreMapConfigContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
-import { Image, View } from "react-native";
+import { useEffect, useState, type PropsWithChildren } from "react";
+import { Image, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 
@@ -26,6 +26,7 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(admin)" />
         <Stack.Screen name="product/[id]" />
         <Stack.Screen name="points" />
         <Stack.Screen name="recently-viewed" />
@@ -47,6 +48,46 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
       </Stack>
       <FloatingChatbotButton />
+    </View>
+  );
+}
+
+function AppProviders({ children }: PropsWithChildren) {
+  return (
+    <GestureHandlerRootView style={styles.root}>
+      <AuthProvider>
+        <CartProvider>
+          <RecentSearchProvider>
+            <CheckoutProvider>
+              <PointsProvider>
+                <StoreMapConfigProvider>
+                  <MapNavigationProvider>
+                    <BeaconLocationProvider>
+                      <MapShoppingNotificationProvider>
+                        <ToastProvider>
+                          <AuthGuard>{children}</AuthGuard>
+                        </ToastProvider>
+                      </MapShoppingNotificationProvider>
+                    </BeaconLocationProvider>
+                  </MapNavigationProvider>
+                </StoreMapConfigProvider>
+              </PointsProvider>
+            </CheckoutProvider>
+          </RecentSearchProvider>
+        </CartProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function BootSplashOverlay() {
+  return (
+    <View style={styles.bootSplash} pointerEvents="auto">
+      <Image
+        source={require("../assets/images/splash-logo.png")}
+        style={{ width: 87 }}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -89,43 +130,24 @@ export default function RootLayout() {
     }
   }, [appIsReady]);
 
-  if (!appIsReady) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Image
-          source={require("../assets/images/splash-logo.png")}
-          style={{ width: 87 }}
-          resizeMode="contain"
-        />
-      </View>
-    );
-  }
-
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <CartProvider>
-          <RecentSearchProvider>
-            <CheckoutProvider>
-              <PointsProvider>
-                <StoreMapConfigProvider>
-                  <MapNavigationProvider>
-                    <BeaconLocationProvider>
-                      <MapShoppingNotificationProvider>
-                        <ToastProvider>
-                          <AuthGuard>
-                            <RootLayoutNav />
-                          </AuthGuard>
-                        </ToastProvider>
-                      </MapShoppingNotificationProvider>
-                    </BeaconLocationProvider>
-                  </MapNavigationProvider>
-                </StoreMapConfigProvider>
-              </PointsProvider>
-            </CheckoutProvider>
-          </RecentSearchProvider>
-        </CartProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <AppProviders>
+      <RootLayoutNav />
+      {!appIsReady ? <BootSplashOverlay /> : null}
+    </AppProviders>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  bootSplash: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    zIndex: 9999,
+    elevation: 9999,
+  },
+});
