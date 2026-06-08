@@ -1,7 +1,9 @@
-import type { Product } from "@/components/product";
 import type { CartZoneItem } from "@/components/category";
+import type { Product } from "@/components/product";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAccessToken } from "@/lib/api/client";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
+import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import {
   addCartItem,
   changeCartItemChecked,
@@ -9,13 +11,22 @@ import {
   getCart,
   removeCartItem,
 } from "@/lib/shopping/api";
-import { mapCartApiToLineItems } from "@/lib/shopping/mappers";
+import {
+  clearCartZoneItems,
+  loadCartZoneItems,
+  saveCartZoneItems,
+} from "@/lib/shopping/cartZoneStorage";
+import {
+  mapCartApiToLineItems,
+  mergeCartApiIntoLineItems,
+} from "@/lib/shopping/mappers";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -70,11 +81,27 @@ function maxQuantityFor(product: Product) {
 export function CartProvider({ children }: PropsWithChildren) {
   const { isLoggedIn, isLoading } = useAuth();
   const [items, setItems] = useState<CartLineItem[]>([]);
-  const [zoneItems, setZoneItems] = useState<CartZoneItem[]>([]);
+  const [zoneItems, setZoneItemsState] = useState<CartZoneItem[]>([]);
+  const zoneUserIdRef = useRef<string | null>(null);
+
+  const persistZoneItems = useCallback(
+    async (nextItems: CartZoneItem[], userId = zoneUserIdRef.current) => {
+      setZoneItemsState(nextItems);
+      if (userId) {
+        await saveCartZoneItems(userId, nextItems);
+      }
+    },
+    [],
+  );
 
   const resetCartState = useCallback(() => {
     setItems([]);
-    setZoneItems([]);
+    setZoneItemsState([]);
+    const userId = zoneUserIdRef.current;
+    zoneUserIdRef.current = null;
+    if (userId) {
+      void clearCartZoneItems(userId);
+    }
   }, []);
 
   useEffect(
@@ -91,13 +118,20 @@ export function CartProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    getCart()
-      .then((cart) => {
-        setItems(mapCartApiToLineItems(cart));
-      })
-      .catch(() => {
-        resetCartState();
-      });
+    const userId = getUserIdFromAccessToken(getAccessToken());
+    zoneUserIdRef.current = userId;
+
+    void (async () => {
+      const [cart, storedZones] = await Promise.all([
+        getCart(),
+        userId ? loadCartZoneItems(userId) : Promise.resolve([]),
+      ]);
+
+      setItems(mapCartApiToLineItems(cart));
+      setZoneItemsState(storedZones);
+    })().catch(() => {
+      resetCartState();
+    });
   }, [isLoading, isLoggedIn, resetCartState]);
 
   const { availableItems, soldOutItems } = useMemo(() => {
@@ -113,18 +147,29 @@ export function CartProvider({ children }: PropsWithChildren) {
     return { availableItems: available, soldOutItems: soldOut };
   }, [items]);
 
+  const applyCartResponse = useCallback(
+    (cart: Awaited<ReturnType<typeof getCart>>) => {
+      setItems((prev) =>
+        prev.length === 0
+          ? mapCartApiToLineItems(cart)
+          : mergeCartApiIntoLineItems(prev, cart),
+      );
+    },
+    [],
+  );
+
   const addToCart = useCallback(async (product: Product, quantity = 1) => {
     const cart = await addCartItem(product.id, quantity);
-    setItems(mapCartApiToLineItems(cart));
-  }, []);
+    applyCartResponse(cart);
+  }, [applyCartResponse]);
 
   const removeFromCart = useCallback(async (productId: string) => {
     const target = items.find((item) => item.productId === productId);
     if (!target?.cartItemId) return;
 
     const cart = await removeCartItem(target.cartItemId);
-    setItems(mapCartApiToLineItems(cart));
-  }, [items]);
+    applyCartResponse(cart);
+  }, [applyCartResponse, items]);
 
   const removeFromCartMany = useCallback((productIds: string[]) => {
     if (productIds.length === 0) return;
@@ -134,8 +179,8 @@ export function CartProvider({ children }: PropsWithChildren) {
 
   const refreshCart = useCallback(async () => {
     const cart = await getCart();
-    setItems(mapCartApiToLineItems(cart));
-  }, []);
+    applyCartResponse(cart);
+  }, [applyCartResponse]);
 
   const setQuantity = useCallback(async (productId: string, quantity: number) => {
     const target = items.find((item) => item.productId === productId);
@@ -145,16 +190,16 @@ export function CartProvider({ children }: PropsWithChildren) {
     const nextQty = Math.min(Math.max(quantity, 1), maxQty);
 
     const cart = await changeCartItemQuantity(target.cartItemId, nextQty);
-    setItems(mapCartApiToLineItems(cart));
-  }, [items]);
+    applyCartResponse(cart);
+  }, [applyCartResponse, items]);
 
   const toggleSelect = useCallback(async (productId: string) => {
     const target = items.find((item) => item.productId === productId);
     if (!target?.cartItemId || !isAvailable(target.product)) return;
 
     const cart = await changeCartItemChecked(target.cartItemId, !target.selected);
-    setItems(mapCartApiToLineItems(cart));
-  }, [items]);
+    applyCartResponse(cart);
+  }, [applyCartResponse, items]);
 
   const toggleSelectAll = useCallback(async () => {
     const selectable = items.filter(
@@ -173,18 +218,18 @@ export function CartProvider({ children }: PropsWithChildren) {
       }
 
       if (latestCart) {
-        setItems(mapCartApiToLineItems(latestCart));
+        applyCartResponse(latestCart);
         return;
       }
 
       const cart = await getCart();
-      setItems(mapCartApiToLineItems(cart));
+      applyCartResponse(cart);
     } catch (error) {
       console.error(error);
       const cart = await getCart();
-      setItems(mapCartApiToLineItems(cart));
+      applyCartResponse(cart);
     }
-  }, [items]);
+  }, [applyCartResponse, items]);
 
   const value = useMemo(
     () => ({
@@ -197,7 +242,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       removeFromCart,
       removeFromCartMany,
       refreshCart,
-      setZoneItems,
+      setZoneItems: persistZoneItems,
       setQuantity,
       toggleSelect,
       toggleSelectAll,
@@ -211,6 +256,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       removeFromCart,
       removeFromCartMany,
       refreshCart,
+      persistZoneItems,
       setQuantity,
       toggleSelect,
       toggleSelectAll,

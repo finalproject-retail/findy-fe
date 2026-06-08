@@ -1,3 +1,9 @@
+import {
+  getAdminProductImage,
+  getAdminProductName,
+} from "@/lib/admin/mockAdminProductAssets";
+import type { ImageSourcePropType } from "react-native";
+
 export type AdminDateRange = {
   start: string;
   end: string;
@@ -46,6 +52,7 @@ export type AdminPromoProduct = {
   promoType: AdminPromoType;
   selectionRate: number;
   purchaseRate: number;
+  image: ImageSourcePropType;
 };
 
 export type AdminDashboardData = {
@@ -94,29 +101,6 @@ export function getDefaultAdminDateRange(): AdminDateRange {
 }
 
 /** API 연동 전 목업 데이터 */
-const MOCK_PROMO_NAMES = [
-  "[농심] 사리곰탕 소컵 6입",
-  "[오뚜기] 진라면 순한맛 5입",
-  "[삼양] 불닭볶음면 4입",
-  "[CJ] 햇반 210g 12입",
-  "[서울] 우유 1L",
-  "[동원] 참치캔 4입",
-  "[롯데] 제크 80g",
-  "[해태] 허니버터칩",
-  "[농심] 신라면 5입",
-  "[오뚜기] 스낵면 5입",
-  "[풀무원] 두부 300g",
-  "[매일] 바른목장 요구르트",
-  "[롯데] 가나 초콜릿",
-  "[농심] 너구리 5입",
-  "[삼립] 호빵 4입",
-  "[CJ] 비비고 만두",
-  "[동원] 양반김 10봉",
-  "[오리온] 초코파이 12입",
-  "[롯데] 칸cho 72g",
-  "[빙그레] 바나나맛우유",
-] as const;
-
 const MOCK_PROMO_TYPES: AdminPromoType[] = ["bundle", "onePlusOne", "discount"];
 
 function buildMockPromoProducts(count = 20): AdminPromoProduct[] {
@@ -128,11 +112,12 @@ function buildMockPromoProducts(count = 20): AdminPromoProduct[] {
 
     return {
       rank,
-      name: MOCK_PROMO_NAMES[index % MOCK_PROMO_NAMES.length]!,
+      name: getAdminProductName(index),
       productId: `promo-${String(rank).padStart(3, "0")}`,
       promoType,
       selectionRate,
       purchaseRate,
+      image: getAdminProductImage(index),
     };
   });
 }

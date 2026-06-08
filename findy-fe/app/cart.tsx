@@ -8,6 +8,7 @@ import {
   CartSoldOutItemRow,
   CartZoneItemRow,
   cartToShoppingMapItems,
+  zonesToShoppingMapItems,
 } from "@/components/cart";
 import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
@@ -17,12 +18,11 @@ import { useToast } from "@/contexts/ToastContext";
 import { getApiErrorMessage } from "@/lib/api";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { removeCartItem } from "@/lib/shopping/api";
+import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
 import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
-import {
-  categoryLineItemsToMapItems,
-  mapShoppingListApiToLineItems,
-} from "@/lib/shopping/mappers";
+import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { pretendard } from "@/utils/pretendard";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
@@ -69,36 +69,53 @@ export default function CartScreen() {
 
     try {
       let shoppingListLines: CartLineItem[] = [];
+      let tripZoneLines: TripZoneLineItem[] = [];
       let activeShoppingListId: number | null = null;
       let serverDestinationGridIds: number[] = [];
+      let shoppingListForZones = null;
 
-      if (hasSelectedProducts || hasSelectedZones) {
+      if (hasSelectedProducts) {
         const shoppingList = await createShoppingListFromCart(
           availableItems,
           selectedLines,
-          hasSelectedZones ? zoneItems : [],
         );
-        shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
+        shoppingListLines = mapShoppingListApiToLineItems(shoppingList).filter(
+          isProductLineItem,
+        );
         activeShoppingListId = shoppingList.shoppingListId;
         serverDestinationGridIds = shoppingList.destinationGridIds ?? [];
+        shoppingListForZones = shoppingList;
 
-        if (hasSelectedProducts) {
-          await Promise.all(
-            selectedLines
-              .filter((line) => line.cartItemId)
-              .map((line) => removeCartItem(line.cartItemId!)),
-          );
-          await refreshCart();
+        await Promise.all(
+          selectedLines
+            .filter((line) => line.cartItemId)
+            .map((line) => removeCartItem(line.cartItemId!)),
+        );
+        await refreshCart();
+      }
+
+      if (hasSelectedZones) {
+        const { shoppingList: shoppingListWithZones, zoneLines } =
+          await addZonesToShoppingList(zoneItems, shoppingListForZones);
+        tripZoneLines = zoneLines;
+        if (shoppingListWithZones != null) {
+          activeShoppingListId = shoppingListWithZones.shoppingListId;
+          if (!hasSelectedProducts) {
+            serverDestinationGridIds =
+              shoppingListWithZones.destinationGridIds ?? [];
+          }
         }
       }
 
-      const productMapItems = cartToShoppingMapItems(
-        shoppingListLines
-          .filter(isProductLineItem)
-          .map((item) => ({ ...item, selected: true })),
-      );
-      const categoryMapItems = categoryLineItemsToMapItems(shoppingListLines);
-      const mapItems = [...productMapItems, ...categoryMapItems].map(
+      const productMapItems = hasSelectedProducts
+        ? cartToShoppingMapItems(
+            shoppingListLines.map((item) => ({ ...item, selected: true })),
+          )
+        : [];
+      const zoneMapItems = hasSelectedZones
+        ? zonesToShoppingMapItems(zoneItems)
+        : [];
+      const mapItems = [...productMapItems, ...zoneMapItems].map(
         (item, index) => ({
           ...item,
           visitOrder: index + 1,
@@ -115,6 +132,7 @@ export default function CartScreen() {
         mapItems,
         activeShoppingListId,
         resolvedDestinationGridIds,
+        tripZoneLines,
       );
 
       if (hasSelectedZones) {
@@ -123,9 +141,12 @@ export default function CartScreen() {
 
       router.push("/route-generating");
     } catch (error) {
-      console.error(error);
+      if (__DEV__) {
+        console.error(error);
+      }
       showToast(
-        getApiErrorMessage(error) || "쇼핑을 시작하지 못했어요. 다시 시도해 주세요.",
+        getApiErrorMessage(error) ||
+          "쇼핑을 시작하지 못했어요. 다시 시도해 주세요.",
       );
     }
   };

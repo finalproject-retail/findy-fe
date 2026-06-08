@@ -5,7 +5,8 @@ import {
 import type { AdminPromoProduct, AdminPromoType } from "@/lib/admin/mockDashboardData";
 import { ADMIN_PROMO_LABELS } from "@/lib/admin/mockDashboardData";
 import { pretendard } from "@/utils/pretendard";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { ScrollView, Text, View } from "react-native";
 
 type AdminPromoProductListProps = {
   products: AdminPromoProduct[];
@@ -15,6 +16,25 @@ type AdminPromoProductListProps = {
 const HEADERS = ["순위", "상품명", "행사 종류", "선택률", "구매율"] as const;
 const ROW_MIN_HEIGHT = 64;
 const MOBILE_LIST_MAX_HEIGHT = 320;
+const THUMB_SIZE = 36;
+
+function PromoProductThumbnail({ image }: { image: AdminPromoProduct["image"] }) {
+  return (
+    <View
+      style={{
+        width: THUMB_SIZE,
+        height: THUMB_SIZE,
+        borderRadius: 6,
+        backgroundColor: ADMIN_COLORS.statCardBg,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Image source={image} style={{ width: THUMB_SIZE, height: THUMB_SIZE }} contentFit="contain" />
+    </View>
+  );
+}
 
 function promoBadgeStyle(type: AdminPromoType) {
   switch (type) {
@@ -127,11 +147,7 @@ function PromoTableRow({
           gap: 10,
         }}
       >
-        <Image
-          source={require("@/assets/images/splash-logo.png")}
-          style={{ width: 36, height: 36, borderRadius: 6 }}
-          resizeMode="cover"
-        />
+        <PromoProductThumbnail image={product.image} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
             numberOfLines={1}

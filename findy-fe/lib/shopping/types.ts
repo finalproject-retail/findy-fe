@@ -74,12 +74,14 @@ export type ShoppingListItemType = "PRODUCT" | "CATEGORY";
 export type CategoryShoppingListItemApi = {
   categoryId: number | null;
   categoryName: string;
-  gridId: number | null;
+  gridId?: number | null;
 };
 
 export type ShoppingListItemApi = {
   shoppingListItemId: number;
   itemType?: ShoppingListItemType;
+  /** @deprecated API는 product.productId 사용 */
+  productId?: number;
   product?: ShoppingProductSummaryApi | null;
   category?: CategoryShoppingListItemApi | null;
   quantity: number;
@@ -89,6 +91,12 @@ export type ShoppingListItemApi = {
   itemTotalAmount?: number | null;
   scannedAmount?: number | null;
 };
+
+export function resolveShoppingListItemProductId(
+  item: Pick<ShoppingListItemApi, "productId" | "product">,
+): number | null {
+  return item.product?.productId ?? item.productId ?? null;
+}
 
 export type ShoppingListApi = {
   shoppingListId: number;
@@ -110,4 +118,15 @@ export type ShoppingLineItem = {
   shoppingListItemId?: string;
   scannedQuantity?: number;
   scanStatus?: ShoppingListScanStatus;
+};
+
+/** 쇼핑리스트·지도 바텀시트에 표시하는 구역(카테고리) 항목 */
+export type TripZoneLineItem = {
+  categoryId: number;
+  label: string;
+  path: string;
+  topLabel: string;
+  middleLabel: string;
+  emoji: string;
+  shoppingListItemId?: string;
 };

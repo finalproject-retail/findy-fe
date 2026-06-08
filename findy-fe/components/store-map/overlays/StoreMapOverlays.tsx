@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import type { StoreMapConfig } from "../types";
-import { MAP_NAVIGATION_MOCK } from "./mock/mapNavigationMock";
+import { MAP_NAVIGATION_EMPTY } from "./mock/mapNavigationEmpty";
 import { BeaconHeatmapLayer } from "./layers/BeaconHeatmapLayer";
 import { NavigationPathLayer } from "./layers/NavigationPathLayer";
 import { RecommendationAdMarkerLayer } from "./layers/RecommendationAdMarkerLayer";
@@ -56,7 +56,7 @@ export function StoreMapOverlays({
   cellPx,
   mapWidth,
   mapHeight,
-  data = MAP_NAVIGATION_MOCK,
+  data = MAP_NAVIGATION_EMPTY,
   routeSnapshot = null,
   navigationRefreshKey = 0,
   pickedMarkerIds,

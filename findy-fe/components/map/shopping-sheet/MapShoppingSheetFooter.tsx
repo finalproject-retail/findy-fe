@@ -2,13 +2,15 @@ import { getUnitPrice } from "@/components/cart/cartItemUtils";
 import { formatPrice, isOutOfStock } from "@/components/product";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { CartLineItem } from "@/contexts/CartContext";
-import { isCategoryLineItem, isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { pretendard } from "@/utils/pretendard";
 import { StyleSheet, Text, View } from "react-native";
 import { MapShoppingSheetFooterButton } from "./MapShoppingSheetFooterButton";
 
 type MapShoppingSheetFooterProps = {
   tripLineItems: CartLineItem[];
+  tripZoneItems?: TripZoneLineItem[];
   pickedQuantityByProductId: Record<string, number>;
   onShopLater: () => void;
   onFinishShopping: () => void;
@@ -17,6 +19,7 @@ type MapShoppingSheetFooterProps = {
 
 export function MapShoppingSheetFooter({
   tripLineItems,
+  tripZoneItems = [],
   pickedQuantityByProductId,
   onShopLater,
   onFinishShopping,
@@ -25,20 +28,18 @@ export function MapShoppingSheetFooter({
   const productItems = tripLineItems.filter(
     (item) => isProductLineItem(item) && !isOutOfStock(item.product),
   );
-  const categoryItems = tripLineItems.filter(isCategoryLineItem);
   const totalQuantity =
     productItems.reduce((sum, item) => sum + item.quantity, 0) +
-    categoryItems.length;
-  const pickedQuantity =
-    productItems.reduce(
-      (sum, item) => sum + (pickedQuantityByProductId[item.productId] ?? 0),
-      0,
-    ) + categoryItems.filter((item) => item.checked ?? false).length;
+    tripZoneItems.length;
+  const pickedQuantity = productItems.reduce(
+    (sum, item) => sum + (pickedQuantityByProductId[item.productId] ?? 0),
+    0,
+  );
   const totalPrice = productItems.reduce(
     (sum, item) => sum + getUnitPrice(item.product) * item.quantity,
     0,
   );
-  const hasTrip = tripLineItems.length > 0;
+  const hasTrip = productItems.length > 0 || tripZoneItems.length > 0;
 
   return (
     <View

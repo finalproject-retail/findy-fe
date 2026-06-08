@@ -45,24 +45,23 @@ import { orderShoppingMinimumRoute } from "@/components/store-map/overlays/utils
 import { ScanBarcodeRequiredModal } from "@/components/map/ScanBarcodeRequiredModal";
 import { MapShoppingSheetEmpty } from "./MapShoppingSheetEmpty";
 import { MapShoppingSheetFooter } from "./MapShoppingSheetFooter";
-import { MapShoppingSheetCategoryItem } from "./MapShoppingSheetCategoryItem";
 import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
-import {
-  categoryLineItemKey,
-  isCategoryLineItem,
-} from "@/lib/shopping/shoppingListItemUtils";
-import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
+import { MapShoppingSheetZoneItem } from "./MapShoppingSheetZoneItem";
+import { buildTripSheetRows } from "./buildTripSheetRows";
+import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { getApiErrorMessage } from "@/lib/api";
 import {
-  changeShoppingListItemChecked,
   decreaseShoppingListItemByScan,
-  removeShoppingListItem,
   scanShoppingListItem,
 } from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
-import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import {
+  mapShoppingListApiToCategoryLineItems,
+  mapShoppingListApiToLineItems,
+} from "@/lib/shopping/mappers";
+import type { ShoppingListApi } from "@/lib/shopping/types";
 import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
 import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 
@@ -114,13 +113,27 @@ export function MapShoppingBottomSheet({
     navigationData,
     pathNavigation,
     tripLineItems,
+    tripZoneItems,
     pickedQuantityByProductId,
     hasActiveTrip,
     endShoppingTrip,
     removeTripItem,
+    removeTripZoneItem,
     setTripItemQuantity,
     syncShoppingTrip,
   } = useMapNavigation();
+
+  const syncFromShoppingList = useCallback(
+    (shoppingList: ShoppingListApi) => {
+      syncShoppingTrip(
+        mapShoppingListApiToLineItems(shoppingList).filter(isProductLineItem),
+        shoppingList.shoppingListId,
+        shoppingList.destinationGridIds,
+        mapShoppingListApiToCategoryLineItems(shoppingList),
+      );
+    },
+    [syncShoppingTrip],
+  );
 
   const routeProductIds = useMemo(() => {
     const config = getEmartStoreMapConfig();
@@ -142,14 +155,15 @@ export function MapShoppingBottomSheet({
     pathNavigation,
   ]);
 
-  const sortedTripLineItems = useMemo(
+  const tripSheetRows = useMemo(
     () =>
-      sortTripLineItemsForChecklist(
-        tripLineItems,
+      buildTripSheetRows(
+        tripLineItems.filter(isProductLineItem),
+        tripZoneItems,
         pickedQuantityByProductId,
         routeProductIds,
       ),
-    [tripLineItems, pickedQuantityByProductId, routeProductIds],
+    [tripLineItems, tripZoneItems, pickedQuantityByProductId, routeProductIds],
   );
 
   const expandedContentHeight = useMemo(
@@ -364,24 +378,24 @@ export function MapShoppingBottomSheet({
       return;
     }
 
-    const hasProductItems = tripLineItems.some(
-      (line) => !isCategoryLineItem(line),
-    );
-    const totalPicked = tripLineItems.reduce((sum, line) => {
-      if (isCategoryLineItem(line)) {
-        return sum;
-      }
-      return sum + (pickedQuantityByProductId[line.productId] ?? 0);
-    }, 0);
-    if (hasProductItems && totalPicked === 0) {
+    const productItems = tripLineItems.filter(isProductLineItem);
+    const hasProductItems = productItems.length > 0;
+
+    if (!hasProductItems) {
       setScanBarcodeModalVisible(true);
       return;
     }
 
-    const hasUnpicked = tripLineItems.some((line) => {
-      if (isCategoryLineItem(line)) {
-        return !(line.checked ?? false);
-      }
+    const totalPicked = productItems.reduce(
+      (sum, line) => sum + (pickedQuantityByProductId[line.productId] ?? 0),
+      0,
+    );
+    if (totalPicked === 0) {
+      setScanBarcodeModalVisible(true);
+      return;
+    }
+
+    const hasUnpicked = productItems.some((line) => {
       const picked = pickedQuantityByProductId[line.productId] ?? 0;
       return picked < line.quantity;
     });
@@ -431,12 +445,7 @@ export function MapShoppingBottomSheet({
         try {
           const canceledProductName = cancelModal.productName;
           const shoppingList = await decreaseShoppingListItemByScan(barcode, 1);
-          const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-          syncShoppingTrip(
-            nextLineItems,
-            shoppingList.shoppingListId,
-            shoppingList.destinationGridIds,
-          );
+          syncFromShoppingList(shoppingList);
           setCancelScanModal(null);
 
           if (cancelToastTimerRef.current) {
@@ -464,11 +473,9 @@ export function MapShoppingBottomSheet({
 
       try {
         const shoppingList = await scanShoppingListItem(barcode, 1);
-        const nextLineItems = mapShoppingListApiToLineItems(shoppingList);
-        syncShoppingTrip(
-          nextLineItems,
-          shoppingList.shoppingListId,
-          shoppingList.destinationGridIds,
+        syncFromShoppingList(shoppingList);
+        const nextLineItems = mapShoppingListApiToLineItems(shoppingList).filter(
+          isProductLineItem,
         );
 
         const lineAfter = nextLineItems.find(
@@ -499,7 +506,7 @@ export function MapShoppingBottomSheet({
       pickedQuantityByProductId,
       presentCancelToast,
       notifyBarcodeScanPromoIfNeeded,
-      syncShoppingTrip,
+      syncFromShoppingList,
       tripLineItems,
     ],
   );
@@ -509,55 +516,8 @@ export function MapShoppingBottomSheet({
     onScan: handleScannerScan,
   });
 
-  const handleRemoveCategoryItem = useCallback(
-    async (item: CartLineItem) => {
-      if (!item.shoppingListItemId) {
-        removeTripItem(item.productId);
-        return;
-      }
-
-      try {
-        const shoppingList = await removeShoppingListItem(item.shoppingListItemId);
-        syncShoppingTrip(
-          mapShoppingListApiToLineItems(shoppingList),
-          shoppingList.shoppingListId,
-          shoppingList.destinationGridIds,
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [removeTripItem, syncShoppingTrip],
-  );
-
-  const handleToggleCategoryChecked = useCallback(
-    async (item: CartLineItem, checked: boolean) => {
-      if (!item.shoppingListItemId) return;
-
-      try {
-        const shoppingList = await changeShoppingListItemChecked(
-          item.shoppingListItemId,
-          checked,
-        );
-        syncShoppingTrip(
-          mapShoppingListApiToLineItems(shoppingList),
-          shoppingList.shoppingListId,
-          shoppingList.destinationGridIds,
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [syncShoppingTrip],
-  );
-
   const handleRemoveItem = useCallback(
     async (item: CartLineItem) => {
-      if (isCategoryLineItem(item)) {
-        await handleRemoveCategoryItem(item);
-        return;
-      }
-
       const picked = pickedQuantityByProductId[item.productId] ?? 0;
       const isFullyPicked = picked >= item.quantity;
 
@@ -577,12 +537,21 @@ export function MapShoppingBottomSheet({
         console.error(error);
       }
     },
-    [
-      addToCart,
-      handleRemoveCategoryItem,
-      pickedQuantityByProductId,
-      removeTripItem,
-    ],
+    [addToCart, pickedQuantityByProductId, removeTripItem],
+  );
+
+  const handleRemoveZone = useCallback(
+    async (categoryId: number) => {
+      try {
+        await removeTripZoneItem(categoryId);
+      } catch (error) {
+        showToast(
+          getApiErrorMessage(error) ||
+            "구역을 삭제하지 못했어요. 다시 시도해 주세요.",
+        );
+      }
+    },
+    [removeTripZoneItem, showToast],
   );
 
   useEffect(() => {
@@ -669,26 +638,23 @@ export function MapShoppingBottomSheet({
                   contentContainerStyle={styles.scrollContent}
                   nestedScrollEnabled
                 >
-                  {sortedTripLineItems.map((item) =>
-                    isCategoryLineItem(item) ? (
-                      <MapShoppingSheetCategoryItem
-                        key={categoryLineItemKey(item)}
-                        item={item}
-                        onToggleChecked={(checked) =>
-                          void handleToggleCategoryChecked(item, checked)
-                        }
-                        onRemove={() => void handleRemoveItem(item)}
+                  {tripSheetRows.map((row) =>
+                    row.kind === "zone" ? (
+                      <MapShoppingSheetZoneItem
+                        key={`zone-${row.item.categoryId}`}
+                        zone={row.item}
+                        onRemove={() => void handleRemoveZone(row.item.categoryId)}
                       />
                     ) : (
                       <MapShoppingSheetItem
-                        key={categoryLineItemKey(item)}
-                        item={item}
+                        key={row.item.productId}
+                        item={row.item}
                         pickedQuantity={
-                          pickedQuantityByProductId[item.productId] ?? 0
+                          pickedQuantityByProductId[row.item.productId] ?? 0
                         }
-                        onRemove={() => void handleRemoveItem(item)}
+                        onRemove={() => void handleRemoveItem(row.item)}
                         onQuantityChange={(qty) =>
-                          void handleTripItemQuantityChange(item, qty)
+                          void handleTripItemQuantityChange(row.item, qty)
                         }
                       />
                     ),
@@ -701,6 +667,7 @@ export function MapShoppingBottomSheet({
               <View style={styles.bottomStack}>
                 <MapShoppingSheetFooter
                   tripLineItems={tripLineItems}
+                  tripZoneItems={tripZoneItems}
                   pickedQuantityByProductId={pickedQuantityByProductId}
                   onShopLater={handleShopLater}
                   onFinishShopping={handleFinishShopping}
