@@ -4,7 +4,30 @@ import {
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
 import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
+
+async function requestChatbotSpeechPermissions() {
+  if (Platform.OS === "android") {
+    return ExpoSpeechRecognitionModule.requestMicrophonePermissionsAsync();
+  }
+  return ExpoSpeechRecognitionModule.requestPermissionsAsync();
+}
+
+function showMicrophonePermissionAlert(canAskAgain: boolean) {
+  const message = canAskAgain
+    ? "음성 입력을 사용하려면 마이크 권한을 허용해 주세요."
+    : "마이크 권한이 거부되어 있습니다.\n설정 > 앱 > Findy > 권한에서 마이크를 허용해 주세요.";
+
+  Alert.alert("마이크 권한 필요", message, [
+    { text: "취소", style: "cancel" },
+    {
+      text: "설정 열기",
+      onPress: () => {
+        void Linking.openSettings();
+      },
+    },
+  ]);
+}
 
 function joinTranscriptResults(
   results: Array<{ transcript?: string }> | undefined,
@@ -137,12 +160,9 @@ export function ChatbotSpeechNativeBridgeImpl({
       return;
     }
 
-    const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    const permission = await requestChatbotSpeechPermissions();
     if (!permission.granted) {
-      Alert.alert(
-        "마이크 권한 필요",
-        "음성 입력을 사용하려면 마이크와 음성 인식 권한을 허용해 주세요.",
-      );
+      showMicrophonePermissionAlert(permission.canAskAgain);
       return;
     }
 
