@@ -12,10 +12,17 @@ import {
   type PropsWithChildren,
 } from "react";
 
+export type CreatedOrderSnapshot = {
+  orderId: number;
+  finalAmount: number;
+  usedRewardAmount: number;
+};
+
 type CheckoutContextValue = {
   checkoutItems: CartLineItem[];
   selectedCoupon: Coupon | null;
   usedPoints: number;
+  lastCreatedOrder: CreatedOrderSnapshot | null;
   hasCheckoutItems: boolean;
   setCheckoutFromTrip: (
     tripLineItems: CartLineItem[],
@@ -24,6 +31,7 @@ type CheckoutContextValue = {
   clearCheckout: () => void;
   setSelectedCoupon: (coupon: Coupon | null) => void;
   setUsedPoints: (points: number) => void;
+  setLastCreatedOrder: (order: CreatedOrderSnapshot) => void;
 };
 
 const CheckoutContext = createContext<CheckoutContextValue | null>(null);
@@ -33,6 +41,8 @@ export function CheckoutProvider({ children }: PropsWithChildren) {
   const [checkoutItems, setCheckoutItems] = useState<CartLineItem[]>([]);
   const [selectedCoupon, setSelectedCouponState] = useState<Coupon | null>(null);
   const [usedPoints, setUsedPointsState] = useState(0);
+  const [lastCreatedOrder, setLastCreatedOrderState] =
+    useState<CreatedOrderSnapshot | null>(null);
 
   const setCheckoutFromTrip = useCallback(
     (
@@ -50,6 +60,7 @@ export function CheckoutProvider({ children }: PropsWithChildren) {
       setCheckoutItems(nextItems);
       setSelectedCouponState(null);
       setUsedPoints(0);
+      setLastCreatedOrderState(null);
     },
     [],
   );
@@ -58,6 +69,11 @@ export function CheckoutProvider({ children }: PropsWithChildren) {
     setCheckoutItems([]);
     setSelectedCouponState(null);
     setUsedPointsState(0);
+    setLastCreatedOrderState(null);
+  }, []);
+
+  const setLastCreatedOrder = useCallback((order: CreatedOrderSnapshot) => {
+    setLastCreatedOrderState(order);
   }, []);
 
   useEffect(
@@ -88,20 +104,24 @@ export function CheckoutProvider({ children }: PropsWithChildren) {
       checkoutItems,
       selectedCoupon,
       usedPoints,
+      lastCreatedOrder,
       hasCheckoutItems: checkoutItems.length > 0,
       setCheckoutFromTrip,
       clearCheckout,
       setSelectedCoupon,
       setUsedPoints,
+      setLastCreatedOrder,
     }),
     [
       checkoutItems,
       selectedCoupon,
       usedPoints,
+      lastCreatedOrder,
       setCheckoutFromTrip,
       clearCheckout,
       setSelectedCoupon,
       setUsedPoints,
+      setLastCreatedOrder,
     ],
   );
 

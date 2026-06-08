@@ -4,6 +4,9 @@ import { COLORS, SPACING } from "@/constants/theme";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { usePoints } from "@/contexts/PointsContext";
+import { useToast } from "@/contexts/ToastContext";
+import { earnPurchaseReward } from "@/lib/rewards/api/earnPurchaseReward";
+import { spendRewardForOrder } from "@/lib/rewards/api/spendRewardForOrder";
 import { pretendard } from "@/utils/pretendard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -20,9 +23,10 @@ const LOGO_HEIGHT = 134;
 export default function PaymentCompleteScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { checkoutItems, clearCheckout } = useCheckout();
+  const { checkoutItems, lastCreatedOrder, clearCheckout } = useCheckout();
   const { endShoppingTrip } = useMapNavigation();
-  const { commitPendingBarcodeRewards } = usePoints();
+  const { commitPendingBarcodeRewards, refreshReward, syncReward } = usePoints();
+  const { showToast } = useToast();
   const purchaseRecordedRef = useRef(false);
 
   useEffect(() => {
@@ -34,9 +38,52 @@ export default function PaymentCompleteScreen() {
     if (purchaseRecordedRef.current) return;
     purchaseRecordedRef.current = true;
 
-    void commitPendingBarcodeRewards();
-    endShoppingTrip();
-  }, [checkoutItems, commitPendingBarcodeRewards, endShoppingTrip, router]);
+    void (async () => {
+      if (lastCreatedOrder) {
+        try {
+          if (lastCreatedOrder.usedRewardAmount >= 1) {
+            const useResult = await spendRewardForOrder({
+              orderId: lastCreatedOrder.orderId,
+              usedAmount: lastCreatedOrder.usedRewardAmount,
+            });
+            syncReward(useResult.rewardBalance);
+          }
+
+          const earnFinalAmount = Math.max(
+            0,
+            lastCreatedOrder.finalAmount - lastCreatedOrder.usedRewardAmount,
+          );
+          const reward = await earnPurchaseReward({
+            orderId: lastCreatedOrder.orderId,
+            finalAmount: earnFinalAmount,
+          });
+          syncReward(reward.rewardBalance);
+        } catch (error) {
+          if (__DEV__) {
+            console.warn("[payment-complete] reward flow", error);
+          }
+          showToast(
+            error instanceof Error
+              ? error.message
+              : "포인트 처리에 실패했습니다.",
+          );
+          await refreshReward();
+        }
+      }
+
+      await commitPendingBarcodeRewards();
+      endShoppingTrip();
+    })();
+  }, [
+    checkoutItems,
+    commitPendingBarcodeRewards,
+    endShoppingTrip,
+    lastCreatedOrder,
+    refreshReward,
+    router,
+    showToast,
+    syncReward,
+  ]);
 
   const handleConfirm = () => {
     clearCheckout();
