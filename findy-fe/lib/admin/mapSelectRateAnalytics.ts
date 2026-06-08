@@ -3,6 +3,7 @@ import type {
   AdminPromoProduct,
   AdminPromoType,
 } from "@/lib/admin/mockDashboardData";
+import { getAdminProductImage } from "@/lib/admin/mockAdminProductAssets";
 import type { PromotionSelectRateApiDto } from "@/lib/admin/api/types";
 
 function toPercentDisplay(value: number): number {
@@ -40,6 +41,7 @@ export function mapPromotionSelectRatesToProducts(
     promoType: inferPromoType(item.promotionName),
     selectionRate: toPercentDisplay(item.selectRate),
     purchaseRate: toPercentDisplay(item.conversionRate),
+    image: getAdminProductImage(index),
   }));
 }
 

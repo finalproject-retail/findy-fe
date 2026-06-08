@@ -2,6 +2,7 @@ import type {
   RecommendationPurchaseConversionData,
   RecommendationPurchaseConversionProductDto,
 } from "@/lib/admin/api/types";
+import { getAdminProductImage } from "@/lib/admin/mockAdminProductAssets";
 import type {
   AdminFunnelStep,
   AdminPromoProduct,
@@ -64,6 +65,7 @@ function mapPromoProduct(
     promoType: "discount",
     selectionRate,
     purchaseRate: toPercentDisplay(Number(item.purchaseConversionRate)),
+    image: getAdminProductImage(rank - 1),
   };
 }
 
