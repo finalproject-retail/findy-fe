@@ -2,7 +2,9 @@ import { tripLineItemsToShoppingMapItems } from "@/components/cart/cartToShoppin
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import { buildTripShoppingMapItems } from "@/lib/shopping/buildTripShoppingMapItems";
 import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
 
 export function gridPointToGridId(
   gridX: number,
@@ -61,50 +63,65 @@ export function remainingTripLineItems(
   });
 }
 
-/** 현재 쇼핑 리스트 기준 경로 API destinationGridIds (추가·삭제·새로고침 반영) */
-export function destinationGridIdsFromTripLineItems(
+function destinationGridIdsFromTripMapItems(
   lineItems: CartLineItem[],
   gridCols: number,
-  apiDestinationGridIds?: number[],
 ): number[] {
-  if (apiDestinationGridIds != null && apiDestinationGridIds.length > 0) {
-    const fromLineItems = destinationGridIdsFromTripLineItems(
-      lineItems,
-      gridCols,
-    );
-    const remainingSet = new Set(fromLineItems);
-    return dedupeDestinationGridIds(
-      apiDestinationGridIds.filter((gridId) => remainingSet.has(gridId)),
-    );
-  }
-
-  const fromProducts: number[] = [];
-  let previous: number | null = null;
-
-  for (const item of lineItems) {
-    const gridId = isCategoryLineItem(item)
-      ? item.category?.gridId ?? item.product.gridId
-      : item.product.gridId;
-    if (gridId == null) {
-      continue;
-    }
-    if (gridId === previous) {
-      continue;
-    }
-    fromProducts.push(gridId);
-    previous = gridId;
-  }
-
-  if (fromProducts.length > 0) {
-    return fromProducts;
-  }
-
   if (lineItems.length === 0) {
     return [];
   }
 
   return destinationGridIdsFromMapItems(
     tripLineItemsToShoppingMapItems(lineItems),
+    gridCols,
+  );
+}
+
+/** 현재 쇼핑 리스트 기준 경로 API destinationGridIds (추가·삭제·새로고침 반영) */
+export function destinationGridIdsFromTripLineItems(
+  lineItems: CartLineItem[],
+  gridCols: number,
+  apiDestinationGridIds?: number[],
+): number[] {
+  const fromMapItems = destinationGridIdsFromTripMapItems(lineItems, gridCols);
+
+  if (apiDestinationGridIds != null && apiDestinationGridIds.length > 0) {
+    if (fromMapItems.length === 0) {
+      return dedupeDestinationGridIds(apiDestinationGridIds);
+    }
+
+    const remainingSet = new Set(fromMapItems);
+    const filtered = apiDestinationGridIds.filter((gridId) =>
+      remainingSet.has(gridId),
+    );
+
+    return dedupeDestinationGridIds(
+      filtered.length > 0 ? filtered : apiDestinationGridIds,
+    );
+  }
+
+  return fromMapItems;
+}
+
+/** 상품·구역 트립 기준 경로 API destinationGridIds */
+export function resolveTripDestinationGridIds(
+  productLineItems: CartLineItem[],
+  zoneItems: TripZoneLineItem[],
+  gridCols: number,
+  apiDestinationGridIds?: number[],
+): number[] {
+  const hasDestinations =
+    productLineItems.length > 0 || zoneItems.length > 0;
+  if (!hasDestinations) {
+    return [];
+  }
+
+  if (apiDestinationGridIds != null && apiDestinationGridIds.length > 0) {
+    return dedupeDestinationGridIds(apiDestinationGridIds);
+  }
+
+  return destinationGridIdsFromMapItems(
+    buildTripShoppingMapItems(productLineItems, zoneItems),
     gridCols,
   );
 }
