@@ -1,6 +1,10 @@
 import { getShoppingList } from "@/lib/shopping/api";
 import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
-import type { ShoppingListApi, ShoppingListItemApi } from "@/lib/shopping/types";
+import {
+  resolveShoppingListItemProductId,
+  type ShoppingListApi,
+  type ShoppingListItemApi,
+} from "@/lib/shopping/types";
 
 export async function findShoppingListItemByProductId(
   productId: string | number,
@@ -11,7 +15,7 @@ export async function findShoppingListItemByProductId(
     if (entry.itemType === "CATEGORY" || (entry.category && !entry.product)) {
       return false;
     }
-    return entry.product?.productId === parsedProductId;
+    return resolveShoppingListItemProductId(entry) === parsedProductId;
   });
 
   if (!item) {
