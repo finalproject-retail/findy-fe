@@ -129,6 +129,28 @@ export async function getShoppingList(
   }
 }
 
+export async function addCategoryShoppingListItem(
+  categoryId: number,
+  categoryName?: string,
+  quantity = 1,
+  userId?: number,
+): Promise<ShoppingListApi> {
+  try {
+    const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
+      "/api/v1/shopping-lists/items/categories",
+      {
+        categoryId,
+        categoryName: categoryName ?? undefined,
+        quantity,
+      },
+      { headers: userHeaders(userId) },
+    );
+    return unwrap(response.data);
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
 export async function addShoppingListItem(
   productId: string | number,
   quantity = 1,

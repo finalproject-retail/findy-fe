@@ -1,6 +1,10 @@
 import { getShoppingList } from "@/lib/shopping/api";
 import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
-import type { ShoppingListApi, ShoppingListItemApi } from "@/lib/shopping/types";
+import {
+  resolveShoppingListItemProductId,
+  type ShoppingListApi,
+  type ShoppingListItemApi,
+} from "@/lib/shopping/types";
 
 export async function findShoppingListItemByProductId(
   productId: string | number,
@@ -8,7 +12,7 @@ export async function findShoppingListItemByProductId(
   const shoppingList = await getShoppingList();
   const parsedProductId = parseShoppingProductId(productId);
   const item = shoppingList.items.find(
-    (entry) => entry.productId === parsedProductId,
+    (entry) => resolveShoppingListItemProductId(entry) === parsedProductId,
   );
 
   if (!item) {

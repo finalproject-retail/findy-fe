@@ -15,9 +15,14 @@ import { SafeView } from "@/components/layout";
 import { COLORS, SPACING } from "@/constants/theme";
 import { useCart, type CartLineItem } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { useToast } from "@/contexts/ToastContext";
+import { getApiErrorMessage } from "@/lib/api";
 import { removeCartItem } from "@/lib/shopping/api";
 import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
-import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
+import {
+  mapShoppingListApiToLineItems,
+} from "@/lib/shopping/mappers";
 import {
   dedupeDestinationGridIds,
   destinationGridIdsFromMapItems,
@@ -29,6 +34,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function CartScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { startShoppingTrip } = useMapNavigation();
   const {
     availableItems,
@@ -66,8 +72,10 @@ export default function CartScreen() {
 
     try {
       let shoppingListLines: CartLineItem[] = [];
+      let tripZoneLines = zoneItems;
       let activeShoppingListId: number | null = null;
       let productDestinationGridIds: number[] = [];
+      let shoppingListForZones = null;
 
       if (hasSelectedProducts) {
         const shoppingList = await createShoppingListFromCart(
@@ -77,6 +85,7 @@ export default function CartScreen() {
         shoppingListLines = mapShoppingListApiToLineItems(shoppingList);
         activeShoppingListId = shoppingList.shoppingListId;
         productDestinationGridIds = shoppingList.destinationGridIds ?? [];
+        shoppingListForZones = shoppingList;
 
         await Promise.all(
           selectedLines
@@ -84,6 +93,19 @@ export default function CartScreen() {
             .map((line) => removeCartItem(line.cartItemId!)),
         );
         await refreshCart();
+      }
+
+      if (hasSelectedZones) {
+        const { shoppingList: shoppingListWithZones, zoneLines } =
+          await addZonesToShoppingList(zoneItems, shoppingListForZones);
+        tripZoneLines = zoneLines;
+        if (shoppingListWithZones != null) {
+          activeShoppingListId = shoppingListWithZones.shoppingListId;
+          if (!hasSelectedProducts) {
+            productDestinationGridIds =
+              shoppingListWithZones.destinationGridIds ?? [];
+          }
+        }
       }
 
       const productMapItems = hasSelectedProducts
@@ -119,6 +141,7 @@ export default function CartScreen() {
         mapItems,
         activeShoppingListId,
         resolvedDestinationGridIds,
+        tripZoneLines,
       );
 
       if (hasSelectedZones) {
@@ -127,7 +150,13 @@ export default function CartScreen() {
 
       router.push("/route-generating");
     } catch (error) {
-      console.error(error);
+      showToast(
+        getApiErrorMessage(error) ||
+          "쇼핑을 시작하지 못했어요. 다시 시도해 주세요.",
+      );
+      if (__DEV__) {
+        console.error(error);
+      }
     }
   };
 

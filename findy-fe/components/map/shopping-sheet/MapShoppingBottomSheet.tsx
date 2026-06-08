@@ -46,13 +46,14 @@ import { ScanBarcodeRequiredModal } from "@/components/map/ScanBarcodeRequiredMo
 import { MapShoppingSheetEmpty } from "./MapShoppingSheetEmpty";
 import { MapShoppingSheetFooter } from "./MapShoppingSheetFooter";
 import { MapShoppingSheetItem } from "./MapShoppingSheetItem";
-import { sortTripLineItemsForChecklist } from "./sortTripLineItems";
+import { MapShoppingSheetZoneItem } from "./MapShoppingSheetZoneItem";
+import { buildTripSheetRows } from "./buildTripSheetRows";
 import { MapShopLaterConfirmModal } from "./MapShopLaterConfirmModal";
 import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { getApiErrorMessage } from "@/lib/api";
 import { scanShoppingListItem, decreaseShoppingListItemByScan } from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
-import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
+import { mapShoppingListApiToLineItems, mapShoppingListApiToCategoryLineItems } from "@/lib/shopping/mappers";
 import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
 import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 
@@ -104,10 +105,12 @@ export function MapShoppingBottomSheet({
     navigationData,
     pathNavigation,
     tripLineItems,
+    tripZoneItems,
     pickedQuantityByProductId,
     hasActiveTrip,
     endShoppingTrip,
     removeTripItem,
+    removeTripZoneItem,
     setTripItemQuantity,
     syncShoppingTrip,
   } = useMapNavigation();
@@ -132,14 +135,15 @@ export function MapShoppingBottomSheet({
     pathNavigation,
   ]);
 
-  const sortedTripLineItems = useMemo(
+  const tripSheetRows = useMemo(
     () =>
-      sortTripLineItemsForChecklist(
+      buildTripSheetRows(
         tripLineItems,
+        tripZoneItems,
         pickedQuantityByProductId,
         routeProductIds,
       ),
-    [tripLineItems, pickedQuantityByProductId, routeProductIds],
+    [tripLineItems, tripZoneItems, pickedQuantityByProductId, routeProductIds],
   );
 
   const expandedContentHeight = useMemo(
@@ -418,6 +422,7 @@ export function MapShoppingBottomSheet({
             nextLineItems,
             shoppingList.shoppingListId,
             shoppingList.destinationGridIds,
+            mapShoppingListApiToCategoryLineItems(shoppingList),
           );
           setCancelScanModal(null);
 
@@ -451,6 +456,7 @@ export function MapShoppingBottomSheet({
           nextLineItems,
           shoppingList.shoppingListId,
           shoppingList.destinationGridIds,
+          mapShoppingListApiToCategoryLineItems(shoppingList),
         );
 
         const lineAfter = nextLineItems.find(
@@ -529,6 +535,20 @@ export function MapShoppingBottomSheet({
     };
   }, []);
 
+  const handleRemoveZone = useCallback(
+    async (categoryId: number) => {
+      try {
+        await removeTripZoneItem(categoryId);
+      } catch (error) {
+        showToast(
+          getApiErrorMessage(error) ||
+            "구역을 삭제하지 못했어요. 다시 시도해 주세요.",
+        );
+      }
+    },
+    [removeTripZoneItem, showToast],
+  );
+
   const handleDismissCancelModal = useCallback(() => {
     setCancelScanModal(null);
   }, []);
@@ -542,7 +562,7 @@ export function MapShoppingBottomSheet({
         const { item: serverItem } = await findShoppingListItemByProductId(
           latestItem.productId,
         );
-        const serverScanned = serverItem.scannedQuantity;
+        const serverScanned = serverItem.scannedQuantity ?? 0;
         const currentQuantity = serverItem.quantity;
         const isDecrease = nextQuantity < currentQuantity;
         const needsBarcodeCancel =
@@ -599,19 +619,27 @@ export function MapShoppingBottomSheet({
                   contentContainerStyle={styles.scrollContent}
                   nestedScrollEnabled
                 >
-                  {sortedTripLineItems.map((item) => (
-                    <MapShoppingSheetItem
-                      key={item.productId}
-                      item={item}
-                      pickedQuantity={
-                        pickedQuantityByProductId[item.productId] ?? 0
-                      }
-                      onRemove={() => handleRemoveItem(item)}
-                      onQuantityChange={(qty) =>
-                        void handleTripItemQuantityChange(item, qty)
-                      }
-                    />
-                  ))}
+                  {tripSheetRows.map((row) =>
+                    row.kind === "zone" ? (
+                      <MapShoppingSheetZoneItem
+                        key={`zone-${row.item.categoryId}`}
+                        zone={row.item}
+                        onRemove={() => void handleRemoveZone(row.item.categoryId)}
+                      />
+                    ) : (
+                      <MapShoppingSheetItem
+                        key={row.item.productId}
+                        item={row.item}
+                        pickedQuantity={
+                          pickedQuantityByProductId[row.item.productId] ?? 0
+                        }
+                        onRemove={() => handleRemoveItem(row.item)}
+                        onQuantityChange={(qty) =>
+                          void handleTripItemQuantityChange(row.item, qty)
+                        }
+                      />
+                    ),
+                  )}
                 </AnimatedScrollView>
               ) : (
                 <MapShoppingSheetEmpty />
