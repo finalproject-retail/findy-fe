@@ -52,10 +52,6 @@
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1"
   },
-  "optionalDependencies": {
-    "@emnapi/core": "1.11.0",
-    "@emnapi/runtime": "1.11.0"
-  },
   "devDependencies": {
     "@types/react": "~19.1.0",
     "babel-preset-expo": "~54.0.10",

@@ -693,7 +693,18 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
   const patchNavigationData = useCallback(
     (patch: Partial<StoreMapNavigationMock>) => {
-      setNavigationData((prev) => ({ ...prev, ...patch }));
+      setNavigationData((prev) => {
+        const nextLocation = patch.currentLocation;
+        if (
+          nextLocation &&
+          prev.currentLocation.gridX === nextLocation.gridX &&
+          prev.currentLocation.gridY === nextLocation.gridY &&
+          Object.keys(patch).length === 1
+        ) {
+          return prev;
+        }
+        return { ...prev, ...patch };
+      });
     },
     [],
   );
