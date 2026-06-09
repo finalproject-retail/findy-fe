@@ -590,6 +590,7 @@ export function MapShoppingBottomSheet({
           const serverScanned = serverItem.scannedQuantity ?? 0;
           const nextQty = serverItem.quantity + delta;
 
+          // 스캔 수 아래로 줄이려 할 때만 바코드 취소 모달
           if (serverScanned > 0 && nextQty < serverScanned) {
             setCancelScanModal({
               productId: latestItem.productId,

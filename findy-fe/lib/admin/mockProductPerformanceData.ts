@@ -130,7 +130,7 @@ function getAdminProductPerformanceCatalog(range: AdminDateRange): AdminProductP
   const cached = catalogCache.get(cacheKey);
   if (cached) return cached;
 
-  const catalog = buildMockCatalog(25);
+  const catalog = buildMockCatalog(55);
   catalogCache.set(cacheKey, catalog);
   return catalog;
 }
@@ -140,6 +140,31 @@ export function getAdminProductPerformanceList(
   range: AdminDateRange,
 ): AdminProductPerformance[] {
   return getAdminProductPerformanceCatalog(range);
+}
+
+export type AdminProductListPageResult = {
+  products: AdminProductPerformance[];
+  page: number;
+  hasMore: boolean;
+  totalElements: number;
+};
+
+/** GET /admin/products — 페이지 목록 (mock) */
+export function getAdminProductPerformanceListPage(
+  range: AdminDateRange,
+  page: number,
+  size: number,
+): AdminProductListPageResult {
+  const all = getAdminProductPerformanceCatalog(range);
+  const start = page * size;
+  const products = all.slice(start, start + size);
+
+  return {
+    products,
+    page,
+    hasMore: start + size < all.length,
+    totalElements: all.length,
+  };
 }
 
 /** GET /admin/products/performance/:productId — 상세 */

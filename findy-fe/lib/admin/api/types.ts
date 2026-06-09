@@ -11,6 +11,55 @@ export type AdminShoppingProductDto = {
   imageUrl?: string | null;
 };
 
+/** shopping-service — GET /api/v1/admin/products query */
+export type AdminProductSaleStatus = "ON_SALE" | "OUT_OF_STOCK";
+
+export type FetchAdminProductsParams = {
+  keyword?: string;
+  categoryId?: number;
+  saleStatus?: AdminProductSaleStatus;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  direction?: "asc" | "desc";
+};
+
+/** shopping-service — AdminProductResponse */
+export type AdminProductListItemDto = {
+  productId: number;
+  categoryId: number | null;
+  brandName: string | null;
+  productName: string;
+  barcode: string | null;
+  externalSource: string | null;
+  externalProductId: string | null;
+  originalPrice: number | null;
+  imageUrl: string | null;
+  saleStatus: AdminProductSaleStatus | null;
+  gridId: number | null;
+  stockQuantity: number | null;
+  stockStatus: string | null;
+  stockUnit: string | null;
+  categoryConfidence: number | string | null;
+  categoryClassifiedBy: string | null;
+  categoryReviewRequired: boolean | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+/** shopping-service — AdminProductPageResponse */
+export type AdminProductPageDto = {
+  products: AdminProductListItemDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+  sortBy?: string;
+  direction?: string;
+};
+
 export type ProductPerformanceItemDto = {
   productId: number;
   productName?: string;

@@ -4,12 +4,13 @@ import { useAdminProductPerformanceDetail } from "@/hooks/useAdminProductPerform
 import { getDefaultAdminDateRange } from "@/lib/admin/mockDashboardData";
 import { pretendard } from "@/utils/pretendard";
 import { useLocalSearchParams } from "expo-router";
+import { useMemo } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 export default function AdminProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const productId = typeof id === "string" ? id : "";
-  const dateRange = getDefaultAdminDateRange();
+  const dateRange = useMemo(() => getDefaultAdminDateRange(), []);
   const { data, isLoading, error, reload } = useAdminProductPerformanceDetail(
     productId,
     dateRange,

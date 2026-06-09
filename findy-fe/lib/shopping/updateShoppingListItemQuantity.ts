@@ -13,7 +13,9 @@ function isNotFoundError(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 404;
 }
 
-/** productId 기준 쇼핑리스트 수량 변경 (장바구니 등 외부 호출용) */
+/**
+ * productId 기준 쇼핑리스트 수량 변경 (장바구니 등 외부 호출용).
+ */
 export async function updateShoppingListItemQuantity(
   productId: string | number,
   nextQuantity: number,

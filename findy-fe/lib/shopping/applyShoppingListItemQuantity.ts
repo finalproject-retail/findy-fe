@@ -5,6 +5,7 @@ import {
   getShoppingList,
   removeShoppingListItem,
 } from "@/lib/shopping/api";
+import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
 import { resolveShoppingUserId } from "@/lib/shopping/shoppingUserId";
 import type { ApiEnvelope, ShoppingListApi } from "@/lib/shopping/types";
 
@@ -81,8 +82,16 @@ async function decreaseViaRemoveAndReadd(
 }
 
 /**
- * 쇼핑리스트 항목 수량 변경.
- * 감소는 PATCH 우선(스캔 이력 유지), 구버전 백엔드·스캔 0일 때만 DELETE+POST 폴백.
+ * 쇼핑리스트 항목 수량 변경 (스냅샷 1회 기준).
+ *
+ * 백엔드 규칙:
+ * - PATCH /quantity 감소는 기본적으로 막힘 (SHOPPING_LIST_013)
+ * - 단, nextQuantity >= scannedQuantity 이면 감소 허용 (shopping-service 최신 빌드 필요)
+ *
+ * 프론트 전략:
+ * - 스캔 0 + 감소 → DELETE + POST (PATCH 안 씀)
+ * - 스캔 있음 + 감소(스캔 수 이상) → PATCH (스캔 이력 유지)
+ * - 증가 → PATCH
  */
 export async function applyShoppingListItemQuantity(
   snapshot: ShoppingListItemQuantitySnapshot,
@@ -97,6 +106,23 @@ export async function applyShoppingListItemQuantity(
 
   const isDecrease = nextQuantity < currentQuantity;
   const isIncrease = nextQuantity > currentQuantity;
+
+  if (__DEV__) {
+    console.log("[shopping] quantity change", {
+      shoppingListItemId,
+      productId: parseShoppingProductId(productId),
+      currentQuantity,
+      nextQuantity,
+      scannedQuantity,
+      strategy: isDecrease
+        ? scannedQuantity > 0
+          ? "PATCH-decrease (scanned)"
+          : "DELETE+POST-decrease"
+        : isIncrease
+          ? "PATCH-increase"
+          : "noop",
+    });
+  }
 
   if (!isDecrease && !isIncrease) {
     return getShoppingList();
@@ -113,30 +139,30 @@ export async function applyShoppingListItemQuantity(
       return removeShoppingListItem(shoppingListItemId);
     }
 
-    try {
-      return await patchShoppingListItemQuantity(
-        shoppingListItemId,
-        nextQuantity,
-      );
-    } catch (error) {
-      // 구버전 백엔드: PATCH 감소 전부 막힘 → 스캔 0일 때만 DELETE+POST
-      if (isDecreaseRequiresScanError(error) && scannedQuantity === 0) {
-        return decreaseViaRemoveAndReadd(
+    // 스캔 이력 있음 → PATCH만 가능 (DELETE+POST는 scannedQuantity 초기화됨)
+    if (scannedQuantity > 0) {
+      try {
+        return await patchShoppingListItemQuantity(
           shoppingListItemId,
-          productId,
           nextQuantity,
-          currentQuantity,
         );
+      } catch (error) {
+        if (isDecreaseRequiresScanError(error)) {
+          throw new Error(
+            "스캔한 상품 수량 줄이기는 최신 shopping-service가 필요해요. 백엔드를 재빌드한 뒤 다시 시도해 주세요.",
+          );
+        }
+        throw error;
       }
-
-      if (isDecreaseRequiresScanError(error) && scannedQuantity > 0) {
-        throw new Error(
-          "스캔한 상품 수량 줄이기는 shopping-service 최신 빌드가 필요해요. 백엔드 재배포 후 다시 시도해 주세요.",
-        );
-      }
-
-      throw error;
     }
+
+    // 스캔 없음 → PATCH 감소 금지, DELETE+POST만 사용
+    return decreaseViaRemoveAndReadd(
+      shoppingListItemId,
+      productId,
+      nextQuantity,
+      currentQuantity,
+    );
   }
 
   return patchShoppingListItemQuantity(shoppingListItemId, nextQuantity);

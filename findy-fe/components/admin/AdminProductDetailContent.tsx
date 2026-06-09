@@ -22,9 +22,30 @@ type AdminProductDetailContentProps = {
 };
 
 const PRODUCT_THUMB_SIZE = 72;
+const DETAIL_GRID_GAP = 12;
 
-function DetailSection({ children }: { children: ReactNode }) {
-  return <View style={{ gap: 12 }}>{children}</View>;
+function DetailGridCell({ children }: { children: ReactNode }) {
+  return <View style={{ flex: 1, minWidth: 0, alignSelf: "stretch" }}>{children}</View>;
+}
+
+function DetailTwoColumnRow({
+  children,
+  stretch = false,
+}: {
+  children: ReactNode;
+  stretch?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        gap: DETAIL_GRID_GAP,
+        alignItems: stretch ? "stretch" : "flex-start",
+      }}
+    >
+      {children}
+    </View>
+  );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -32,6 +53,8 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <View
       style={{
         flex: 1,
+        alignSelf: "stretch",
+        width: "100%",
         minWidth: 0,
         backgroundColor: "#EEF3FF",
         borderRadius: 12,
@@ -144,39 +167,27 @@ export function AdminProductDetailContent({ data }: AdminProductDetailContentPro
             </View>
           </View>
 
-          <View style={{ flexDirection: isWide ? "row" : "column", gap: 12 }}>
-            <StatCard label="기간 조회수" value={formatAdminViewCount(data.views)} />
-            <StatCard
-              label="추천 노출수"
-              value={formatAdminViewCount(data.impressionCount || data.todayViews)}
-            />
-          </View>
+          <DetailTwoColumnRow stretch>
+            <DetailGridCell>
+              <StatCard label="금일 조회수" value={formatAdminViewCount(data.todayViews)} />
+            </DetailGridCell>
+            <DetailGridCell>
+              <StatCard label="연간 누적 조회수" value={formatAdminViewCount(data.yearlyViews)} />
+            </DetailGridCell>
+          </DetailTwoColumnRow>
 
-          {isWide ? (
-            <View style={{ flexDirection: "row", gap: 20, alignItems: "stretch" }}>
-              <View style={{ flex: 1.2, minWidth: 0 }}>
-                <AdminMonthlyViewsChart points={data.monthlyViews} />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <AdminRecommendationFunnel
-                  steps={data.funnelSteps}
-                  finalConversionRate={getAdminProductFinalConversionRate(data)}
-                />
-              </View>
-            </View>
-          ) : (
-            <>
-              <DetailSection>
-                <AdminMonthlyViewsChart points={data.monthlyViews} />
-              </DetailSection>
-              <DetailSection>
-                <AdminRecommendationFunnel
-                  steps={data.funnelSteps}
-                  finalConversionRate={getAdminProductFinalConversionRate(data)}
-                />
-              </DetailSection>
-            </>
-          )}
+          <DetailTwoColumnRow stretch>
+            <DetailGridCell>
+              <AdminMonthlyViewsChart points={data.monthlyViews} stretch />
+            </DetailGridCell>
+            <DetailGridCell>
+              <AdminRecommendationFunnel
+                steps={data.funnelSteps}
+                finalConversionRate={getAdminProductFinalConversionRate(data)}
+                stretch
+              />
+            </DetailGridCell>
+          </DetailTwoColumnRow>
         </View>
       </AdminContentFrame>
     </AdminScrollView>
