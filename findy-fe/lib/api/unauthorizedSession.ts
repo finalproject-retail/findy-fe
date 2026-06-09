@@ -6,6 +6,11 @@ type UnauthorizedSessionHandler = () => void | Promise<void>;
 
 let handler: UnauthorizedSessionHandler | null = null;
 let isHandling = false;
+let sessionRestoreInProgress = false;
+
+export function setSessionRestoreInProgress(value: boolean) {
+  sessionRestoreInProgress = value;
+}
 
 export function setUnauthorizedSessionHandler(
   next: UnauthorizedSessionHandler | null,
@@ -21,6 +26,9 @@ export function shouldHandleUnauthorizedSession(options: {
   status?: number;
   url?: string;
 }): boolean {
+  if (sessionRestoreInProgress) {
+    return false;
+  }
   if (!getAccessToken()) {
     return false;
   }

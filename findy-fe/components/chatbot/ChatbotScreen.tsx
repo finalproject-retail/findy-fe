@@ -1,4 +1,5 @@
 import MicIcon from "@/assets/icons/mic-icon.svg";
+import { ChatbotRecommendedProducts } from "@/components/chatbot/ChatbotRecommendedProducts";
 import { ChatbotSpeechNativeBridge } from "@/components/chatbot/ChatbotSpeechNativeBridge";
 import { VoiceWaveform } from "@/components/chatbot/VoiceWaveform";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
@@ -32,39 +33,75 @@ const QUICK_QUESTIONS = [
 
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.sender === "user";
+  const recommendedProducts = message.recommendedProducts ?? [];
+
+  if (isUser) {
+    return (
+      <View
+        className="flex-row justify-end"
+        style={{ marginBottom: SPACING.sm }}
+      >
+        <View
+          style={{
+            maxWidth: "78%",
+            borderRadius: RADIUS.md,
+            paddingHorizontal: SPACING.md,
+            paddingVertical: SPACING.sm,
+            backgroundColor: COLORS.main,
+          }}
+        >
+          <Text
+            className="text-white"
+            style={{
+              ...pretendard(400),
+              fontSize: 14,
+              lineHeight: 21,
+            }}
+          >
+            {message.text}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
-      className={`flex-row ${isUser ? "justify-end" : "justify-start"}`}
+      className="flex-row justify-start"
       style={{ marginBottom: SPACING.sm }}
     >
-      {!isUser ? (
-        <View
-          className="mr-sm items-center justify-center rounded-full bg-sub"
-          style={{ width: 32, height: 32 }}
-        >
-          <MaterialCommunityIcons name="robot" size={19} color={COLORS.main} />
-        </View>
-      ) : null}
       <View
-        style={{
-          maxWidth: "78%",
-          borderRadius: RADIUS.md,
-          paddingHorizontal: SPACING.md,
-          paddingVertical: SPACING.sm,
-          backgroundColor: isUser ? COLORS.main : COLORS.lightGray,
-        }}
+        className="mr-sm items-center justify-center rounded-full bg-sub"
+        style={{ width: 32, height: 32 }}
       >
-        <Text
-          className={isUser ? "text-white" : "text-charcoal"}
+        <MaterialCommunityIcons name="robot" size={19} color={COLORS.main} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0, maxWidth: "88%" }}>
+        <View
           style={{
-            ...pretendard(400),
-            fontSize: 14,
-            lineHeight: 21,
+            alignSelf: "flex-start",
+            maxWidth: "100%",
+            borderRadius: RADIUS.md,
+            paddingHorizontal: SPACING.md,
+            paddingVertical: SPACING.sm,
+            backgroundColor: COLORS.lightGray,
           }}
         >
-          {message.text}
-        </Text>
+          <Text
+            className="text-charcoal"
+            style={{
+              ...pretendard(400),
+              fontSize: 14,
+              lineHeight: 21,
+            }}
+          >
+            {message.text}
+          </Text>
+        </View>
+
+        {recommendedProducts.length > 0 ? (
+          <ChatbotRecommendedProducts products={recommendedProducts} />
+        ) : null}
       </View>
     </View>
   );

@@ -130,6 +130,10 @@ export function useChatbot(storeId: number) {
             id: `bot-${response.sessionId}-${Date.now() + 1}`,
             sender: "bot",
             text: response.answer,
+            recommendedProducts:
+              response.recommendedProducts.length > 0
+                ? response.recommendedProducts
+                : undefined,
           },
         ]);
       } catch (err) {
@@ -189,6 +193,10 @@ export function useChatbot(storeId: number) {
             id: `bot-${response.sessionId}-${Date.now() + 1}`,
             sender: "bot",
             text: response.answer,
+            recommendedProducts:
+              response.recommendedProducts.length > 0
+                ? response.recommendedProducts
+                : undefined,
           },
         ]);
       } catch (err) {

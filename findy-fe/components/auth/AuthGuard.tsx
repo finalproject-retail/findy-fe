@@ -1,5 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter, useSegments, type Href } from "expo-router";
+import {
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+  type Href,
+} from "expo-router";
 import { useEffect, type PropsWithChildren } from "react";
 
 const LOGIN_HREF = "/(auth)/login" as Href;
@@ -10,19 +15,37 @@ const ONBOARDING_HREF = "/onboarding" as Href;
 /**
  * 로그인 없이 보호된 화면 접근 시 로그인으로 이동.
  * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
+ *
+ * children은 항상 렌더해야 expo-router가 마운트되어 navigation state가 준비됩니다.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
-  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession, isAdminUser, needsOnboarding } =
-    useAuth();
+  const {
+    isLoggedIn,
+    isLoading,
+    isProfileLoading,
+    isAdminSession,
+    isAdminUser,
+    needsOnboarding,
+  } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const isNavigationReady = Boolean(navigationState?.key);
+  const root = segments[0];
 
   useEffect(() => {
-    if (isLoading || (isLoggedIn && isProfileLoading)) {
+    if (!isNavigationReady || isLoading) {
       return;
     }
 
-    const root = segments[0];
+    if (!root) {
+      return;
+    }
+
+    if (isLoggedIn && isProfileLoading) {
+      return;
+    }
+
     const inAuthGroup = root === "(auth)";
     const inAdminGroup = root === "(admin)";
     const inUserTabs = root === "(tabs)";
@@ -70,8 +93,10 @@ export function AuthGuard({ children }: PropsWithChildren) {
     isAdminUser,
     isLoading,
     isLoggedIn,
+    isNavigationReady,
     isProfileLoading,
     needsOnboarding,
+    root,
     router,
     segments,
   ]);

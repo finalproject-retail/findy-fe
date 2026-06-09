@@ -1,3 +1,6 @@
+import type { Product } from "@/components/product/types";
+import type { ProductApiDto } from "@/lib/products/types";
+
 export type ChatbotApiEnvelope<T> = {
   success?: boolean;
   code?: string;
@@ -9,6 +12,8 @@ export type ChatbotApiEnvelope<T> = {
 export type ChatbotMessageResponseApiDto = {
   sessionId: number;
   answer: string;
+  recommendedProducts?: ProductApiDto[];
+  products?: ProductApiDto[];
   shoppingContext?: Record<string, unknown> | null;
   ragContext?: Record<string, unknown> | null;
   status?: string;
@@ -48,6 +53,8 @@ export type ChatbotVoiceMessageApiData = {
   chatbotResponse?: ChatbotMessageResponseApiDto;
   sessionId?: number;
   answer?: string;
+  recommendedProducts?: ProductApiDto[];
+  products?: ProductApiDto[];
   shoppingContext?: Record<string, unknown> | null;
   ragContext?: Record<string, unknown> | null;
   status?: string;
@@ -57,6 +64,7 @@ export type ChatbotVoiceMessageApiData = {
 export type ChatbotMessageResult = {
   sessionId: number;
   answer: string;
+  recommendedProducts: Product[];
   status?: string;
   failureType?: string | null;
 };
@@ -65,6 +73,7 @@ export type ChatbotVoiceMessageResult = {
   sessionId: number;
   transcribedText: string;
   answer: string;
+  recommendedProducts: Product[];
   status?: string;
   failureType?: string | null;
 };

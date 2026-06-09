@@ -1,0 +1,37 @@
+import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
+import type { ApiEnvelope } from "@/lib/map/types";
+import { analyticsApiClient } from "@/lib/admin/api/analyticsClient";
+import type {
+  FetchAdminDashboardAnalyticsParams,
+  ZoneVisitRateData,
+} from "@/lib/admin/api/types";
+
+/** GET /api/v1/analytics/zones/visit-rate */
+export async function fetchAdminZoneVisitRates(
+  params: FetchAdminDashboardAnalyticsParams,
+): Promise<ZoneVisitRateData> {
+  try {
+    const response = await analyticsApiClient.get<ApiEnvelope<ZoneVisitRateData>>(
+      "/api/v1/analytics/zones/visit-rate",
+      {
+        params: {
+          startDate: params.startDate,
+          endDate: params.endDate,
+          ...(params.storeId != null ? { storeId: params.storeId } : {}),
+          ...(params.zoneId != null ? { zoneId: params.zoneId } : {}),
+        },
+      },
+    );
+
+    const body = response.data;
+    if (!body?.success || !body.data) {
+      throw new Error(body?.message ?? "구역별 방문율을 불러오지 못했습니다.");
+    }
+
+    return body.data;
+  } catch (error) {
+    throw new Error(
+      parseApiErrorMessage(error, "구역별 방문율을 불러오지 못했습니다."),
+    );
+  }
+}
