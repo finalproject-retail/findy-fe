@@ -2,28 +2,29 @@ import CartIcon from "@/assets/icons/cart-icon.svg";
 import { ProductDiscountPriceRow } from "@/components/product/ProductDiscountPriceRow";
 import { ProductThumbnail } from "@/components/product/ProductThumbnail";
 import type { Product } from "@/components/product/types";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
-import { useCart } from "@/contexts/CartContext";
 import { isOutOfStock } from "@/components/product/isOutOfStock";
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { useCart } from "@/contexts/CartContext";
+import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
-const CARD_WIDTH = 140;
-const CARD_GAP = 10;
+export const CHATBOT_PRODUCT_CARD_WIDTH = 140;
 const CART_BUTTON_SIZE = 28;
 
-type ChatbotRecommendedProductsProps = {
-  products: Product[];
+type ChatbotRecommendProductCardProps = {
+  product: Product;
 };
 
-function ChatbotRecommendProductCard({ product }: { product: Product }) {
+export function ChatbotRecommendProductCard({
+  product,
+}: ChatbotRecommendProductCardProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const { addToCart } = useCart();
   const soldOut = isOutOfStock(product);
-  const imageSize = CARD_WIDTH - SPACING.sm * 2;
+  const imageSize = CHATBOT_PRODUCT_CARD_WIDTH - SPACING.sm * 2;
 
   const openProductDetail = () => {
     router.push(`/product/${product.id}`);
@@ -38,7 +39,7 @@ function ChatbotRecommendProductCard({ product }: { product: Product }) {
   return (
     <View
       style={{
-        width: CARD_WIDTH,
+        width: CHATBOT_PRODUCT_CARD_WIDTH,
         borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.lightGray,
@@ -99,38 +100,6 @@ function ChatbotRecommendProductCard({ product }: { product: Product }) {
 
         <ProductDiscountPriceRow product={product} size="sm" />
       </Pressable>
-    </View>
-  );
-}
-
-export function ChatbotRecommendedProducts({
-  products,
-}: ChatbotRecommendedProductsProps) {
-  if (products.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={{ marginTop: SPACING.sm, gap: SPACING.xs, maxWidth: "100%" }}>
-      <Text
-        className="text-text-sub"
-        style={{ ...pretendard(500), fontSize: TYPOGRAPHY.size.xs }}
-      >
-        추천 상품
-      </Text>
-
-      <FlatList
-        data={products}
-        keyExtractor={(item) => `chatbot-rec-${item.id}`}
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToAlignment="start"
-        snapToInterval={CARD_WIDTH + CARD_GAP}
-        contentContainerStyle={{ gap: CARD_GAP, paddingRight: SPACING.sm }}
-        renderItem={({ item }) => <ChatbotRecommendProductCard product={item} />}
-      />
     </View>
   );
 }

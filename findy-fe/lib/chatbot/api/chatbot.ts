@@ -17,7 +17,14 @@ import type {
   ChatbotVoiceMessageApiData,
   ChatbotVoiceMessageResult,
 } from "@/lib/chatbot/api/types";
-import { mapChatbotRecommendedProducts } from "@/lib/chatbot/mapChatbotRecommendedProducts";
+import {
+  hasChatbotRecipeRecommendation,
+  mapChatbotMessageRecipeRecommendation,
+} from "@/lib/chatbot/mapChatbotRecipeRecommendation";
+import {
+  hasChatbotProductRecommendation,
+  mapChatbotShoppingProductRecommendation,
+} from "@/lib/chatbot/mapChatbotShoppingContext";
 import { CHATBOT_DEFAULT_LIMIT } from "@/lib/chatbot/types";
 import { Platform } from "react-native";
 
@@ -40,10 +47,18 @@ export type PostChatbotVoiceMessageParams = {
 function mapMessageResponse(
   dto: ChatbotMessageResponseApiDto,
 ): ChatbotMessageResult {
+  const recipeRecommendation = mapChatbotMessageRecipeRecommendation(dto);
+  const productRecommendation = mapChatbotShoppingProductRecommendation(dto);
+
   return {
     sessionId: dto.sessionId,
     answer: dto.answer,
-    recommendedProducts: mapChatbotRecommendedProducts(dto),
+    recipeRecommendation: hasChatbotRecipeRecommendation(recipeRecommendation)
+      ? recipeRecommendation
+      : undefined,
+    productRecommendation: hasChatbotProductRecommendation(productRecommendation)
+      ? productRecommendation
+      : undefined,
     status: dto.status,
     failureType: dto.failureType,
   };
@@ -53,16 +68,24 @@ function mapVoiceResponse(
   dto: ChatbotVoiceMessageApiData,
 ): ChatbotVoiceMessageResult {
   const nested = dto.chatbotResponse;
+  const source = {
+    recipeRecommendation:
+      nested?.recipeRecommendation ?? dto.recipeRecommendation,
+    shoppingContext: nested?.shoppingContext ?? dto.shoppingContext,
+  };
+  const recipeRecommendation = mapChatbotMessageRecipeRecommendation(source);
+  const productRecommendation = mapChatbotShoppingProductRecommendation(source);
 
   return {
     sessionId: nested?.sessionId ?? dto.sessionId ?? 0,
     transcribedText: dto.transcribedText,
     answer: nested?.answer ?? dto.answer ?? "",
-    recommendedProducts: mapChatbotRecommendedProducts({
-      recommendedProducts: nested?.recommendedProducts ?? dto.recommendedProducts,
-      products: nested?.products ?? dto.products,
-      shoppingContext: nested?.shoppingContext ?? dto.shoppingContext,
-    }),
+    recipeRecommendation: hasChatbotRecipeRecommendation(recipeRecommendation)
+      ? recipeRecommendation
+      : undefined,
+    productRecommendation: hasChatbotProductRecommendation(productRecommendation)
+      ? productRecommendation
+      : undefined,
     status: nested?.status ?? dto.status,
     failureType: nested?.failureType ?? dto.failureType,
   };
