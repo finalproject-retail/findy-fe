@@ -8,6 +8,7 @@ import {
   deviceMayBePhysicalBeacon,
   parseBlePlxDevice,
 } from "@/lib/beacon/utils/ibeacon";
+import { startWebBleScan } from "@/lib/beacon/services/webBleScanner";
 
 /** Expo Go·웹에는 react-native-ble-plx가 없어 정적 import 시 크래시 또는 번들 실패 */
 const BLE_UNAVAILABLE =
@@ -158,6 +159,10 @@ export async function startBleScan(
   onError?: (error: Error) => void,
   onDebug?: (info: BleScanDebugInfo) => void,
 ): Promise<() => void> {
+  if (Platform.OS === "web") {
+    return startWebBleScan(onScan, onError);
+  }
+
   if (BLE_UNAVAILABLE) {
     return () => {};
   }
