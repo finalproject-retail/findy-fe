@@ -2,7 +2,15 @@ import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { HomeStoreOption } from "./storeOptions";
@@ -32,7 +40,8 @@ export function HomeStoreFilter({
     () => options.find((option) => option.id === value) ?? options[0],
     [options, value],
   );
-  const label = selected?.label ?? (isLoading ? "매장 불러오는 중..." : "매장 선택");
+  const label =
+    selected?.label ?? (isLoading ? "매장 불러오는 중..." : "매장 선택");
 
   return (
     <View className="px-screen" style={{ paddingTop: SPACING.sm }}>

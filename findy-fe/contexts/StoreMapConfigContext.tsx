@@ -14,6 +14,7 @@ import {
   saveSelectedStoreId,
 } from "@/lib/map/selectedStoreStorage";
 import type { StoreApi } from "@/lib/map/types";
+import { setShoppingStoreId } from "@/lib/shopping/shoppingStoreId";
 import {
   createContext,
   useCallback,
@@ -61,7 +62,9 @@ function resolveInitialStoreId(
   return stores[0]!.storeId;
 }
 
-function storeFromMapConfig(api: Awaited<ReturnType<typeof fetchStoreMapConfig>>): StoreOption {
+function storeFromMapConfig(
+  api: Awaited<ReturnType<typeof fetchStoreMapConfig>>,
+): StoreOption {
   return {
     storeId: api.store.storeId,
     storeName: api.store.storeName,
@@ -91,6 +94,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
   const applyLocalFallback = useCallback(() => {
     setStores([]);
     setStoreIdState(FALLBACK_STORE_ID);
+    setShoppingStoreId(FALLBACK_STORE_ID);
     setStoreMapConfig(localFallback);
     setMinorToGridId(MINOR_TO_GRID_ID);
     setError(null);
@@ -135,6 +139,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
         savedStoreId,
       );
       setStoreIdState(resolvedStoreId);
+      setShoppingStoreId(resolvedStoreId);
       storeIdRef.current = resolvedStoreId;
 
       if (resolvedStoreId !== savedStoreId) {
@@ -176,7 +181,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
     } finally {
       setIsLoading(false);
     }
-  }, [applyLocalFallback, isAuthLoading, isLoggedIn, loadMapConfig, localFallback]);
+  }, [applyLocalFallback, isAuthLoading, isLoggedIn, localFallback]);
 
   const setStoreId = useCallback(
     async (nextStoreId: number) => {
@@ -190,6 +195,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
 
       try {
         setStoreIdState(nextStoreId);
+        setShoppingStoreId(nextStoreId);
         storeIdRef.current = nextStoreId;
         await saveSelectedStoreId(nextStoreId);
         await loadMapConfig(nextStoreId);
@@ -200,6 +206,7 @@ export function StoreMapConfigProvider({ children }: PropsWithChildren) {
             : "매장 지도 설정을 불러오지 못했습니다.";
         setError(message);
         setStoreIdState(previousStoreId);
+        setShoppingStoreId(previousStoreId);
         storeIdRef.current = previousStoreId;
         void saveSelectedStoreId(previousStoreId);
         setStoreMapConfig(localFallback);
