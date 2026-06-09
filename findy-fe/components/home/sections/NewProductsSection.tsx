@@ -8,7 +8,7 @@ import { ActivityIndicator, FlatList, useWindowDimensions, View } from "react-na
 const CARD_GAP = 12;
 
 type NewProductsSectionProps = {
-  storeId: string;
+  storeId: number;
 };
 
 export function NewProductsSection({ storeId }: NewProductsSectionProps) {
