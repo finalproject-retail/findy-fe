@@ -36,7 +36,7 @@ type MapShoppingNotificationContextValue = {
   listLoading: boolean;
   listError: string | null;
   reloadNotifications: () => Promise<void>;
-  /** 바코드 누적 스캔 수가 5의 배수일 때 쇼핑 추천 알림 API 호출 */
+  /** 바코드 누적 스캔 1회·이후 5회마다(1, 6, 11…) 쇼핑 추천 알림 API 호출 */
   notifyBarcodeScanPromoIfNeeded: (
     totalScanCount: number,
     lastPickedProduct: Product,
@@ -44,7 +44,7 @@ type MapShoppingNotificationContextValue = {
   /** 쇼핑 추천 알림 조회 (바코드 마일스톤 외에는 쓰로틀 적용) */
   pollShoppingRecommendationNotification: (
     sourceProductId?: string | null,
-    options?: { force?: boolean },
+    options?: { force?: boolean; scanMilestone?: number },
   ) => Promise<void>;
   handleNotificationPress: (
     notification: MapShoppingNotification,
@@ -185,10 +185,10 @@ export function MapShoppingNotificationProvider({
     (
       result: ShoppingRecommendationNotificationResult,
       sourceProduct?: Product,
-    ) => {
+    ): boolean => {
       const notification = buildNotificationFromApi(result, sourceProduct);
       if (!notification) {
-        return;
+        return false;
       }
 
       shownProductIdsRef.current = [
@@ -206,6 +206,7 @@ export function MapShoppingNotificationProvider({
         return [notification, ...prev];
       });
       enqueueToast(notification, setActiveToast, toastQueueRef);
+      return true;
     },
     [addRecommendedMapItem],
   );
@@ -213,7 +214,7 @@ export function MapShoppingNotificationProvider({
   const pollShoppingRecommendationNotification = useCallback(
     async (
       sourceProductId?: string | null,
-      options?: { force?: boolean },
+      options?: { force?: boolean; scanMilestone?: number },
     ) => {
       if (!isLoggedIn || !hasActiveTrip) {
         return;
@@ -259,7 +260,10 @@ export function MapShoppingNotificationProvider({
             )?.product
           : undefined;
 
-        applyShoppingNotificationResult(result, sourceProduct);
+        const shown = applyShoppingNotificationResult(result, sourceProduct);
+        if (options?.scanMilestone != null && shown) {
+          lastNotifiedScanMilestoneRef.current = options.scanMilestone;
+        }
       } finally {
         pollInFlightRef.current = false;
         const pendingSourceProductId = pendingForcedPollRef.current;
@@ -343,18 +347,22 @@ export function MapShoppingNotificationProvider({
 
   const notifyBarcodeScanPromoIfNeeded = useCallback(
     (totalScanCount: number, lastPickedProduct: Product) => {
-      const milestone = Math.floor(
-        totalScanCount / BARCODE_SCANS_FOR_PROMO_NOTIFICATION,
-      );
+      const isPromoScanMilestone =
+        totalScanCount > 0 &&
+        (totalScanCount === 1 ||
+          (totalScanCount - 1) % BARCODE_SCANS_FOR_PROMO_NOTIFICATION === 0);
 
-      if (milestone === 0 || milestone <= lastNotifiedScanMilestoneRef.current) {
+      if (!isPromoScanMilestone) {
         return;
       }
 
-      lastNotifiedScanMilestoneRef.current = milestone;
+      if (totalScanCount <= lastNotifiedScanMilestoneRef.current) {
+        return;
+      }
+
       void pollShoppingRecommendationNotification(
         resolveCatalogProductId(lastPickedProduct.id),
-        { force: true },
+        { force: true, scanMilestone: totalScanCount },
       );
     },
     [pollShoppingRecommendationNotification],
