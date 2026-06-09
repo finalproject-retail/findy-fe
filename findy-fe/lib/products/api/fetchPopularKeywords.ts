@@ -5,25 +5,37 @@ import { shoppingApiClient } from "@/lib/products/api/productClient";
 export type PopularKeywordDto = {
   rank: number;
   keyword: string;
+  score?: number;
 };
 
 type PopularKeywordsApiData = {
+  keywords?: PopularKeywordDto[];
   popularKeywords?: PopularKeywordDto[];
 };
 
-/** GET /api/v1/products/keywords */
-export async function fetchPopularKeywords(): Promise<string[]> {
+const DEFAULT_TRENDING_LIMIT = 10;
+
+function unwrapPopularKeywords(data: PopularKeywordsApiData | undefined) {
+  return data?.keywords ?? data?.popularKeywords ?? [];
+}
+
+/** GET /api/v1/search-keywords/trending */
+export async function fetchPopularKeywords(
+  limit = DEFAULT_TRENDING_LIMIT,
+): Promise<string[]> {
   try {
     const response = await shoppingApiClient.get<
       ApiEnvelope<PopularKeywordsApiData>
-    >("/api/v1/products/keywords");
+    >("/api/v1/search-keywords/trending", {
+      params: { limit },
+    });
 
     const body = response.data;
     if (!body?.success) {
       throw new Error(body?.message ?? "인기 검색어를 불러오지 못했습니다.");
     }
 
-    return (body.data?.popularKeywords ?? [])
+    return unwrapPopularKeywords(body.data)
       .slice()
       .sort((a, b) => a.rank - b.rank)
       .map((item) => item.keyword.trim())
