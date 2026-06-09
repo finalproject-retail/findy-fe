@@ -1,5 +1,6 @@
 import {
   BEACON_EMA_ALPHA,
+  BEACON_PRESENCE_HEARTBEAT_MS,
   BEACON_REQUIRED_STREAK_DEFAULT,
 } from "@/constants/beacon";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
@@ -11,7 +12,10 @@ import {
   startBleScan,
 } from "@/lib/beacon/services/bleScanner";
 import type { BeaconScan } from "@/lib/beacon/types";
-import { evaluateZoneChange } from "@/lib/beacon/utils/beaconLogic";
+import {
+  evaluateZoneChange,
+  shouldSendPresenceHeartbeat,
+} from "@/lib/beacon/utils/beaconLogic";
 import { createBeaconRssiFilter } from "@/lib/beacon/utils/beaconRssiFilter";
 import {
   defaultScanCsvFilename,
@@ -54,6 +58,7 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
   const filterRef = useRef(createBeaconRssiFilter({ alpha: BEACON_EMA_ALPHA }));
   const zoneRef = useRef({
     lastSentGridId: null as number | null,
+    lastSentAtMs: null as number | null,
     pendingGridId: null as number | null,
     streak: 0,
   });
@@ -153,23 +158,33 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
       }
 
       const zone = zoneRef.current;
-      const { shouldSend, streak: nextStreak } = evaluateZoneChange({
-        lastSentGridId: zone.lastSentGridId,
-        candidateGridId: userGridId,
-        streak: zone.pendingGridId === userGridId ? zone.streak : 0,
-        requiredStreak: BEACON_REQUIRED_STREAK_DEFAULT,
-      });
+      const { shouldSend: shouldSendZoneChange, streak: nextStreak } =
+        evaluateZoneChange({
+          lastSentGridId: zone.lastSentGridId,
+          candidateGridId: userGridId,
+          streak: zone.pendingGridId === userGridId ? zone.streak : 0,
+          requiredStreak: BEACON_REQUIRED_STREAK_DEFAULT,
+        });
 
       zone.pendingGridId = userGridId;
       zone.streak = nextStreak;
 
-      if (!shouldSend || !getAccessToken()) {
+      const shouldSendHeartbeat =
+        zone.lastSentGridId === userGridId &&
+        shouldSendPresenceHeartbeat(
+          zone.lastSentAtMs,
+          Date.now(),
+          BEACON_PRESENCE_HEARTBEAT_MS,
+        );
+
+      if ((!shouldSendZoneChange && !shouldSendHeartbeat) || !getAccessToken()) {
         return;
       }
 
       try {
         await sendBeaconGridChange(storeIdRef.current, scan, userGridId);
         zone.lastSentGridId = userGridId;
+        zone.lastSentAtMs = Date.now();
         zone.pendingGridId = null;
         zone.streak = 0;
         setLastError(null);
@@ -200,8 +215,9 @@ export function BeaconLocationProvider({ children }: PropsWithChildren) {
     filterRef.current.reset();
     clearScanLog();
     lastAppliedGridIdRef.current = null;
-    zoneRef.current = {
+     zoneRef.current = {
       lastSentGridId: null,
+      lastSentAtMs: null,
       pendingGridId: null,
       streak: 0,
     };
