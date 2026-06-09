@@ -1,9 +1,12 @@
-import { fetchRecommendationPurchaseConversionAnalytics } from "@/lib/admin/api/fetchAdminRecommendationAnalytics";
-import { toAdminAnalyticsPeriodQuery } from "@/lib/admin/formatAdminApiDate";
 import {
-  mapPromotionConversionToProducts,
-  mapSubstituteConversionToFunnel,
-} from "@/lib/admin/mapAdminRecommendationAnalytics";
+  fetchAlternativeSelectRates,
+  fetchPromotionSelectRates,
+} from "@/lib/admin/api/fetchPromotionSelectRates";
+import { toAdminAnalyticsQueryRange } from "@/lib/admin/formatAdminApiDate";
+import {
+  mapPromotionSelectRatesToProducts,
+  mapSubstituteSelectRatesToFunnel,
+} from "@/lib/admin/mapSelectRateAnalytics";
 import type {
   AdminDateRange,
   AdminFunnelStep,
@@ -17,9 +20,6 @@ const EMPTY_FUNNEL: AdminFunnelStep[] = [
   { label: "2. 대체 상품 선택", percent: 0 },
   { label: "3. 대체 상품 구매", percent: 0 },
 ];
-
-const SUBSTITUTE_TYPE = "SUBSTITUTE";
-const PROMOTION_TYPE = "AI_PERSONALIZED_PROMOTION";
 
 export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
   const isAuthReady = useAuthReady();
@@ -35,33 +35,26 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
     }
 
     let cancelled = false;
-    const periodQuery = toAdminAnalyticsPeriodQuery(dateRange);
+    const query = toAdminAnalyticsQueryRange(dateRange);
 
     async function load() {
       setLoading(true);
       setError(null);
 
       try {
-        const [substituteConversion, promotionConversion] = await Promise.all([
-          fetchRecommendationPurchaseConversionAnalytics({
-            ...periodQuery,
-            recommendationType: SUBSTITUTE_TYPE,
-          }),
-          fetchRecommendationPurchaseConversionAnalytics({
-            ...periodQuery,
-            recommendationType: PROMOTION_TYPE,
-            limit: 20,
-          }),
+        const [alternativeSelectRates, promotionSelectRates] = await Promise.all([
+          fetchAlternativeSelectRates(query),
+          fetchPromotionSelectRates(query),
         ]);
 
         if (cancelled) {
           return;
         }
 
-        const funnelData = mapSubstituteConversionToFunnel(substituteConversion);
+        const funnelData = mapSubstituteSelectRatesToFunnel(alternativeSelectRates);
         setFunnel(funnelData.steps);
         setFinalConversionRate(funnelData.finalConversionRate);
-        setPromoProducts(mapPromotionConversionToProducts(promotionConversion));
+        setPromoProducts(mapPromotionSelectRatesToProducts(promotionSelectRates));
       } catch (err) {
         if (cancelled) {
           return;

@@ -1,3 +1,4 @@
+import { formatAdminDate } from "@/lib/admin/dateRange";
 import {
   getAdminProductImage,
   getAdminProductName,
@@ -105,13 +106,6 @@ export function getRecentAdminDateRange(days = 7): AdminDateRange {
     start: formatAdminDate(start),
     end: formatAdminDate(end),
   };
-}
-
-function formatAdminDate(date: Date): string {
-  const yy = String(date.getFullYear()).slice(-2);
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yy}.${mm}.${dd}`;
 }
 
 /** API 연동 전 목업 데이터 */

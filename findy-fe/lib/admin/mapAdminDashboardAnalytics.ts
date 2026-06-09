@@ -1,8 +1,9 @@
 import { parseAdminRate } from "@/lib/admin/api/adminApiUtils";
 import type {
   AnalyticsSummaryData,
-  GridVisitRateDto,
+  ZoneMovementDto,
   ZoneVisitRateData,
+  ZoneVisitRateDto,
 } from "@/lib/admin/api/types";
 import type {
   AdminStatCard,
@@ -51,29 +52,38 @@ function buildEmptyZoneMatrix(): AdminZoneMatrix {
   }, {} as AdminZoneMatrix);
 }
 
-function mapVisitRateToTraffic(item: GridVisitRateDto): AdminZoneTraffic {
-  const visitRate = parseAdminRate(item.visitRate);
-  const percent =
-    visitRate > 0 && visitRate <= 1
-      ? Math.round(visitRate * 1000) / 10
-      : Math.round(visitRate * 10) / 10;
+function toDisplayPercent(rate: number): number {
+  const parsed = parseAdminRate(rate);
+  return parsed > 0 && parsed <= 1
+    ? Math.round(parsed * 1000) / 10
+    : Math.round(parsed * 10) / 10;
+}
 
+function mapZoneVisitRateToTraffic(item: ZoneVisitRateDto): AdminZoneTraffic {
   return {
-    total: Math.max(0, item.visitCount ?? 0),
-    percent,
-    averageStayDuration: Math.max(0, item.averageStayDuration ?? 0),
+    total: Math.max(0, item.uniqueVisitorCount ?? item.visitCount ?? 0),
+    percent: toDisplayPercent(item.visitRate),
+    averageStayDuration: Math.max(0, item.averageStayDurationSeconds ?? 0),
   };
 }
 
-function resolveZoneKey(item: GridVisitRateDto): AdminZoneKey | null {
-  const byLabel = GRID_TYPE_TO_ZONE_KEY[item.gridType?.trim() ?? ""];
-  if (byLabel) {
-    return byLabel;
-  }
+function mapZoneMovementToTraffic(item: ZoneMovementDto): AdminZoneTraffic {
+  return {
+    total: Math.max(0, item.movementCount ?? 0),
+    percent: toDisplayPercent(item.movementRate),
+    averageStayDuration: Math.max(0, item.averageTravelTimeSeconds ?? 0),
+  };
+}
 
-  const normalized = item.gridType?.trim();
+function resolveZoneKeyByName(zoneName: string | undefined | null): AdminZoneKey | null {
+  const normalized = zoneName?.trim();
   if (!normalized) {
     return null;
+  }
+
+  const byLabel = GRID_TYPE_TO_ZONE_KEY[normalized];
+  if (byLabel) {
+    return byLabel;
   }
 
   const matched = (Object.entries(ADMIN_ZONE_LABELS) as [AdminZoneKey, string][]).find(
@@ -97,7 +107,7 @@ export function getPlaceholderAdminStats(): AdminStatCard[] {
   }));
 }
 
-/** GET /api/v1/analytics/summary → 운영 요약 카드 */
+/** GET /api/v1/admin/analytics/performance-summary → 운영 요약 카드 */
 export function mapAnalyticsSummaryToStats(data: AnalyticsSummaryData): AdminStatCard[] {
   const summary = data.summary;
 
@@ -125,20 +135,35 @@ export function mapAnalyticsSummaryToStats(data: AnalyticsSummaryData): AdminSta
   ];
 }
 
-/** GET /api/v1/analytics/zones/visit-rate → 구역별 방문 히트맵 */
+/** GET /api/v1/admin/analytics/zones/visit-rates → 구역별 방문 히트맵 */
 export function mapZoneVisitRatesToMatrix(data: ZoneVisitRateData): AdminZoneMatrix {
   const matrix = buildEmptyZoneMatrix();
-  const items = data.gridVisitRates ?? [];
 
-  for (const item of items) {
-    const zoneKey = resolveZoneKey(item);
+  for (const item of data.zoneVisitRates ?? []) {
+    const zoneKey = resolveZoneKeyByName(item.zoneName);
     if (!zoneKey) {
       continue;
     }
 
     matrix[zoneKey] = {
       ...matrix[zoneKey],
-      visitors: mapVisitRateToTraffic(item),
+      visitors: mapZoneVisitRateToTraffic(item),
+    };
+  }
+
+  for (const movement of data.zoneMovements ?? []) {
+    const fromKey = resolveZoneKeyByName(movement.fromZoneName);
+    const toKey = resolveZoneKeyByName(movement.toZoneName);
+    if (!fromKey || !toKey || fromKey === toKey) {
+      continue;
+    }
+
+    matrix[fromKey] = {
+      ...matrix[fromKey],
+      flows: {
+        ...matrix[fromKey].flows,
+        [toKey]: mapZoneMovementToTraffic(movement),
+      },
     };
   }
 

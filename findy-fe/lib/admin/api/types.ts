@@ -94,6 +94,7 @@ export type PromotionSelectRateApiDto = {
 export type PromotionSelectRateApiData = {
   promotionSelectRates?: PromotionSelectRateApiDto[];
   substituteSelectRates?: PromotionSelectRateApiDto[];
+  alternativeSelectRates?: PromotionSelectRateApiDto[];
 };
 
 export type FetchPromotionSelectRateParams = {
@@ -171,6 +172,11 @@ export type FetchAdminDashboardAnalyticsParams = {
   zoneId?: number;
 };
 
+export type FetchAdminZoneVisitRatesParams = FetchAdminDashboardAnalyticsParams & {
+  minStaySeconds?: number;
+  includeMovement?: boolean;
+};
+
 export type AnalyticsSummaryDto = {
   totalVisitorCount: number;
   outOfStockCount: number;
@@ -185,15 +191,28 @@ export type AnalyticsSummaryData = {
   summary: AnalyticsSummaryDto;
 };
 
-export type GridVisitRateDto = {
-  gridId: number;
-  gridType: string;
+export type ZoneVisitRateDto = {
+  zoneId: number;
+  zoneName: string;
   visitCount: number;
+  uniqueVisitorCount: number;
   visitRate: number;
-  averageStayDuration: number;
+  averageStayDurationSeconds: number;
+  totalStayDurationSeconds: number;
   rankNo: number;
 };
 
+export type ZoneMovementDto = {
+  fromZoneId: number;
+  fromZoneName: string;
+  toZoneId: number;
+  toZoneName: string;
+  movementCount: number;
+  movementRate: number;
+  averageTravelTimeSeconds: number;
+};
+
 export type ZoneVisitRateData = {
-  gridVisitRates: GridVisitRateDto[];
+  zoneVisitRates: ZoneVisitRateDto[];
+  zoneMovements?: ZoneMovementDto[];
 };

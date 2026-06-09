@@ -2,23 +2,29 @@ import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import type { ApiEnvelope } from "@/lib/map/types";
 import { analyticsApiClient } from "@/lib/admin/api/analyticsClient";
 import type {
-  FetchAdminDashboardAnalyticsParams,
+  FetchAdminZoneVisitRatesParams,
   ZoneVisitRateData,
 } from "@/lib/admin/api/types";
 
-/** GET /api/v1/analytics/zones/visit-rate */
+/** GET /api/v1/admin/analytics/zones/visit-rates */
 export async function fetchAdminZoneVisitRates(
-  params: FetchAdminDashboardAnalyticsParams,
+  params: FetchAdminZoneVisitRatesParams,
 ): Promise<ZoneVisitRateData> {
   try {
     const response = await analyticsApiClient.get<ApiEnvelope<ZoneVisitRateData>>(
-      "/api/v1/analytics/zones/visit-rate",
+      "/api/v1/admin/analytics/zones/visit-rates",
       {
         params: {
           startDate: params.startDate,
           endDate: params.endDate,
           ...(params.storeId != null ? { storeId: params.storeId } : {}),
           ...(params.zoneId != null ? { zoneId: params.zoneId } : {}),
+          ...(params.minStaySeconds != null
+            ? { minStaySeconds: params.minStaySeconds }
+            : {}),
+          ...(params.includeMovement != null
+            ? { includeMovement: params.includeMovement }
+            : {}),
         },
       },
     );
