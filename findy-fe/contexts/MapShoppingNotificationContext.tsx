@@ -1,6 +1,10 @@
-import { SHOPPING_NOTIFICATION_MIN_INTERVAL_MS } from "@/components/map/constants";
+import {
+  BARCODE_SCANS_FOR_PROMO_NOTIFICATION,
+  SHOPPING_NOTIFICATION_MIN_INTERVAL_MS,
+} from "@/components/map/constants";
 import type { MapShoppingNotification } from "@/components/map/notifications/types";
 import type { Product } from "@/components/product";
+import { resolveCatalogProductId } from "@/components/product/resolveCatalogProductId";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
@@ -32,14 +36,15 @@ type MapShoppingNotificationContextValue = {
   listLoading: boolean;
   listError: string | null;
   reloadNotifications: () => Promise<void>;
-  /** 바코드 수령 등 이벤트 후 쇼핑 추천 알림 API 1회 시도 */
+  /** 바코드 누적 스캔 수가 5의 배수일 때 쇼핑 추천 알림 API 호출 */
   notifyBarcodeScanPromoIfNeeded: (
     totalScanCount: number,
     lastPickedProduct: Product,
   ) => void;
-  /** 쇼핑 중 주기적·진입 시 알림 조회 */
+  /** 쇼핑 추천 알림 조회 (바코드 마일스톤 외에는 쓰로틀 적용) */
   pollShoppingRecommendationNotification: (
     sourceProductId?: string | null,
+    options?: { force?: boolean },
   ) => Promise<void>;
   handleNotificationPress: (
     notification: MapShoppingNotification,
@@ -127,7 +132,9 @@ export function MapShoppingNotificationProvider({
   const toastQueueRef = useRef<MapShoppingNotification[]>([]);
   const shownProductIdsRef = useRef<string[]>([]);
   const lastPollAtRef = useRef(0);
+  const lastNotifiedScanMilestoneRef = useRef(0);
   const pollInFlightRef = useRef(false);
+  const pendingForcedPollRef = useRef<string | null | undefined>(undefined);
 
   const resetNotifications = useCallback(() => {
     resetMapShoppingNotifications(
@@ -158,6 +165,8 @@ export function MapShoppingNotificationProvider({
       setActiveToast(null);
       shownProductIdsRef.current = [];
       lastPollAtRef.current = 0;
+      lastNotifiedScanMilestoneRef.current = 0;
+      pendingForcedPollRef.current = undefined;
     }
   }, [hasActiveTrip]);
 
@@ -202,16 +211,27 @@ export function MapShoppingNotificationProvider({
   );
 
   const pollShoppingRecommendationNotification = useCallback(
-    async (sourceProductId?: string | null) => {
+    async (
+      sourceProductId?: string | null,
+      options?: { force?: boolean },
+    ) => {
       if (!isLoggedIn || !hasActiveTrip) {
         return;
       }
 
       const now = Date.now();
       if (
-        pollInFlightRef.current ||
-        now - lastPollAtRef.current < SHOPPING_NOTIFICATION_MIN_INTERVAL_MS
+        !options?.force &&
+        (pollInFlightRef.current ||
+          now - lastPollAtRef.current < SHOPPING_NOTIFICATION_MIN_INTERVAL_MS)
       ) {
+        return;
+      }
+
+      if (pollInFlightRef.current) {
+        if (options?.force) {
+          pendingForcedPollRef.current = sourceProductId ?? null;
+        }
         return;
       }
 
@@ -219,22 +239,36 @@ export function MapShoppingNotificationProvider({
       lastPollAtRef.current = now;
 
       try {
+        const normalizedSourceProductId = sourceProductId
+          ? resolveCatalogProductId(sourceProductId)
+          : undefined;
+
         const result = await fetchShoppingRecommendationNotification({
           storeId,
           shoppingListId: activeShoppingListId,
-          sourceProductId,
+          sourceProductId: normalizedSourceProductId,
           currentGridId,
           excludeProductIds: buildExcludeProductIds(),
         });
 
-        const sourceProduct = sourceProductId
-          ? tripLineItems.find((item) => item.productId === sourceProductId)
-              ?.product
+        const sourceProduct = normalizedSourceProductId
+          ? tripLineItems.find(
+              (item) =>
+                resolveCatalogProductId(item.productId) ===
+                normalizedSourceProductId,
+            )?.product
           : undefined;
 
         applyShoppingNotificationResult(result, sourceProduct);
       } finally {
         pollInFlightRef.current = false;
+        const pendingSourceProductId = pendingForcedPollRef.current;
+        if (pendingSourceProductId !== undefined) {
+          pendingForcedPollRef.current = undefined;
+          void pollShoppingRecommendationNotification(pendingSourceProductId, {
+            force: true,
+          });
+        }
       }
     },
     [
@@ -308,8 +342,20 @@ export function MapShoppingNotificationProvider({
   );
 
   const notifyBarcodeScanPromoIfNeeded = useCallback(
-    (_totalScanCount: number, lastPickedProduct: Product) => {
-      void pollShoppingRecommendationNotification(lastPickedProduct.id);
+    (totalScanCount: number, lastPickedProduct: Product) => {
+      const milestone = Math.floor(
+        totalScanCount / BARCODE_SCANS_FOR_PROMO_NOTIFICATION,
+      );
+
+      if (milestone === 0 || milestone <= lastNotifiedScanMilestoneRef.current) {
+        return;
+      }
+
+      lastNotifiedScanMilestoneRef.current = milestone;
+      void pollShoppingRecommendationNotification(
+        resolveCatalogProductId(lastPickedProduct.id),
+        { force: true },
+      );
     },
     [pollShoppingRecommendationNotification],
   );

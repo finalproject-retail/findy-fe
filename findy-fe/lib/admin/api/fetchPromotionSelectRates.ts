@@ -10,7 +10,12 @@ import type {
 function unwrapSelectRates(
   data: PromotionSelectRateApiData | undefined,
 ): PromotionSelectRateApiDto[] {
-  return data?.promotionSelectRates ?? data?.substituteSelectRates ?? [];
+  return (
+    data?.promotionSelectRates ??
+    data?.alternativeSelectRates ??
+    data?.substituteSelectRates ??
+    []
+  );
 }
 
 async function fetchSelectRates(
@@ -33,18 +38,23 @@ async function fetchSelectRates(
   }
 }
 
-/** GET /api/v1/analytics/recommendations/promotions/select-rate */
+/** GET /api/v1/admin/analytics/promotions/select-rate */
 export function fetchPromotionSelectRates(params: FetchPromotionSelectRateParams) {
   return fetchSelectRates(
-    "/api/v1/analytics/recommendations/promotions/select-rate",
+    "/api/v1/admin/analytics/promotions/select-rate",
     params,
   );
 }
 
-/** GET /api/v1/analytics/recommendations/substitutes/select-rate — 품절 대응 퍼널 */
-export function fetchSubstituteSelectRates(params: FetchPromotionSelectRateParams) {
+/** GET /api/v1/admin/analytics/alternatives/select-rate — 품절 대응 퍼널 */
+export function fetchAlternativeSelectRates(params: FetchPromotionSelectRateParams) {
   return fetchSelectRates(
-    "/api/v1/analytics/recommendations/substitutes/select-rate",
+    "/api/v1/admin/analytics/alternatives/select-rate",
     params,
   );
+}
+
+/** @deprecated fetchAlternativeSelectRates 사용 */
+export function fetchSubstituteSelectRates(params: FetchPromotionSelectRateParams) {
+  return fetchAlternativeSelectRates(params);
 }

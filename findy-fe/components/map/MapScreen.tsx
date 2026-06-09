@@ -1,18 +1,17 @@
 import { StoreMapView } from "@/components/store-map";
 import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
-import { useMapNavigation } from "@/contexts/MapNavigationContext";
-import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
-import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
-import { type Href, useRouter, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
+import { useMapNavigation } from "@/contexts/MapNavigationContext";
+import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
+import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
+import { type Href, useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SHOPPING_NOTIFICATION_MIN_INTERVAL_MS } from "./constants";
 import { MapOverlayControls } from "./MapOverlayControls";
 import { MapShoppingToast } from "./notifications/MapShoppingToast";
 import { MapShoppingBottomSheet } from "./shopping-sheet";
-import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import {
   getSheetCollapsedBottomLift,
   getSheetCollapsedPeekHeight,
@@ -31,14 +30,9 @@ export function MapScreen() {
     tripLineItems,
     recommendedProductsById,
     pickedQuantityByProductId,
-    hasActiveTrip,
   } = useMapNavigation();
-  const {
-    activeToast,
-    dismissActiveToast,
-    pollShoppingRecommendationNotification,
-    handleNotificationPress,
-  } = useMapShoppingNotifications();
+  const { activeToast, dismissActiveToast, handleNotificationPress } =
+    useMapShoppingNotifications();
 
   const {
     startTracking,
@@ -105,7 +99,9 @@ export function MapScreen() {
 
   const handleMarkerPress = useCallback((productId: string) => {
     suppressMapTapDismissRef.current = true;
-    setSelectedMarkerProductId((prev) => (prev === productId ? null : productId));
+    setSelectedMarkerProductId((prev) =>
+      prev === productId ? null : productId,
+    );
     requestAnimationFrame(() => {
       suppressMapTapDismissRef.current = false;
     });
@@ -115,20 +111,6 @@ export function MapScreen() {
     if (suppressMapTapDismissRef.current) return;
     handleDismissMarkerCallout();
   }, [handleDismissMarkerCallout]);
-
-  useEffect(() => {
-    if (!hasActiveTrip) {
-      return;
-    }
-
-    void pollShoppingRecommendationNotification();
-
-    const intervalId = setInterval(() => {
-      void pollShoppingRecommendationNotification();
-    }, SHOPPING_NOTIFICATION_MIN_INTERVAL_MS);
-
-    return () => clearInterval(intervalId);
-  }, [hasActiveTrip, pollShoppingRecommendationNotification]);
 
   const handleToastPress = useCallback(async () => {
     if (!activeToast) {
@@ -140,12 +122,7 @@ export function MapScreen() {
     if (productId) {
       router.push(`/product/${productId}` as Href);
     }
-  }, [
-    activeToast,
-    dismissActiveToast,
-    handleNotificationPress,
-    router,
-  ]);
+  }, [activeToast, dismissActiveToast, handleNotificationPress, router]);
 
   const mapOverlayControlProps = {
     onSearchPress: () =>
@@ -230,12 +207,12 @@ export function MapScreen() {
         >
           <View style={styles.devBeaconPanel} pointerEvents="auto">
             <Text style={styles.devBeaconText}>
-              map-config {isMapConfigLoading ? "…" : mapConfigError ? "ERR" : "OK"}
+              map-config{" "}
+              {isMapConfigLoading ? "…" : mapConfigError ? "ERR" : "OK"}
               {mapConfigError ? `\n${mapConfigError}` : ""}
               {"\n"}
-              BLE {isScanning ? "ON" : "OFF"} · grid {currentGridId ?? "-"} · CSV{" "}
-              {scanLogCount}건
-              {lastError ? `\n${lastError}` : ""}
+              BLE {isScanning ? "ON" : "OFF"} · grid {currentGridId ?? "-"} ·
+              CSV {scanLogCount}건{lastError ? `\n${lastError}` : ""}
             </Text>
             <View style={styles.devBeaconActions}>
               <Pressable
