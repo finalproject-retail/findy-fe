@@ -8,8 +8,6 @@ type UseBarcodeScannerParams = {
   onScan: (barcode: string) => void;
 };
 
-const SCAN_DEDUPE_MS = 600;
-
 export function useBarcodeScanner({
   enabled,
   minLength = 8,
@@ -18,9 +16,6 @@ export function useBarcodeScanner({
 }: UseBarcodeScannerParams) {
   const bufferRef = useRef("");
   const lastKeyAtRef = useRef(0);
-  const lastEmittedScanRef = useRef<{ barcode: string; at: number } | null>(
-    null,
-  );
   const onScanRef = useRef(onScan);
 
   useEffect(() => {
@@ -47,17 +42,6 @@ export function useBarcodeScanner({
 
         if (barcode.length >= minLength) {
           event.preventDefault();
-
-          const lastEmitted = lastEmittedScanRef.current;
-          if (
-            lastEmitted &&
-            lastEmitted.barcode === barcode &&
-            now - lastEmitted.at < SCAN_DEDUPE_MS
-          ) {
-            return;
-          }
-
-          lastEmittedScanRef.current = { barcode, at: now };
           onScanRef.current(barcode);
         }
 

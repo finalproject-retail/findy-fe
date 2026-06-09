@@ -44,7 +44,7 @@ type MapShoppingNotificationContextValue = {
   /** 쇼핑 추천 알림 조회 (바코드 마일스톤 외에는 쓰로틀 적용) */
   pollShoppingRecommendationNotification: (
     sourceProductId?: string | null,
-    options?: { force?: boolean },
+    options?: { force?: boolean; scanMilestone?: number },
   ) => Promise<void>;
   handleNotificationPress: (
     notification: MapShoppingNotification,
@@ -185,10 +185,10 @@ export function MapShoppingNotificationProvider({
     (
       result: ShoppingRecommendationNotificationResult,
       sourceProduct?: Product,
-    ) => {
+    ): boolean => {
       const notification = buildNotificationFromApi(result, sourceProduct);
       if (!notification) {
-        return;
+        return false;
       }
 
       shownProductIdsRef.current = [
@@ -206,6 +206,7 @@ export function MapShoppingNotificationProvider({
         return [notification, ...prev];
       });
       enqueueToast(notification, setActiveToast, toastQueueRef);
+      return true;
     },
     [addRecommendedMapItem],
   );
@@ -213,7 +214,7 @@ export function MapShoppingNotificationProvider({
   const pollShoppingRecommendationNotification = useCallback(
     async (
       sourceProductId?: string | null,
-      options?: { force?: boolean },
+      options?: { force?: boolean; scanMilestone?: number },
     ) => {
       if (!isLoggedIn || !hasActiveTrip) {
         return;
@@ -259,7 +260,10 @@ export function MapShoppingNotificationProvider({
             )?.product
           : undefined;
 
-        applyShoppingNotificationResult(result, sourceProduct);
+        const shown = applyShoppingNotificationResult(result, sourceProduct);
+        if (options?.scanMilestone != null && shown) {
+          lastNotifiedScanMilestoneRef.current = options.scanMilestone;
+        }
       } finally {
         pollInFlightRef.current = false;
         const pendingSourceProductId = pendingForcedPollRef.current;
@@ -356,10 +360,9 @@ export function MapShoppingNotificationProvider({
         return;
       }
 
-      lastNotifiedScanMilestoneRef.current = totalScanCount;
       void pollShoppingRecommendationNotification(
         resolveCatalogProductId(lastPickedProduct.id),
-        { force: true },
+        { force: true, scanMilestone: totalScanCount },
       );
     },
     [pollShoppingRecommendationNotification],
