@@ -6,7 +6,6 @@ import {
   getInStockProducts,
   MOCK_POPULAR_PRODUCTS,
 } from "@/components/home/mockProducts";
-import { resolveHomeApiStoreId } from "@/components/home/storeOptions";
 import type { Product } from "@/components/product";
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import {
@@ -25,7 +24,7 @@ export type HomeSectionProductKind =
 
 type UseHomeSectionProductsOptions = {
   kind: HomeSectionProductKind;
-  storeId: string;
+  storeId: number;
   limit?: number;
 };
 
@@ -44,10 +43,8 @@ function getMockFallback(kind: HomeSectionProductKind, limit: number): Product[]
 async function fetchByKind(
   kind: HomeSectionProductKind,
   limit: number,
-  storeId: string,
+  storeId: number,
 ): Promise<Product[]> {
-  const apiStoreId = resolveHomeApiStoreId(storeId);
-
   switch (kind) {
     case "new":
       return fetchNewProducts(limit);
@@ -56,7 +53,7 @@ async function fetchByKind(
     case "findy":
       return fetchFindyRecommendProducts(limit);
     case "personalized": {
-      const result = await fetchPersonalizedRecommendations(limit, apiStoreId);
+      const result = await fetchPersonalizedRecommendations(limit, storeId);
       return result.products;
     }
   }

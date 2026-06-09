@@ -6,7 +6,7 @@ import { COLORS } from "@/constants/theme";
 import { ActivityIndicator, View } from "react-native";
 
 type PopularProductsSectionProps = {
-  storeId: string;
+  storeId: number;
 };
 
 export function PopularProductsSection({ storeId }: PopularProductsSectionProps) {

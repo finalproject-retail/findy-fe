@@ -7,7 +7,7 @@ import { ActivityIndicator, FlatList, useWindowDimensions, View } from "react-na
 const CARD_GAP = 12;
 
 type OnboardingRecommendSectionProps = {
-  storeId: string;
+  storeId: number;
 };
 
 export function OnboardingRecommendSection({

@@ -14,7 +14,7 @@ export function formatAdminDateForApi(value: string): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/** select-rate 스펙용 (현재 서버 500 — 레거시) */
+/** select-rate 스펙용 — startDate / endDate */
 export function toAdminAnalyticsQueryRange(range: AdminDateRange) {
   return {
     startDate: formatAdminDateForApi(range.start),

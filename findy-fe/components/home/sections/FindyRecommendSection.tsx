@@ -21,7 +21,7 @@ function chunkProducts<T>(items: T[], size: number): T[][] {
 }
 
 type FindyRecommendSectionProps = {
-  storeId: string;
+  storeId: number;
 };
 
 export function FindyRecommendSection({ storeId }: FindyRecommendSectionProps) {
