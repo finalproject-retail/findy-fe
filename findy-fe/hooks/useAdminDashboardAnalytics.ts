@@ -15,7 +15,10 @@ import type {
 import { useEffect, useState } from "react";
 
 const PLACEHOLDER_STATS = getPlaceholderAdminStats();
-const EMPTY_ZONES: AdminZoneMatrix = mapZoneVisitRatesToMatrix({ gridVisitRates: [] });
+const EMPTY_ZONES: AdminZoneMatrix = mapZoneVisitRatesToMatrix({
+  zoneVisitRates: [],
+  zoneMovements: [],
+});
 
 export function useAdminDashboardAnalytics(dateRange: AdminDateRange) {
   const [stats, setStats] = useState<AdminStatCard[]>(PLACEHOLDER_STATS);
@@ -38,7 +41,7 @@ export function useAdminDashboardAnalytics(dateRange: AdminDateRange) {
       try {
         const [summaryResult, zoneResult] = await Promise.allSettled([
           fetchAdminAnalyticsSummary(query),
-          fetchAdminZoneVisitRates(query),
+          fetchAdminZoneVisitRates({ ...query, includeMovement: true }),
         ]);
 
         if (cancelled) {
