@@ -9,6 +9,7 @@ import type {
   AdminFunnelStep,
   AdminPromoProduct,
 } from "@/lib/admin/mockDashboardData";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { useEffect, useState } from "react";
 
 const EMPTY_FUNNEL: AdminFunnelStep[] = [
@@ -21,6 +22,7 @@ const SUBSTITUTE_TYPE = "SUBSTITUTE";
 const PROMOTION_TYPE = "AI_PERSONALIZED_PROMOTION";
 
 export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
+  const isAuthReady = useAuthReady();
   const [funnel, setFunnel] = useState<AdminFunnelStep[]>(EMPTY_FUNNEL);
   const [finalConversionRate, setFinalConversionRate] = useState("0%");
   const [promoProducts, setPromoProducts] = useState<AdminPromoProduct[]>([]);
@@ -28,6 +30,10 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isAuthReady) {
+      return;
+    }
+
     let cancelled = false;
     const periodQuery = toAdminAnalyticsPeriodQuery(dateRange);
 
@@ -80,7 +86,7 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
     return () => {
       cancelled = true;
     };
-  }, [dateRange.end, dateRange.start]);
+  }, [dateRange.end, dateRange.start, isAuthReady]);
 
   return {
     funnel,

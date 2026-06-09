@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSegments, type Href } from "expo-router";
 import { useEffect, type PropsWithChildren } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 const LOGIN_HREF = "/(auth)/login" as Href;
 const USER_HOME_HREF = "/(tabs)" as Href;
@@ -16,9 +17,10 @@ export function AuthGuard({ children }: PropsWithChildren) {
     useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const isBootstrapping = isLoading || (isLoggedIn && isProfileLoading);
 
   useEffect(() => {
-    if (isLoading || (isLoggedIn && isProfileLoading)) {
+    if (isBootstrapping) {
       return;
     }
 
@@ -68,13 +70,20 @@ export function AuthGuard({ children }: PropsWithChildren) {
   }, [
     isAdminSession,
     isAdminUser,
-    isLoading,
+    isBootstrapping,
     isLoggedIn,
-    isProfileLoading,
     needsOnboarding,
     router,
     segments,
   ]);
+
+  if (isBootstrapping) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return children;
 }

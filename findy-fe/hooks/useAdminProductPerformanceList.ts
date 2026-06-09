@@ -5,9 +5,11 @@ import {
   fetchAdminProductPerformanceListPage,
   type AdminProductPerformanceMap,
 } from "@/lib/admin/api/fetchAdminProductPerformance";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useAdminProductPerformanceList(dateRange: AdminDateRange) {
+  const isAuthReady = useAuthReady();
   const [products, setProducts] = useState<AdminProductPerformance[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -57,8 +59,11 @@ export function useAdminProductPerformanceList(dateRange: AdminDateRange) {
   }, [dateRange.end, dateRange.start]);
 
   useEffect(() => {
+    if (!isAuthReady) {
+      return;
+    }
     void loadFirstPage();
-  }, [loadFirstPage]);
+  }, [isAuthReady, loadFirstPage]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || isLoading || isLoadingMore) return;
