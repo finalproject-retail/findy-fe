@@ -12,6 +12,7 @@ import { Image } from "expo-image";
 import { useRouter, type Href } from "expo-router";
 import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -23,6 +24,9 @@ import {
 type AdminProductPerformanceListProps = {
   products: AdminProductPerformance[];
   stretch?: boolean;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
 };
 
 const MOBILE_THUMB_SIZE = 64;
@@ -373,10 +377,12 @@ function EmptyState() {
 export function AdminProductPerformanceList({
   products,
   stretch = false,
+  hasMore = false,
+  isLoadingMore = false,
 }: AdminProductPerformanceListProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<AdminProductCategoryFilter>("fresh");
+  const [category, setCategory] = useState<AdminProductCategoryFilter>("all");
 
   const openProductDetail = (productId: string) => {
     router.push({
@@ -428,14 +434,24 @@ export function AdminProductPerformanceList({
         >
           <ProductPerformanceTableHeader stretch />
           {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <ProductPerformanceTableRow
-                key={product.productId}
-                product={product}
-                stretch
-                onPress={() => openProductDetail(product.productId)}
-              />
-            ))
+            filteredProducts.map((product, index) => {
+              const isLastRow = index === filteredProducts.length - 1 && !hasMore;
+
+              return (
+                <View
+                  key={product.productId}
+                  style={{
+                    borderBottomWidth: isLastRow ? 0 : undefined,
+                  }}
+                >
+                  <ProductPerformanceTableRow
+                    product={product}
+                    stretch
+                    onPress={() => openProductDetail(product.productId)}
+                  />
+                </View>
+              );
+            })
           ) : (
             <EmptyState />
           )}
@@ -447,7 +463,7 @@ export function AdminProductPerformanceList({
               <ProductPerformanceMobileRow
                 key={product.productId}
                 product={product}
-                isLast={index === filteredProducts.length - 1}
+                isLast={index === filteredProducts.length - 1 && !hasMore}
                 onPress={() => openProductDetail(product.productId)}
               />
             ))
@@ -456,6 +472,12 @@ export function AdminProductPerformanceList({
           )}
         </View>
       )}
+
+      {isLoadingMore ? (
+        <View style={{ alignItems: "center", paddingVertical: 16 }}>
+          <ActivityIndicator color={ADMIN_COLORS.navActive} />
+        </View>
+      ) : null}
     </View>
   );
 }

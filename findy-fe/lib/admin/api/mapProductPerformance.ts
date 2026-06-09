@@ -37,6 +37,43 @@ function formatProductName(item: ProductPerformanceItemDto) {
   return name.startsWith("[") ? name : `[${brand}] ${name}`;
 }
 
+function formatAdminProductName(brandName: string | null | undefined, productName: string) {
+  const brand = brandName?.trim();
+  const name = productName.trim();
+  if (!brand) return name;
+  return name.startsWith("[") ? name : `[${brand}] ${name}`;
+}
+
+export function mapAdminProductListItem(
+  product: {
+    productId: number;
+    categoryId: number | null;
+    brandName: string | null;
+    productName: string;
+    imageUrl: string | null;
+  },
+  performanceById: Map<number, ProductPerformanceItemDto>,
+): AdminProductPerformance {
+  const perf = performanceById.get(product.productId);
+  const conversionRate = perf ? parseAdminRate(perf.viewToPurchaseRate) : 0;
+
+  return {
+    productId: String(product.productId),
+    name: formatAdminProductName(product.brandName, product.productName),
+    category: mapCategoryIdToFilter(product.categoryId),
+    image: resolveProductImageSource(product.imageUrl),
+    views: perf?.viewCount ?? 0,
+    conversionRate,
+    todayViews: 0,
+    yearlyViews: 0,
+    monthlyViews: [],
+    funnelSteps: [],
+    impressionCount: 0,
+    clickCount: 0,
+    purchaseCount: 0,
+  };
+}
+
 function buildMonthlyTrendFromDaily(
   dailyTrends: RecommendationDailyTrendDto[],
 ): AdminMonthlyViewPoint[] {

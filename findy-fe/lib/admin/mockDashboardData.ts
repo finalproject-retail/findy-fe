@@ -97,7 +97,26 @@ function traffic(
 }
 
 export function getDefaultAdminDateRange(): AdminDateRange {
-  return { start: "26.05.01", end: "26.05.31" };
+  return getRecentAdminDateRange(7);
+}
+
+/** 최근 N일 (오늘 포함) — API 기본 조회 기간 */
+export function getRecentAdminDateRange(days = 7): AdminDateRange {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - Math.max(days - 1, 0));
+
+  return {
+    start: formatAdminDate(start),
+    end: formatAdminDate(end),
+  };
+}
+
+function formatAdminDate(date: Date): string {
+  const yy = String(date.getFullYear()).slice(-2);
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yy}.${mm}.${dd}`;
 }
 
 /** API 연동 전 목업 데이터 */
