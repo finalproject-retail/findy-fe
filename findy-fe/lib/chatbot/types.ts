@@ -1,7 +1,10 @@
+import type { Product } from "@/components/product/types";
+
 export type ChatMessage = {
   id: string;
   sender: "bot" | "user";
   text: string;
+  recommendedProducts?: Product[];
 };
 
 export const CHATBOT_WELCOME_MESSAGES: ChatMessage[] = [

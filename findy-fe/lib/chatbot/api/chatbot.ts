@@ -17,6 +17,7 @@ import type {
   ChatbotVoiceMessageApiData,
   ChatbotVoiceMessageResult,
 } from "@/lib/chatbot/api/types";
+import { mapChatbotRecommendedProducts } from "@/lib/chatbot/mapChatbotRecommendedProducts";
 import { CHATBOT_DEFAULT_LIMIT } from "@/lib/chatbot/types";
 import { Platform } from "react-native";
 
@@ -42,6 +43,7 @@ function mapMessageResponse(
   return {
     sessionId: dto.sessionId,
     answer: dto.answer,
+    recommendedProducts: mapChatbotRecommendedProducts(dto),
     status: dto.status,
     failureType: dto.failureType,
   };
@@ -56,6 +58,11 @@ function mapVoiceResponse(
     sessionId: nested?.sessionId ?? dto.sessionId ?? 0,
     transcribedText: dto.transcribedText,
     answer: nested?.answer ?? dto.answer ?? "",
+    recommendedProducts: mapChatbotRecommendedProducts({
+      recommendedProducts: nested?.recommendedProducts ?? dto.recommendedProducts,
+      products: nested?.products ?? dto.products,
+      shoppingContext: nested?.shoppingContext ?? dto.shoppingContext,
+    }),
     status: nested?.status ?? dto.status,
     failureType: nested?.failureType ?? dto.failureType,
   };

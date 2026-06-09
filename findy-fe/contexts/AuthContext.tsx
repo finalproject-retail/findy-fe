@@ -4,7 +4,10 @@ import {
   saveAdminSession,
 } from "@/lib/admin/adminSession";
 import { setAccessToken } from "@/lib/api/client";
-import { setUnauthorizedSessionHandler } from "@/lib/api/unauthorizedSession";
+import {
+  setSessionRestoreInProgress,
+  setUnauthorizedSessionHandler,
+} from "@/lib/api/unauthorizedSession";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { clearAccountCache } from "@/lib/auth/clearAccountCache";
 import { isInvalidStoredSessionError } from "@/lib/auth/isInvalidStoredSessionError";
@@ -78,12 +81,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       return withOnboardingFlag(profile, needs);
     } catch (error) {
-      setIsAdminUser(false);
-      setIsAdminSession(false);
-      setNeedsOnboarding(false);
       if (isInvalidStoredSessionError(error)) {
+        setIsAdminUser(false);
+        setIsAdminSession(false);
+        setNeedsOnboarding(false);
         throw error;
       }
+
+      try {
+        const adminSession = await loadAdminSession();
+        setIsAdminSession(adminSession);
+      } catch {
+        setIsAdminSession(false);
+      }
+      setIsAdminUser(false);
+      setNeedsOnboarding(false);
       throw new Error("회원 정보를 불러오지 못했습니다.");
     } finally {
       setIsProfileLoading(false);
@@ -109,6 +121,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     let cancelled = false;
 
     async function restoreSession() {
+      setSessionRestoreInProgress(true);
       try {
         const stored = await loadStoredSession();
         if (cancelled) {
@@ -129,6 +142,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           }
         }
       } finally {
+        setSessionRestoreInProgress(false);
         if (!cancelled) {
           setIsLoading(false);
         }

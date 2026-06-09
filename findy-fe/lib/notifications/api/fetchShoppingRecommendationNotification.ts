@@ -69,7 +69,7 @@ export async function fetchShoppingRecommendationNotification(
   try {
     const response = await notificationApiClient.get<
       ApiEnvelope<ShoppingRecommendationNotificationApiData>
-    >("/api/v1/recommendations/notifications/shopping", {
+    >("/api/v1/notifications/shopping", {
       params: {
         ...query,
         excludeProductIds: excludeIds.length > 0 ? excludeIds : undefined,

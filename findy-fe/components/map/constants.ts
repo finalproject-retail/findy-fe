@@ -9,5 +9,5 @@ export const MAP_REFRESH_PILL_PADDING_H = 16;
 /** 트립 전체 바코드 스캔 수량 합 — 바코드 수령 후 쇼핑 추천 알림 API 1회 트리거 */
 export const BARCODE_SCANS_FOR_PROMO_NOTIFICATION = 5;
 
-/** GET /notifications/recommendations/shopping 최소 호출 간격(ms) */
+/** GET /notifications/shopping 최소 호출 간격(ms) */
 export const SHOPPING_NOTIFICATION_MIN_INTERVAL_MS = 8_000;

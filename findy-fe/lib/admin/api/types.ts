@@ -163,3 +163,37 @@ export type FetchAdminRecommendationAnalyticsParams = {
   limit?: number;
   productId?: number;
 };
+
+export type FetchAdminDashboardAnalyticsParams = {
+  startDate: string;
+  endDate: string;
+  storeId?: number;
+  zoneId?: number;
+};
+
+export type AnalyticsSummaryDto = {
+  totalVisitorCount: number;
+  outOfStockCount: number;
+  routeUsageCount: number;
+  recommendationConversionRate: number;
+  totalSalesAmount: number;
+  totalOrderCount: number;
+  averageOrderAmount: number;
+};
+
+export type AnalyticsSummaryData = {
+  summary: AnalyticsSummaryDto;
+};
+
+export type GridVisitRateDto = {
+  gridId: number;
+  gridType: string;
+  visitCount: number;
+  visitRate: number;
+  averageStayDuration: number;
+  rankNo: number;
+};
+
+export type ZoneVisitRateData = {
+  gridVisitRates: GridVisitRateDto[];
+};

@@ -12,8 +12,8 @@ export type AdminDateRange = {
 export type AdminStatCard = {
   label: string;
   value: string;
-  delta: string;
-  trend: "up" | "down";
+  delta?: string;
+  trend?: "up" | "down";
 };
 
 export type AdminZoneKey =
@@ -26,8 +26,7 @@ export type AdminZoneKey =
 export type AdminZoneTraffic = {
   total: number;
   percent: number;
-  male: { count: number; percent: number };
-  female: { count: number; percent: number };
+  averageStayDuration: number;
 };
 
 export type AdminZoneMatrix = Record<
@@ -83,16 +82,12 @@ export const ADMIN_ZONE_ORDER: AdminZoneKey[] = [
 function traffic(
   total: number,
   percent: number,
-  malePct: number,
+  averageStayDuration: number,
 ): AdminZoneTraffic {
-  const maleCount = Math.round(total * (malePct / 100));
-  const femaleCount = total - maleCount;
-  const femalePct = total > 0 ? Math.round((femaleCount / total) * 100) : 0;
   return {
     total,
     percent,
-    male: { count: maleCount, percent: malePct },
-    female: { count: femaleCount, percent: femalePct },
+    averageStayDuration,
   };
 }
 
@@ -179,48 +174,48 @@ export function getAdminDashboardMock(_range: AdminDateRange): AdminDashboardDat
     ],
     zones: {
       fresh: {
-        visitors: traffic(312, 68, 71),
+        visitors: traffic(312, 68, 420),
         flows: {
-          processedFrozen: traffic(58, 19, 74),
-          bakeryDeli: traffic(42, 13, 63),
-          beverageAlcohol: traffic(28, 9, 58),
-          lifestyle: traffic(64, 21, 69),
+          processedFrozen: traffic(58, 19, 180),
+          bakeryDeli: traffic(42, 13, 240),
+          beverageAlcohol: traffic(28, 9, 150),
+          lifestyle: traffic(64, 21, 300),
         },
       },
       processedFrozen: {
-        visitors: traffic(198, 43, 78),
+        visitors: traffic(198, 43, 360),
         flows: {
-          fresh: traffic(72, 36, 75),
-          bakeryDeli: traffic(31, 16, 70),
-          beverageAlcohol: traffic(48, 24, 82),
-          lifestyle: traffic(35, 18, 77),
+          fresh: traffic(72, 36, 210),
+          bakeryDeli: traffic(31, 16, 190),
+          beverageAlcohol: traffic(48, 24, 270),
+          lifestyle: traffic(35, 18, 220),
         },
       },
       bakeryDeli: {
-        visitors: traffic(156, 34, 64),
+        visitors: traffic(156, 34, 510),
         flows: {
-          fresh: traffic(54, 35, 68),
-          processedFrozen: traffic(38, 24, 72),
-          beverageAlcohol: traffic(22, 14, 61),
-          lifestyle: traffic(18, 12, 55),
+          fresh: traffic(54, 35, 200),
+          processedFrozen: traffic(38, 24, 160),
+          beverageAlcohol: traffic(22, 14, 130),
+          lifestyle: traffic(18, 12, 140),
         },
       },
       beverageAlcohol: {
-        visitors: traffic(124, 27, 66),
+        visitors: traffic(124, 27, 280),
         flows: {
-          fresh: traffic(19, 15, 58),
-          processedFrozen: traffic(41, 33, 80),
-          bakeryDeli: traffic(24, 19, 62),
-          lifestyle: traffic(28, 23, 71),
+          fresh: traffic(19, 15, 170),
+          processedFrozen: traffic(41, 33, 250),
+          bakeryDeli: traffic(24, 19, 200),
+          lifestyle: traffic(28, 23, 230),
         },
       },
       lifestyle: {
-        visitors: traffic(186, 41, 73),
+        visitors: traffic(186, 41, 390),
         flows: {
-          fresh: traffic(48, 26, 70),
-          processedFrozen: traffic(52, 28, 79),
-          bakeryDeli: traffic(21, 11, 57),
-          beverageAlcohol: traffic(33, 18, 68),
+          fresh: traffic(48, 26, 220),
+          processedFrozen: traffic(52, 28, 260),
+          bakeryDeli: traffic(21, 11, 180),
+          beverageAlcohol: traffic(33, 18, 210),
         },
       },
     },
