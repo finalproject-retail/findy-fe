@@ -169,10 +169,13 @@ export function AdminProductDetailContent({ data }: AdminProductDetailContentPro
 
           <DetailTwoColumnRow stretch>
             <DetailGridCell>
-              <StatCard label="금일 조회수" value={formatAdminViewCount(data.todayViews)} />
+              <StatCard label="기간 조회수 (최근 7일)" value={formatAdminViewCount(data.views)} />
             </DetailGridCell>
             <DetailGridCell>
-              <StatCard label="연간 누적 조회수" value={formatAdminViewCount(data.yearlyViews)} />
+              <StatCard
+                label="구매 전환율"
+                value={getAdminProductFinalConversionRate(data)}
+              />
             </DetailGridCell>
           </DetailTwoColumnRow>
 
