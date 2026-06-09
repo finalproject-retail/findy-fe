@@ -230,15 +230,15 @@ export async function fetchAdminProductPerformanceDetail(
       return null;
     }
 
-    const [summary, shoppingProduct, purchaseConversion, clickRate] = await Promise.all([
-      fetchProductPerformanceSummary(range),
-      fetchAdminShoppingProduct(productId),
-      fetchRecommendationPurchaseConversion(range, productId),
-      fetchRecommendationClickRate(range),
+    const shoppingProduct = await fetchAdminShoppingProduct(productId);
+
+    const [performanceResult, purchaseConversion, clickRate] = await Promise.all([
+      fetchAdminProductPerformanceMapSafe(range),
+      fetchRecommendationPurchaseConversion(range, productId).catch(() => null),
+      fetchRecommendationClickRate(range).catch(() => null),
     ]);
 
-    const summaryItem =
-      summary.products.find((item) => item.productId === numericId) ?? null;
+    const summaryItem = performanceResult.map.get(numericId) ?? null;
 
     const brand = shoppingProduct.brandName?.trim();
     const productName = shoppingProduct.productName?.trim() ?? summaryItem?.productName ?? "";
