@@ -126,7 +126,7 @@ export function MapShoppingSheetItem({
                 onPress={onRemove}
                 hitSlop={10}
                 accessibilityRole="button"
-                accessibilityLabel={`${product.name} 삭제`}
+                accessibilityLabel={`${product.name} 장바구니로 이동`}
                 style={{
                   width: DELETE_SIZE,
                   height: TITLE_LINE_HEIGHT,
@@ -280,7 +280,7 @@ export function MapShoppingSheetItem({
               onPress={onRemove}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel={`${product.name} 삭제`}
+              accessibilityLabel={`${product.name} 장바구니로 이동`}
               style={{
                 width: DELETE_SIZE,
                 height: TITLE_LINE_HEIGHT,

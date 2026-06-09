@@ -54,6 +54,7 @@ import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { getApiErrorMessage } from "@/lib/api";
 import {
   decreaseShoppingListItemByScan,
+  returnShoppingListItemToCart,
   scanShoppingListItem,
 } from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
@@ -62,6 +63,7 @@ import {
   mapShoppingListApiToLineItems,
 } from "@/lib/shopping/mappers";
 import type { ShoppingListApi } from "@/lib/shopping/types";
+import { barcodesMatch } from "@/lib/shopping/normalizeBarcode";
 import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
 import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 
@@ -85,7 +87,7 @@ export function MapShoppingBottomSheet({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
-  const { addToCart, refreshCart } = useCart();
+  const { refreshCart } = useCart();
   const { setCheckoutFromTrip } = useCheckout();
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
@@ -103,6 +105,7 @@ export function MapShoppingBottomSheet({
   } | null>(null);
   const cancelToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelScanHandledRef = useRef(false);
+  const scanInFlightRef = useRef(false);
   const cancelScanModalRef = useRef(cancelScanModal);
   cancelScanModalRef.current = cancelScanModal;
   const { showToast } = useToast();
@@ -435,7 +438,7 @@ export function MapShoppingBottomSheet({
           (item) => item.productId === cancelModal.productId,
         );
         const expectedBarcode = line?.product.barcode;
-        if (expectedBarcode && barcode !== expectedBarcode) {
+        if (expectedBarcode && !barcodesMatch(expectedBarcode, barcode)) {
           console.warn("취소 대상 상품과 바코드가 일치하지 않습니다.");
           return;
         }
@@ -463,14 +466,21 @@ export function MapShoppingBottomSheet({
       }
 
       if (!hasActiveTrip) return;
+      if (scanInFlightRef.current) return;
 
-      const lineBefore = tripLineItems.find(
-        (item) => item.product.barcode === barcode,
+      const lineBefore = tripLineItems.find((item) =>
+        barcodesMatch(item.product.barcode, barcode),
       );
-      const prevPicked = lineBefore
-        ? (pickedQuantityByProductId[lineBefore.productId] ?? 0)
-        : 0;
 
+      const applyPointRewardRoll = () => {
+        const rewardPoints = rollBarcodePointReward();
+        if (rewardPoints !== null) {
+          addPendingBarcodeReward(rewardPoints);
+          setPointRewardModal({ visible: true, points: rewardPoints });
+        }
+      };
+
+      scanInFlightRef.current = true;
       try {
         const shoppingList = await scanShoppingListItem(barcode, 1);
         syncFromShoppingList(shoppingList);
@@ -478,26 +488,57 @@ export function MapShoppingBottomSheet({
           isProductLineItem,
         );
 
-        const lineAfter = nextLineItems.find(
-          (item) => item.product.barcode === barcode,
-        );
-        if (!lineAfter) return;
+        const lineAfter =
+          nextLineItems.find((item) =>
+            barcodesMatch(item.product.barcode, barcode),
+          ) ??
+          (lineBefore
+            ? nextLineItems.find(
+                (item) => item.productId === lineBefore.productId,
+              )
+            : undefined) ??
+          nextLineItems.find((item) => {
+            const before = tripLineItems.find(
+              (entry) => entry.productId === item.productId,
+            );
+            const beforePicked = before
+              ? (pickedQuantityByProductId[before.productId] ??
+                before.scannedQuantity ??
+                0)
+              : 0;
+            return (item.scannedQuantity ?? 0) > beforePicked;
+          });
 
-        const newPicked = lineAfter.scannedQuantity ?? 0;
-        if (newPicked > prevPicked) {
-          const totalScanCount = nextLineItems.reduce(
-            (sum, item) => sum + (item.scannedQuantity ?? 0),
-            0,
-          );
-          notifyBarcodeScanPromoIfNeeded(totalScanCount, lineAfter.product);
-          const rewardPoints = rollBarcodePointReward();
-          if (rewardPoints !== null) {
-            addPendingBarcodeReward(rewardPoints);
-            setPointRewardModal({ visible: true, points: rewardPoints });
+        const scannedLine = lineAfter ?? lineBefore;
+        if (!scannedLine) {
+          return;
+        }
+
+        applyPointRewardRoll();
+
+        if (lineAfter) {
+          const newPicked = lineAfter.scannedQuantity ?? 0;
+          const beforePicked = lineBefore
+            ? (pickedQuantityByProductId[lineBefore.productId] ??
+              lineBefore.scannedQuantity ??
+              0)
+            : 0;
+
+          if (newPicked > beforePicked) {
+            const totalScanCount = nextLineItems.reduce(
+              (sum, item) => sum + (item.scannedQuantity ?? 0),
+              0,
+            );
+            notifyBarcodeScanPromoIfNeeded(totalScanCount, lineAfter.product);
           }
         }
       } catch (error) {
         console.error("바코드 스캔 반영 실패:", error);
+        if (lineBefore) {
+          applyPointRewardRoll();
+        }
+      } finally {
+        scanInFlightRef.current = false;
       }
     },
     [
@@ -518,26 +559,25 @@ export function MapShoppingBottomSheet({
 
   const handleRemoveItem = useCallback(
     async (item: CartLineItem) => {
-      const picked = pickedQuantityByProductId[item.productId] ?? 0;
-      const isFullyPicked = picked >= item.quantity;
-
-      if (isFullyPicked) {
-        setCancelScanModal({
-          productId: item.productId,
-          productName: item.product.name,
-          quantity: item.quantity,
-        });
+      if (!item.shoppingListItemId) {
+        removeTripItem(item.productId);
         return;
       }
 
       try {
-        await addToCart(item.product, item.quantity);
-        removeTripItem(item.productId);
+        const shoppingList = await returnShoppingListItemToCart(
+          item.shoppingListItemId,
+        );
+        syncFromShoppingList(shoppingList);
+        await refreshCart();
       } catch (error) {
-        console.error(error);
+        showToast(
+          getApiErrorMessage(error) ||
+            "장바구니로 옮기지 못했어요. 다시 시도해 주세요.",
+        );
       }
     },
-    [addToCart, pickedQuantityByProductId, removeTripItem],
+    [refreshCart, removeTripItem, showToast, syncFromShoppingList],
   );
 
   const handleRemoveZone = useCallback(
