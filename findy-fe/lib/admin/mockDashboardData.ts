@@ -1,3 +1,4 @@
+import { formatAdminDate } from "@/lib/admin/dateRange";
 import {
   getAdminProductImage,
   getAdminProductName,
@@ -92,7 +93,13 @@ function traffic(
 }
 
 export function getDefaultAdminDateRange(): AdminDateRange {
-  return { start: "26.05.01", end: "26.05.31" };
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  return {
+    start: formatAdminDate(firstOfMonth),
+    end: formatAdminDate(today),
+  };
 }
 
 /** API 연동 전 목업 데이터 */
