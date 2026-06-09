@@ -4,7 +4,9 @@ import {
 import type { Product } from "@/components/product";
 import { resolveCatalogProductId } from "@/components/product/resolveCatalogProductId";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
-import { fetchCongestionOnRefresh } from "@/components/store-map/overlays/fetchCongestionOnRefresh";
+import { toBeaconCongestionOverlayPoints } from "@/components/store-map/overlays/fetchCongestionOnRefresh";
+import { CONGESTION_WINDOW_SECONDS } from "@/constants/beacon";
+import { fetchGridCongestion } from "@/lib/map/api/fetchGridCongestion";
 import { MAP_NAVIGATION_EMPTY } from "@/components/store-map/overlays/mock/mapNavigationEmpty";
 import type {
   NavigationRouteSnapshot,
@@ -67,6 +69,7 @@ type MapNavigationContextValue = {
     storeId: number,
     gridCols?: number,
   ) => Promise<void>;
+  refreshBeaconCongestion: (storeId: number) => Promise<void>;
   applyShoppingItems: (items: ShoppingMapItem[]) => void;
   startShoppingTrip: (
     lineItems: CartLineItem[],
@@ -376,26 +379,35 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     }
   }, [storeId]);
 
-  const refreshNavigationOverlay = useCallback(
-    async (storeId: number, gridCols = GRID_COLS) => {
-      let beaconCongestion: Awaited<
-        ReturnType<typeof fetchCongestionOnRefresh>
-      > = [];
-      try {
-        beaconCongestion = await fetchCongestionOnRefresh({ storeId });
-      } catch (error) {
-        if (__DEV__) {
-          console.warn("Failed to refresh congestion overlay", error);
-        }
-      }
-
+  const refreshBeaconCongestion = useCallback(async (storeId: number) => {
+    try {
+      const data = await fetchGridCongestion(storeId, {
+        windowSeconds: CONGESTION_WINDOW_SECONDS,
+      });
+      const beaconCongestion = toBeaconCongestionOverlayPoints(data.points);
       setNavigationData((prev) => ({
         ...prev,
         beaconCongestion,
       }));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "혼잡도 API 호출 실패";
+      setNavigationData((prev) => ({
+        ...prev,
+        beaconCongestion: [],
+      }));
+      if (__DEV__) {
+        console.warn("Failed to refresh congestion overlay", message);
+      }
+    }
+  }, []);
+
+  const refreshNavigationOverlay = useCallback(
+    async (storeId: number, gridCols = GRID_COLS) => {
+      await refreshBeaconCongestion(storeId);
       await generateShoppingPath(storeId, gridCols);
     },
-    [generateShoppingPath],
+    [generateShoppingPath, refreshBeaconCongestion],
   );
 
   const applyShoppingItems = useCallback((items: ShoppingMapItem[]) => {
@@ -764,6 +776,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       hasActiveTrip,
       activeShoppingListId,
       refreshNavigationOverlay,
+      refreshBeaconCongestion,
       generateShoppingPath,
       applyShoppingItems,
       startShoppingTrip,
@@ -792,6 +805,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       hasActiveTrip,
       activeShoppingListId,
       refreshNavigationOverlay,
+      refreshBeaconCongestion,
       generateShoppingPath,
       applyShoppingItems,
       startShoppingTrip,

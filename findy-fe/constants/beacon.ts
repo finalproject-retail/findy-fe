@@ -41,3 +41,10 @@ export function gridIdToGridPoint(gridId: number): {
 
 export const BEACON_REQUIRED_STREAK_DEFAULT = 2;
 export const BEACON_EMA_ALPHA = 0.25;
+
+/** map-service CongestionService.DEFAULT_WINDOW_SECONDS 와 동일 */
+export const CONGESTION_WINDOW_SECONDS = 90;
+/** 같은 grid 체류 시 위치 재전송 주기 — 집계 창(90초)보다 짧게 */
+export const BEACON_PRESENCE_HEARTBEAT_MS = 45_000;
+/** 지도 혼잡도 오버레이 자동 갱신 주기 (새로고침 버튼 없이) */
+export const CONGESTION_REFRESH_INTERVAL_MS = 60_000;
