@@ -5,7 +5,7 @@ import { pretendard } from "@/utils/pretendard";
 import { Text, View } from "react-native";
 
 type AdminOperationsSummaryProps = {
-  insight: string;
+  insight?: string;
   stats: AdminStatCard[];
   stretch?: boolean;
 };
@@ -14,6 +14,7 @@ function StatCard({ stat, compact }: { stat: AdminStatCard; compact?: boolean })
   const isUp = stat.trend === "up";
   const badgeBg = isUp ? ADMIN_COLORS.positiveBg : ADMIN_COLORS.negativeBg;
   const badgeText = isUp ? ADMIN_COLORS.positiveText : ADMIN_COLORS.negativeText;
+  const showDelta = Boolean(stat.delta && stat.trend);
 
   return (
     <View
@@ -32,19 +33,21 @@ function StatCard({ stat, compact }: { stat: AdminStatCard; compact?: boolean })
       <Text style={{ ...pretendard(700), fontSize: 20, color: ADMIN_COLORS.navy }}>
         {stat.value}
       </Text>
-      <View
-        style={{
-          alignSelf: "flex-start",
-          backgroundColor: badgeBg,
-          borderRadius: 999,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-        }}
-      >
-        <Text style={{ ...pretendard(600), fontSize: 12, color: badgeText }}>
-          {stat.delta}
-        </Text>
-      </View>
+      {showDelta ? (
+        <View
+          style={{
+            alignSelf: "flex-start",
+            backgroundColor: badgeBg,
+            borderRadius: 999,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+          }}
+        >
+          <Text style={{ ...pretendard(600), fontSize: 12, color: badgeText }}>
+            {stat.delta}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -77,26 +80,28 @@ export function AdminOperationsSummary({
             : { gap: 16 }
         }
       >
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <View
-            style={{
-              width: 4,
-              borderRadius: 2,
-              backgroundColor: ADMIN_COLORS.accentBar,
-            }}
-          />
-          <Text
-            style={{
-              flex: 1,
-              ...pretendard(500),
-              fontSize: 14,
-              color: ADMIN_COLORS.navyMuted,
-              lineHeight: 22,
-            }}
-          >
-            {insight}
-          </Text>
-        </View>
+        {insight ? (
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View
+              style={{
+                width: 4,
+                borderRadius: 2,
+                backgroundColor: ADMIN_COLORS.accentBar,
+              }}
+            />
+            <Text
+              style={{
+                flex: 1,
+                ...pretendard(500),
+                fontSize: 14,
+                color: ADMIN_COLORS.navyMuted,
+                lineHeight: 22,
+              }}
+            >
+              {insight}
+            </Text>
+          </View>
+        ) : null}
 
         <View
           style={{

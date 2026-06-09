@@ -4,6 +4,7 @@ import {
   ADMIN_ZONE_TABLE_HEADER_HEIGHT,
   ADMIN_ZONE_TABLE_ROW_HEIGHT,
 } from "@/lib/admin/adminDashboardLayout";
+import { formatAverageStayDuration } from "@/lib/admin/formatAverageStayDuration";
 import type {
   AdminZoneKey,
   AdminZoneMatrix,
@@ -95,16 +96,7 @@ function TrafficCell({
           color: ADMIN_COLORS.navyMuted,
         }}
       >
-        ♂ {traffic.male.count} ({traffic.male.percent}%)
-      </Text>
-      <Text
-        style={{
-          ...pretendard(500),
-          fontSize: 10,
-          color: ADMIN_COLORS.navyMuted,
-        }}
-      >
-        ♀ {traffic.female.count} ({traffic.female.percent}%)
+        평균 {formatAverageStayDuration(traffic.averageStayDuration)}
       </Text>
     </View>
   );
@@ -134,16 +126,7 @@ function VisitorCell({ traffic }: { traffic: AdminZoneTraffic }) {
           color: ADMIN_COLORS.navyMuted,
         }}
       >
-        ♂ {traffic.male.count} ({traffic.male.percent}%)
-      </Text>
-      <Text
-        style={{
-          ...pretendard(500),
-          fontSize: 10,
-          color: ADMIN_COLORS.navyMuted,
-        }}
-      >
-        ♀ {traffic.female.count} ({traffic.female.percent}%)
+        평균 {formatAverageStayDuration(traffic.averageStayDuration)}
       </Text>
     </View>
   );

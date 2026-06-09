@@ -55,7 +55,7 @@ export async function fetchNotifications(options?: {
   try {
     const response = await notificationApiClient.get<
       ApiEnvelope<NotificationListItemApiDto[]>
-    >("/api/v1/recommendations/notifications", {
+    >("/api/v1/notifications", {
       params: {
         userId,
         size,

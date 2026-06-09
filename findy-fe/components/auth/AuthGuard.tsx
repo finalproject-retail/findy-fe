@@ -1,6 +1,13 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter, useSegments, type Href } from "expo-router";
+import { COLORS } from "@/constants/theme";
+import {
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+  type Href,
+} from "expo-router";
 import { useEffect, type PropsWithChildren } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 const LOGIN_HREF = "/(auth)/login" as Href;
 const USER_HOME_HREF = "/(tabs)" as Href;
@@ -12,17 +19,28 @@ const ONBOARDING_HREF = "/onboarding" as Href;
  * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
-  const { isLoggedIn, isLoading, isProfileLoading, isAdminSession, isAdminUser, needsOnboarding } =
-    useAuth();
+  const {
+    isLoggedIn,
+    isLoading,
+    isProfileLoading,
+    isAdminSession,
+    isAdminUser,
+    needsOnboarding,
+  } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const isNavigationReady = Boolean(navigationState?.key);
+  const root = segments[0];
+  const isRouteReady = isNavigationReady && Boolean(root);
+  const isAuthReady = !isLoading && !(isLoggedIn && isProfileLoading);
+  const isAppReady = isRouteReady && isAuthReady;
 
   useEffect(() => {
-    if (isLoading || (isLoggedIn && isProfileLoading)) {
+    if (!isAppReady) {
       return;
     }
 
-    const root = segments[0];
     const inAuthGroup = root === "(auth)";
     const inAdminGroup = root === "(admin)";
     const inUserTabs = root === "(tabs)";
@@ -68,13 +86,27 @@ export function AuthGuard({ children }: PropsWithChildren) {
   }, [
     isAdminSession,
     isAdminUser,
-    isLoading,
+    isAppReady,
     isLoggedIn,
-    isProfileLoading,
     needsOnboarding,
+    root,
     router,
-    segments,
   ]);
+
+  if (!isAppReady) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: COLORS.white,
+        }}
+      >
+        <ActivityIndicator size="large" color={COLORS.main} />
+      </View>
+    );
+  }
 
   return children;
 }

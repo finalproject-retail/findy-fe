@@ -2,19 +2,6 @@ import { MOCK_PRODUCTS } from "@/components/home/mockProducts";
 import type { Product } from "@/components/product";
 import type { ProductSortType } from "./searchTypes";
 
-export const POPULAR_SEARCH_TERMS = [
-  "생차녹차",
-  "사리곰탕",
-  "텀블러",
-  "황치즈",
-  "핸드크림",
-  "오레오",
-  "생크림쫀득빵",
-  "아메리카노",
-  "쿠쿠다스 케이크",
-  "하리보",
-] as const;
-
 /** 연관 검색어·자동완성용 키워드 */
 export const SEARCH_SUGGESTION_KEYWORDS = [
   "생차녹차",

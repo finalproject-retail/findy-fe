@@ -33,8 +33,8 @@ export function resolveSessionExpiresAtMs(token: string): number {
   return clientExpiry;
 }
 
-function isSessionExpired(expiresAtMs: number | null): boolean {
-  return expiresAtMs == null || !Number.isFinite(expiresAtMs) || Date.now() >= expiresAtMs;
+function isClientSessionExpired(expiresAtMs: number): boolean {
+  return !Number.isFinite(expiresAtMs) || Date.now() >= expiresAtMs;
 }
 
 export async function clearStoredSession(): Promise<void> {
@@ -55,17 +55,23 @@ export async function loadStoredSession(): Promise<string | null> {
     return null;
   }
 
-  const expiresAtMs = expiresAtRaw != null ? Number(expiresAtRaw) : null;
-
-  if (isSessionExpired(expiresAtMs)) {
-    await clearStoredSession();
-    return null;
-  }
-
   const jwtExpiry = getJwtExpiresAtMs(token);
   if (jwtExpiry != null && Date.now() >= jwtExpiry) {
     await clearStoredSession();
     return null;
+  }
+
+  if (expiresAtRaw != null) {
+    const expiresAtMs = Number(expiresAtRaw);
+    if (isClientSessionExpired(expiresAtMs)) {
+      await clearStoredSession();
+      return null;
+    }
+  } else {
+    await AsyncStorage.setItem(
+      SESSION_EXPIRES_AT_KEY,
+      String(resolveSessionExpiresAtMs(token)),
+    );
   }
 
   return token;
