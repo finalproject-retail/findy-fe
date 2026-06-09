@@ -1,5 +1,6 @@
 import { MAP_API_URL } from "@/constants/beacon";
 import { getAccessToken } from "@/lib/api/client";
+import { handleUnauthorizedHttpResponse } from "@/lib/api/unauthorizedSession";
 import type { ApiEnvelope, PathNavigationApi } from "@/lib/map/types";
 
 const PATH_API_URL = `${MAP_API_URL}/api/v1/path`;
@@ -36,6 +37,8 @@ export async function createShoppingPath(
     },
     body: JSON.stringify({ storeId, destinationGridIds }),
   });
+
+  await handleUnauthorizedHttpResponse(response, PATH_API_URL);
 
   const json = (await response.json().catch(() => null)) as ApiEnvelope<PathNavigationApi> | null;
 
