@@ -1,5 +1,6 @@
 import MicIcon from "@/assets/icons/mic-icon.svg";
-import { ChatbotRecommendedProducts } from "@/components/chatbot/ChatbotRecommendedProducts";
+import { ChatbotProductRecommendation } from "@/components/chatbot/ChatbotProductRecommendation";
+import { ChatbotRecipeRecommendation } from "@/components/chatbot/ChatbotRecipeRecommendation";
 import { ChatbotSpeechNativeBridge } from "@/components/chatbot/ChatbotSpeechNativeBridge";
 import { VoiceWaveform } from "@/components/chatbot/VoiceWaveform";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
@@ -33,7 +34,8 @@ const QUICK_QUESTIONS = [
 
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.sender === "user";
-  const recommendedProducts = message.recommendedProducts ?? [];
+  const recipeRecommendation = message.recipeRecommendation;
+  const productRecommendation = message.productRecommendation;
 
   if (isUser) {
     return (
@@ -99,8 +101,12 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           </Text>
         </View>
 
-        {recommendedProducts.length > 0 ? (
-          <ChatbotRecommendedProducts products={recommendedProducts} />
+        {recipeRecommendation ? (
+          <ChatbotRecipeRecommendation recommendation={recipeRecommendation} />
+        ) : null}
+
+        {productRecommendation ? (
+          <ChatbotProductRecommendation recommendation={productRecommendation} />
         ) : null}
       </View>
     </View>

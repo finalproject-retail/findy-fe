@@ -1,10 +1,29 @@
 import type { Product } from "@/components/product/types";
 
+export type ChatbotIngredientRecommendation = {
+  ingredientName: string;
+  quantityText: string;
+  products: Product[];
+};
+
+export type ChatbotRecipeRecommendation = {
+  recipeName: string;
+  storeId?: number;
+  ingredients: ChatbotIngredientRecommendation[];
+};
+
+export type ChatbotProductRecommendation = {
+  title: string;
+  keyword?: string;
+  products: Product[];
+};
+
 export type ChatMessage = {
   id: string;
   sender: "bot" | "user";
   text: string;
-  recommendedProducts?: Product[];
+  recipeRecommendation?: ChatbotRecipeRecommendation;
+  productRecommendation?: ChatbotProductRecommendation;
 };
 
 export const CHATBOT_WELCOME_MESSAGES: ChatMessage[] = [
