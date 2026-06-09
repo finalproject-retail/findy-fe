@@ -1,5 +1,4 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { COLORS } from "@/constants/theme";
 import {
   useRootNavigationState,
   useRouter,
@@ -7,7 +6,6 @@ import {
   type Href,
 } from "expo-router";
 import { useEffect, type PropsWithChildren } from "react";
-import { ActivityIndicator, View } from "react-native";
 
 const LOGIN_HREF = "/(auth)/login" as Href;
 const USER_HOME_HREF = "/(tabs)" as Href;
@@ -17,6 +15,8 @@ const ONBOARDING_HREF = "/onboarding" as Href;
 /**
  * 로그인 없이 보호된 화면 접근 시 로그인으로 이동.
  * 관리자 세션은 (admin), 일반 세션은 (tabs) 기준으로 분기.
+ *
+ * children은 항상 렌더해야 expo-router가 마운트되어 navigation state가 준비됩니다.
  */
 export function AuthGuard({ children }: PropsWithChildren) {
   const {
@@ -32,12 +32,17 @@ export function AuthGuard({ children }: PropsWithChildren) {
   const navigationState = useRootNavigationState();
   const isNavigationReady = Boolean(navigationState?.key);
   const root = segments[0];
-  const isRouteReady = isNavigationReady && Boolean(root);
-  const isAuthReady = !isLoading && !(isLoggedIn && isProfileLoading);
-  const isAppReady = isRouteReady && isAuthReady;
 
   useEffect(() => {
-    if (!isAppReady) {
+    if (!isNavigationReady || isLoading) {
+      return;
+    }
+
+    if (!root) {
+      return;
+    }
+
+    if (isLoggedIn && isProfileLoading) {
       return;
     }
 
@@ -86,27 +91,15 @@ export function AuthGuard({ children }: PropsWithChildren) {
   }, [
     isAdminSession,
     isAdminUser,
-    isAppReady,
+    isLoading,
     isLoggedIn,
+    isNavigationReady,
+    isProfileLoading,
     needsOnboarding,
     root,
     router,
+    segments,
   ]);
-
-  if (!isAppReady) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: COLORS.white,
-        }}
-      >
-        <ActivityIndicator size="large" color={COLORS.main} />
-      </View>
-    );
-  }
 
   return children;
 }
