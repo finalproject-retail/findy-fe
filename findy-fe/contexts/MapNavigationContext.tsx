@@ -37,7 +37,6 @@ import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { runSerializedShoppingListQuantityChange } from "@/lib/shopping/serializeShoppingListQuantityChange";
 import { applyShoppingListItemQuantity } from "@/lib/shopping/applyShoppingListItemQuantity";
-import { rollBarcodePointReward } from "@/utils/barcodePointReward";
 import {
   createContext,
   useCallback,
@@ -829,8 +828,6 @@ export function useIsShoppingListMode() {
 export function useMapBarcodePick() {
   const { markProductPicked, tripLineItems, pickedQuantityByProductId } =
     useMapNavigation();
-  const { addPendingBarcodeReward } = usePoints();
-
   const getPickedQuantity = (productId: string) =>
     pickedQuantityByProductId[productId] ?? 0;
 
@@ -843,13 +840,9 @@ export function useMapBarcodePick() {
   const pickProductFromBarcode = useCallback(
     (productId: string, amount?: number) => {
       markProductPicked(productId, amount);
-      const rewardPoints = rollBarcodePointReward();
-      if (rewardPoints !== null) {
-        addPendingBarcodeReward(rewardPoints);
-      }
-      return rewardPoints;
+      return null;
     },
-    [addPendingBarcodeReward, markProductPicked],
+    [markProductPicked],
   );
 
   return {

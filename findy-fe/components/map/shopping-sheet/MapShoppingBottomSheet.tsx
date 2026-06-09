@@ -54,6 +54,7 @@ import { MapFinishShoppingConfirmModal } from "./MapFinishShoppingConfirmModal";
 import { getApiErrorMessage } from "@/lib/api";
 import {
   decreaseShoppingListItemByScan,
+  returnShoppingListItemToCart,
   scanShoppingListItem,
 } from "@/lib/shopping/api";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
@@ -85,7 +86,7 @@ export function MapShoppingBottomSheet({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
-  const { addToCart, refreshCart } = useCart();
+  const { refreshCart } = useCart();
   const { setCheckoutFromTrip } = useCheckout();
   const [showBody, setShowBodyVisible] = useState(true);
   const [scanBarcodeModalVisible, setScanBarcodeModalVisible] = useState(false);
@@ -103,6 +104,7 @@ export function MapShoppingBottomSheet({
   } | null>(null);
   const cancelToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelScanHandledRef = useRef(false);
+  const scanInFlightRef = useRef(false);
   const cancelScanModalRef = useRef(cancelScanModal);
   cancelScanModalRef.current = cancelScanModal;
   const { showToast } = useToast();
@@ -463,6 +465,7 @@ export function MapShoppingBottomSheet({
       }
 
       if (!hasActiveTrip) return;
+      if (scanInFlightRef.current) return;
 
       const lineBefore = tripLineItems.find(
         (item) => item.product.barcode === barcode,
@@ -471,6 +474,7 @@ export function MapShoppingBottomSheet({
         ? (pickedQuantityByProductId[lineBefore.productId] ?? 0)
         : 0;
 
+      scanInFlightRef.current = true;
       try {
         const shoppingList = await scanShoppingListItem(barcode, 1);
         syncFromShoppingList(shoppingList);
@@ -498,6 +502,8 @@ export function MapShoppingBottomSheet({
         }
       } catch (error) {
         console.error("바코드 스캔 반영 실패:", error);
+      } finally {
+        scanInFlightRef.current = false;
       }
     },
     [
@@ -518,26 +524,25 @@ export function MapShoppingBottomSheet({
 
   const handleRemoveItem = useCallback(
     async (item: CartLineItem) => {
-      const picked = pickedQuantityByProductId[item.productId] ?? 0;
-      const isFullyPicked = picked >= item.quantity;
-
-      if (isFullyPicked) {
-        setCancelScanModal({
-          productId: item.productId,
-          productName: item.product.name,
-          quantity: item.quantity,
-        });
+      if (!item.shoppingListItemId) {
+        removeTripItem(item.productId);
         return;
       }
 
       try {
-        await addToCart(item.product, item.quantity);
-        removeTripItem(item.productId);
+        const shoppingList = await returnShoppingListItemToCart(
+          item.shoppingListItemId,
+        );
+        syncFromShoppingList(shoppingList);
+        await refreshCart();
       } catch (error) {
-        console.error(error);
+        showToast(
+          getApiErrorMessage(error) ||
+            "장바구니로 옮기지 못했어요. 다시 시도해 주세요.",
+        );
       }
     },
-    [addToCart, pickedQuantityByProductId, removeTripItem],
+    [refreshCart, removeTripItem, showToast, syncFromShoppingList],
   );
 
   const handleRemoveZone = useCallback(

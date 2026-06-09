@@ -36,7 +36,7 @@ type MapShoppingNotificationContextValue = {
   listLoading: boolean;
   listError: string | null;
   reloadNotifications: () => Promise<void>;
-  /** 바코드 누적 스캔 수가 5의 배수일 때 쇼핑 추천 알림 API 호출 */
+  /** 바코드 누적 스캔 1회·이후 5회마다(1, 6, 11…) 쇼핑 추천 알림 API 호출 */
   notifyBarcodeScanPromoIfNeeded: (
     totalScanCount: number,
     lastPickedProduct: Product,
@@ -343,15 +343,20 @@ export function MapShoppingNotificationProvider({
 
   const notifyBarcodeScanPromoIfNeeded = useCallback(
     (totalScanCount: number, lastPickedProduct: Product) => {
-      const milestone = Math.floor(
-        totalScanCount / BARCODE_SCANS_FOR_PROMO_NOTIFICATION,
-      );
+      const isPromoScanMilestone =
+        totalScanCount > 0 &&
+        (totalScanCount === 1 ||
+          (totalScanCount - 1) % BARCODE_SCANS_FOR_PROMO_NOTIFICATION === 0);
 
-      if (milestone === 0 || milestone <= lastNotifiedScanMilestoneRef.current) {
+      if (!isPromoScanMilestone) {
         return;
       }
 
-      lastNotifiedScanMilestoneRef.current = milestone;
+      if (totalScanCount <= lastNotifiedScanMilestoneRef.current) {
+        return;
+      }
+
+      lastNotifiedScanMilestoneRef.current = totalScanCount;
       void pollShoppingRecommendationNotification(
         resolveCatalogProductId(lastPickedProduct.id),
         { force: true },

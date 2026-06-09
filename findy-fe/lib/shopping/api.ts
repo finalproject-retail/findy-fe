@@ -2,8 +2,6 @@ import { getApiErrorMessage } from "@/lib/api";
 import { shoppingApiClient } from "@/lib/products/api/productClient";
 import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
 import { resolveShoppingUserId } from "@/lib/shopping/shoppingUserId";
-
-export { DEFAULT_USER_ID } from "@/lib/shopping/shoppingUserId";
 import type {
   ApiEnvelope,
   CartApi,
@@ -11,6 +9,8 @@ import type {
   ShoppingListApi,
   ShoppingProductApi,
 } from "@/lib/shopping/types";
+
+export { DEFAULT_USER_ID } from "@/lib/shopping/shoppingUserId";
 
 function userHeaders(userId?: number) {
   return { "X-User-Id": String(resolveShoppingUserId(userId)) };
@@ -211,6 +211,23 @@ export async function removeShoppingListItem(
   try {
     const response = await shoppingApiClient.delete<ApiEnvelope<ShoppingListApi>>(
       `/api/v1/shopping-lists/items/${shoppingListItemId}`,
+      { headers: userHeaders(userId) },
+    );
+    return unwrap(response.data);
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+/** POST /api/v1/shopping-lists/items/{shoppingListItemId}/return-to-cart */
+export async function returnShoppingListItemToCart(
+  shoppingListItemId: string | number,
+  userId?: number,
+): Promise<ShoppingListApi> {
+  try {
+    const response = await shoppingApiClient.post<ApiEnvelope<ShoppingListApi>>(
+      `/api/v1/shopping-lists/items/${shoppingListItemId}/return-to-cart`,
+      undefined,
       { headers: userHeaders(userId) },
     );
     return unwrap(response.data);
