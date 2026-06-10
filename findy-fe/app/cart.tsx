@@ -22,7 +22,7 @@ import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
 import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
 import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
 import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
-import type { TripZoneLineItem } from "@/lib/shopping/types";
+import type { ShoppingListApi, TripZoneLineItem } from "@/lib/shopping/types";
 import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
 import { pretendard } from "@/utils/pretendard";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
@@ -72,13 +72,14 @@ export default function CartScreen() {
       let tripZoneLines: TripZoneLineItem[] = [];
       let activeShoppingListId: number | null = null;
       let serverDestinationGridIds: number[] = [];
-      let shoppingListForZones = null;
+      let shoppingListForZones: ShoppingListApi | null = null;
 
       if (hasSelectedProducts) {
         const shoppingList = await createShoppingListFromCart(
           availableItems,
           selectedLines,
         );
+
         shoppingListLines = mapShoppingListApiToLineItems(shoppingList).filter(
           isProductLineItem,
         );
@@ -97,12 +98,12 @@ export default function CartScreen() {
       if (hasSelectedZones) {
         const { shoppingList: shoppingListWithZones, zoneLines } =
           await addZonesToShoppingList(zoneItems, shoppingListForZones);
+
         tripZoneLines = zoneLines;
-        if (shoppingListWithZones != null) {
-          activeShoppingListId = shoppingListWithZones.shoppingListId;
-          if (shoppingListWithZones.destinationGridIds?.length) {
-            serverDestinationGridIds = shoppingListWithZones.destinationGridIds;
-          }
+        activeShoppingListId = shoppingListWithZones.shoppingListId;
+
+        if (shoppingListWithZones.destinationGridIds?.length) {
+          serverDestinationGridIds = shoppingListWithZones.destinationGridIds;
         }
       }
 
@@ -111,9 +112,12 @@ export default function CartScreen() {
             shoppingListLines.map((item) => ({ ...item, selected: true })),
           )
         : [];
+
+      const zoneMapSource = tripZoneLines.length > 0 ? tripZoneLines : zoneItems;
       const zoneMapItems = hasSelectedZones
-        ? zonesToShoppingMapItems(zoneItems)
+        ? zonesToShoppingMapItems(zoneMapSource)
         : [];
+
       const mapItems = [...productMapItems, ...zoneMapItems].map(
         (item, index) => ({
           ...item,
