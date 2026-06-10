@@ -11,6 +11,16 @@ function resolveRecentViewStockCount(dto: RecentViewApiDto): number | undefined 
   });
 }
 
+/** 장바구니(쇼핑 API)와 동일하게 `[브랜드] 상품명` 형식으로 통일 */
+function buildDisplayName(dto: RecentViewApiDto): string {
+  const name = dto.productName.trim();
+  const brand = dto.brandName?.trim();
+  if (!brand || name.includes(brand) || name.startsWith("[")) {
+    return name;
+  }
+  return `[${brand}] ${name}`;
+}
+
 export function mapRecentViewToProduct(dto: RecentViewApiDto): Product | null {
   if (dto.productId == null || !dto.productName?.trim()) {
     return null;
@@ -20,7 +30,7 @@ export function mapRecentViewToProduct(dto: RecentViewApiDto): Product | null {
 
   return {
     id: String(dto.productId),
-    name: dto.productName.trim(),
+    name: buildDisplayName(dto),
     price: dto.price ?? 0,
     discountPercent: 0,
     image: resolveProductImageSource(null, dto.thumbnailUrl),

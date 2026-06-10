@@ -5,6 +5,7 @@ import { getAccessToken } from "@/lib/api/client";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import { getApiErrorMessage } from "@/lib/api";
+import { isAxiosError } from "axios";
 import {
   addCartItem,
   changeCartItemChecked,
@@ -85,6 +86,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartLineItem[]>([]);
   const [zoneItems, setZoneItemsState] = useState<CartZoneItem[]>([]);
   const zoneUserIdRef = useRef<string | null>(null);
+  const removingCartItemIdsRef = useRef(new Set<string>());
 
   const persistZoneItems = useCallback(
     async (nextItems: CartZoneItem[], userId = zoneUserIdRef.current) => {
@@ -179,12 +181,45 @@ export function CartProvider({ children }: PropsWithChildren) {
   }, [applyCartResponse]);
 
   const removeFromCart = useCallback(async (productId: string) => {
-    const target = items.find((item) => item.productId === productId);
-    if (!target?.cartItemId) return;
+    let cartItemId: string | null = null;
+    let removedItem: CartLineItem | null = null;
 
-    const cart = await removeCartItem(target.cartItemId);
-    applyCartResponse(cart);
-  }, [applyCartResponse, items]);
+    setItems((prev) => {
+      const target = prev.find((item) => item.productId === productId);
+      if (!target?.cartItemId) return prev;
+      if (removingCartItemIdsRef.current.has(target.cartItemId)) return prev;
+
+      cartItemId = target.cartItemId;
+      removedItem = target;
+      removingCartItemIdsRef.current.add(target.cartItemId);
+      return prev.filter((item) => item.cartItemId !== target.cartItemId);
+    });
+
+    if (!cartItemId) return;
+
+    try {
+      const cart = await removeCartItem(cartItemId);
+      applyCartResponse(cart);
+    } catch (error) {
+      const alreadyRemoved =
+        isAxiosError(error) && error.response?.status === 404;
+      if (alreadyRemoved) {
+        try {
+          applyCartResponse(await getCart());
+        } catch {
+          // optimistic removal stands
+        }
+      } else if (removedItem) {
+        setItems((prev) => {
+          if (prev.some((item) => item.cartItemId === cartItemId)) return prev;
+          return [...prev, removedItem!];
+        });
+        console.error(getApiErrorMessage(error));
+      }
+    } finally {
+      removingCartItemIdsRef.current.delete(cartItemId);
+    }
+  }, [applyCartResponse]);
 
   const removeFromCartMany = useCallback((productIds: string[]) => {
     if (productIds.length === 0) return;

@@ -1,12 +1,13 @@
 import { StoreMapView } from "@/components/store-map";
 import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
+import { CONGESTION_REFRESH_INTERVAL_MS } from "@/constants/beacon";
 import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { useBeaconLocation } from "@/contexts/BeaconLocationContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { useMapShoppingNotifications } from "@/contexts/MapShoppingNotificationContext";
 import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import { type Href, useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapOverlayControls } from "./MapOverlayControls";
@@ -18,9 +19,6 @@ import {
   getSheetMapBottomInset,
 } from "./shopping-sheet/constants";
 
-/** 화면 캡처 등 — BLE 디버그 패널 잠깐 숨길 때 false */
-const SHOW_MAP_DEV_PANEL = false;
-
 export function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -30,6 +28,7 @@ export function MapScreen() {
     routeSnapshot,
     navigationRefreshKey,
     refreshNavigationOverlay,
+    refreshBeaconCongestion,
     tripLineItems,
     tripZoneItems,
     recommendedProductsById,
@@ -135,6 +134,20 @@ export function MapScreen() {
     }
   }, [activeToast, dismissActiveToast, handleNotificationPress, router]);
 
+  useEffect(() => {
+    if (!showCongestion) {
+      return;
+    }
+
+    void refreshBeaconCongestion(storeId);
+
+    const intervalId = setInterval(() => {
+      void refreshBeaconCongestion(storeId);
+    }, CONGESTION_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [showCongestion, storeId, refreshBeaconCongestion]);
+
   const mapOverlayControlProps = {
     onSearchPress: () =>
       router.push({
@@ -209,7 +222,7 @@ export function MapScreen() {
         />
       ) : null}
 
-      {__DEV__ && SHOW_MAP_DEV_PANEL ? (
+      {__DEV__ ? (
         <View
           style={[
             styles.devBeaconHost,

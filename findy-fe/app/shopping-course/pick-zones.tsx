@@ -10,7 +10,6 @@ import {
   ZONE_PICK_FOOTER_HEIGHT,
   ZonePickSubList,
 } from "@/components/shopping-course";
-import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
@@ -100,10 +99,6 @@ export default function PickZonesScreen() {
       if (next.has(categoryId)) {
         next.delete(categoryId);
         return next;
-      }
-      if (next.size >= MAX_SHOPPING_ZONES) {
-        showToast(`구역은 최대 ${MAX_SHOPPING_ZONES}개까지 담을 수 있어요`);
-        return prev;
       }
       next.add(categoryId);
       return next;

@@ -54,6 +54,17 @@ export function evaluateZoneChange({
   return { shouldSend: true, streak: 0 };
 }
 
+export function shouldSendPresenceHeartbeat(
+  lastSentAtMs: number | null,
+  nowMs: number,
+  intervalMs: number,
+): boolean {
+  if (lastSentAtMs == null || intervalMs <= 0) {
+    return false;
+  }
+  return nowMs - lastSentAtMs >= intervalMs;
+}
+
 export function buildPayload(
   storeId: number | string,
   scan: BeaconScan,
