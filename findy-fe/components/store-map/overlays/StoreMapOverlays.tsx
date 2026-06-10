@@ -97,14 +97,12 @@ export function StoreMapOverlays({
 
   const renderablePath = useMemo(() => {
     if (!routeSnapshot || routeOrder.length === 0) {
-      return { nodes: [], legEndIndices: [], markerConnectors: [] };
+      return { nodes: [], legEndIndices: [] };
     }
     if (routeSnapshot.pathNavigation?.legs.length) {
       return buildRenderableNavigationPath(
         routeSnapshot.pathNavigation,
-        routeOrder,
         config,
-        cellPx,
       );
     }
     const localLegs = buildAisleLegsForShoppingItems(
@@ -112,13 +110,8 @@ export function StoreMapOverlays({
       routeSnapshot.currentLocation,
       routeOrder,
     );
-    return buildRenderablePathFromLocalLegs(
-      localLegs,
-      routeOrder,
-      config,
-      cellPx,
-    );
-  }, [cellPx, config, routeSnapshot, routeOrder]);
+    return buildRenderablePathFromLocalLegs(localLegs, config);
+  }, [config, routeSnapshot, routeOrder]);
 
   const navigationLegCount = useMemo(() => {
     if (routeSnapshot?.pathNavigation?.legs.length) {
@@ -176,22 +169,13 @@ export function StoreMapOverlays({
       return (pickedQuantityByProductId[target.id] ?? 0) > 0;
     };
 
-    const aisleSegments = buildNavigationPathSegmentsFromNodes(
+    return buildNavigationPathSegmentsFromNodes(
       renderablePath.nodes,
       cellPx,
       config,
       renderablePath.legEndIndices,
       isLegDashed,
     );
-
-    const markerSegments = renderablePath.markerConnectors.map(
-      ({ legIndex, segment }) => ({
-        ...segment,
-        variant: isLegDashed(legIndex) ? ("dashed" as const) : ("solid" as const),
-      }),
-    );
-
-    return [...aisleSegments, ...markerSegments];
   }, [
     renderablePath,
     cellPx,

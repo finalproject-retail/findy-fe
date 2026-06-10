@@ -1,14 +1,7 @@
 import type { StoreMapConfig } from "../../types";
-import { snapToNearestShelf } from "../shelfGrid";
-import type {
-  CurrentLocationMock,
-  NavigationPathSegment,
-  ShoppingMapItem,
-} from "../types";
+import type { CurrentLocationMock, ShoppingMapItem } from "../types";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
-import { gridPointToGridId } from "@/lib/map/pathUtils";
 import type { PathNavigationApi } from "@/lib/map/types";
-import { gridCellCenterToPixel } from "./gridToPixel";
 import {
   bfsPath,
   buildWalkableAisleKeys,
@@ -55,30 +48,6 @@ function pathGridIdsToNodes(
     const { gridX, gridY } = gridIdToGridPoint(gridId, cols);
     return { x: gridX, y: gridY };
   });
-}
-
-export function resolveWalkableGridIdForItem(
-  item: ShoppingMapItem,
-  config: StoreMapConfig,
-  walkable: Set<string>,
-): number | null {
-  const { gridX, gridY } =
-    item.gridId != null
-      ? gridIdToGridPoint(item.gridId, config.cols)
-      : { gridX: item.gridX, gridY: item.gridY };
-
-  const goal = goalAisleForGridCell(
-    gridX,
-    gridY,
-    walkable,
-    config.cols,
-    config.rows,
-  );
-  if (!goal) {
-    return null;
-  }
-
-  return gridPointToGridId(goal.x, goal.y, config.cols);
 }
 
 function goalAisleForItem(
@@ -135,25 +104,6 @@ export function sanitizeWalkablePath(
   return dedupeConsecutiveNodes(result);
 }
 
-function buildMarkerConnectorSegment(
-  aisleNode: GridNode,
-  item: ShoppingMapItem,
-  config: StoreMapConfig,
-  cellPx: number,
-  variant: NavigationPathSegment["variant"],
-): NavigationPathSegment | null {
-  const shelf = snapToNearestShelf(config, item.gridX, item.gridY);
-  if (!isAdjacent(aisleNode, { x: shelf.gridX, y: shelf.gridY })) {
-    return null;
-  }
-
-  return {
-    from: gridCellCenterToPixel(aisleNode.x, aisleNode.y, cellPx),
-    to: gridCellCenterToPixel(shelf.gridX, shelf.gridY, cellPx),
-    variant,
-  };
-}
-
 function mergeLegNodes(
   merged: GridNode[],
   legNodes: GridNode[],
@@ -171,129 +121,25 @@ function mergeLegNodes(
   return sanitizeWalkablePath(combined, walkable);
 }
 
-function resolveWalkableGridIdFromGridId(
-  gridId: number,
-  config: StoreMapConfig,
-  walkable: Set<string>,
-): number | null {
-  const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
-  const goal = goalAisleForGridCell(
-    gridX,
-    gridY,
-    walkable,
-    config.cols,
-    config.rows,
-  );
-  if (!goal) {
-    return null;
-  }
-  return gridPointToGridId(goal.x, goal.y, config.cols);
-}
-
-function findLegIndexForItem(
-  item: ShoppingMapItem,
-  pathNavigation: PathNavigationApi,
-  config: StoreMapConfig,
-  walkable: Set<string>,
-): number {
-  const itemWalkableId = resolveWalkableGridIdForItem(item, config, walkable);
-  if (itemWalkableId != null) {
-    const byWalkable = pathNavigation.legs.findIndex(
-      (leg) => leg.toGridId === itemWalkableId,
-    );
-    if (byWalkable >= 0) {
-      return byWalkable;
-    }
-  }
-
-  const rawGridId =
-    item.gridId ?? gridPointToGridId(item.gridX, item.gridY, config.cols);
-  const destWalkable = resolveWalkableGridIdFromGridId(
-    rawGridId,
-    config,
-    walkable,
-  );
-  if (destWalkable != null) {
-    return pathNavigation.legs.findIndex((leg) => leg.toGridId === destWalkable);
-  }
-
-  return -1;
-}
-
-function groupRouteItemsByLeg(
-  pathNavigation: PathNavigationApi,
-  routeOrder: ShoppingMapItem[],
-  config: StoreMapConfig,
-  walkable: Set<string>,
-): ShoppingMapItem[][] {
-  const groups = pathNavigation.legs.map(() => [] as ShoppingMapItem[]);
-  for (const item of routeOrder) {
-    const legIndex = findLegIndexForItem(item, pathNavigation, config, walkable);
-    if (legIndex >= 0) {
-      groups[legIndex]!.push(item);
-    }
-  }
-
-  return groups;
-}
-
-function legEndNode(
-  toGridId: number,
-  cols: number,
-): GridNode {
-  const { gridX, gridY } = gridIdToGridPoint(toGridId, cols);
-  return { x: gridX, y: gridY };
-}
-
-export type MarkerConnector = {
-  legIndex: number;
-  segment: NavigationPathSegment;
-};
-
 export type RenderableNavigationPath = {
   nodes: GridNode[];
   legEndIndices: number[];
-  markerConnectors: MarkerConnector[];
 };
 
 export function buildRenderableNavigationPath(
   pathNavigation: PathNavigationApi,
-  routeOrder: ShoppingMapItem[],
   config: StoreMapConfig,
-  cellPx: number,
 ): RenderableNavigationPath {
   const walkable = buildWalkableAisleKeys(config.cells);
-  const legItemGroups = groupRouteItemsByLeg(
-    pathNavigation,
-    routeOrder,
-    config,
-    walkable,
-  );
 
   let merged: GridNode[] = [];
   const legEndIndices: number[] = [];
-  const markerConnectors: MarkerConnector[] = [];
 
-  pathNavigation.legs.forEach((apiLeg, legIndex) => {
+  for (const apiLeg of pathNavigation.legs) {
     const legNodes = pathGridIdsToNodes(apiLeg.pathGridIds, config.cols);
     merged = mergeLegNodes(merged, legNodes, walkable);
     legEndIndices.push(Math.max(0, merged.length - 1));
-
-    const endNode = legEndNode(apiLeg.toGridId, config.cols);
-    const items = legItemGroups[legIndex] ?? [];
-    for (const item of items) {
-      const connector = buildMarkerConnectorSegment(
-        endNode,
-        item,
-        config,
-        cellPx,
-        "solid",
-      );
-      if (connector) {
-        markerConnectors.push({ legIndex, segment: connector });
-      }
-    }
-  });
+  }
 
   const nodes = sanitizeWalkablePath(merged, walkable);
   const normalizedLegEnds = legEndIndices.map((endIndex) => {
@@ -307,46 +153,25 @@ export function buildRenderableNavigationPath(
     return idx >= 0 ? idx : nodes.length - 1;
   });
 
-  return { nodes, legEndIndices: normalizedLegEnds, markerConnectors };
+  return { nodes, legEndIndices: normalizedLegEnds };
 }
 
 export function buildRenderablePathFromLocalLegs(
   legs: GridNode[][],
-  routeOrder: ShoppingMapItem[],
   config: StoreMapConfig,
-  cellPx: number,
 ): RenderableNavigationPath {
   const walkable = buildWalkableAisleKeys(config.cells);
   let merged: GridNode[] = [];
   const legEndIndices: number[] = [];
-  const markerConnectors: MarkerConnector[] = [];
 
-  legs.forEach((leg, legIndex) => {
+  for (const leg of legs) {
     merged = mergeLegNodes(merged, leg, walkable);
     legEndIndices.push(Math.max(0, merged.length - 1));
-
-    const item = routeOrder[legIndex];
-    if (!item || leg.length === 0) {
-      return;
-    }
-
-    const endNode = leg[leg.length - 1]!;
-    const connector = buildMarkerConnectorSegment(
-      endNode,
-      item,
-      config,
-      cellPx,
-      "solid",
-    );
-    if (connector) {
-      markerConnectors.push({ legIndex, segment: connector });
-    }
-  });
+  }
 
   return {
     nodes: sanitizeWalkablePath(merged, walkable),
     legEndIndices,
-    markerConnectors,
   };
 }
 
