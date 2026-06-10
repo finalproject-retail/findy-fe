@@ -49,6 +49,7 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
+import { usePathname } from "expo-router";
 
 type MapNavigationContextValue = {
   navigationData: StoreMapNavigationMock;
@@ -179,6 +180,9 @@ function mergeTripLineItems(
 export function MapNavigationProvider({ children }: PropsWithChildren) {
   const { isLoggedIn, isLoading } = useAuth();
   const { storeId, isLoading: isStoreMapLoading } = useStoreMapConfig();
+  const pathname = usePathname();
+  const shouldRestoreActiveShoppingTrip =
+    pathname === "/map" || pathname === "/route-generating";
   const { clearPendingBarcodeRewards } = usePoints();
   const [navigationData, setNavigationData] =
     useState<StoreMapNavigationMock>(MAP_NAVIGATION_EMPTY);
@@ -525,15 +529,22 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   }, [endShoppingTrip, isLoading, isLoggedIn]);
 
   useEffect(() => {
-    if (isLoading || !isLoggedIn || isStoreMapLoading) {
+    if (
+      isLoading ||
+      !isLoggedIn ||
+      isStoreMapLoading ||
+      !shouldRestoreActiveShoppingTrip
+    ) {
       return;
     }
+
     void restoreActiveShoppingTrip();
   }, [
     isLoading,
     isLoggedIn,
     isStoreMapLoading,
     storeId,
+    shouldRestoreActiveShoppingTrip,
     restoreActiveShoppingTrip,
   ]);
 
