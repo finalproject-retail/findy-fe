@@ -1,15 +1,14 @@
 import type { CartZoneItem } from "@/components/category";
 import { addCategoryShoppingListItem } from "@/lib/shopping/api";
-import { cancelActiveShoppingListIfExists } from "@/lib/shopping/cancelActiveShoppingListIfExists";
 import { mapShoppingListApiToCategoryLineItems } from "@/lib/shopping/mappers";
 import type { ShoppingListApi, TripZoneLineItem } from "@/lib/shopping/types";
 
 type AddZonesToShoppingListResult = {
-  shoppingList: ShoppingListApi | null;
+  shoppingList: ShoppingListApi;
   zoneLines: TripZoneLineItem[];
 };
 
-/** 선택한 구역을 쇼핑리스트에 반영합니다. 상품 쇼핑리스트가 없으면 로컬 구역만 사용합니다. */
+/** 선택한 구역을 백엔드 쇼핑리스트 카테고리 항목으로 저장합니다. */
 export async function addZonesToShoppingList(
   zones: CartZoneItem[],
   existingShoppingList?: ShoppingListApi | null,
@@ -18,22 +17,18 @@ export async function addZonesToShoppingList(
     throw new Error("쇼핑리스트에 담을 구역이 없습니다.");
   }
 
-  if (existingShoppingList == null) {
-    // 백엔드 createShoppingList는 checked 장바구니 상품이 필수라 구역만으로는 생성 불가
-    await cancelActiveShoppingListIfExists();
-    return {
-      shoppingList: null,
-      zoneLines: zones.map((zone) => ({ ...zone })),
-    };
-  }
+  let shoppingList = existingShoppingList ?? null;
 
-  let shoppingList = existingShoppingList;
   for (const zone of zones) {
     shoppingList = await addCategoryShoppingListItem({
       categoryId: zone.categoryId,
       categoryName: zone.label,
       quantity: 1,
     });
+  }
+
+  if (shoppingList == null) {
+    throw new Error("쇼핑리스트를 생성하지 못했습니다.");
   }
 
   return {
