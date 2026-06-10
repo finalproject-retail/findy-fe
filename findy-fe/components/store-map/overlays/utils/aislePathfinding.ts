@@ -121,6 +121,27 @@ function mergeLegNodes(
   return sanitizeWalkablePath(combined, walkable);
 }
 
+/** fullPathGridIds 상에서 각 leg 도착 통로 칸 인덱스 (앞 leg 이후 구간만 탐색) */
+function resolveLegEndIndices(
+  nodes: GridNode[],
+  legs: PathNavigationApi["legs"],
+  cols: number,
+): number[] {
+  let searchFrom = 0;
+  return legs.map((leg) => {
+    const { gridX, gridY } = gridIdToGridPoint(leg.toGridId, cols);
+    let endIndex = searchFrom;
+    for (let i = searchFrom; i < nodes.length; i++) {
+      const node = nodes[i]!;
+      if (node.x === gridX && node.y === gridY) {
+        endIndex = i;
+      }
+    }
+    searchFrom = endIndex;
+    return endIndex;
+  });
+}
+
 export type RenderableNavigationPath = {
   nodes: GridNode[];
   legEndIndices: number[];
@@ -131,6 +152,22 @@ export function buildRenderableNavigationPath(
   config: StoreMapConfig,
 ): RenderableNavigationPath {
   const walkable = buildWalkableAisleKeys(config.cells);
+
+  if (pathNavigation.fullPathGridIds.length >= 2) {
+    const rawNodes = pathGridIdsToNodes(
+      pathNavigation.fullPathGridIds,
+      config.cols,
+    );
+    const nodes = sanitizeWalkablePath(rawNodes, walkable);
+    return {
+      nodes,
+      legEndIndices: resolveLegEndIndices(
+        nodes,
+        pathNavigation.legs,
+        config.cols,
+      ),
+    };
+  }
 
   let merged: GridNode[] = [];
   const legEndIndices: number[] = [];
@@ -160,18 +197,10 @@ export function buildRenderablePathFromLocalLegs(
   legs: GridNode[][],
   config: StoreMapConfig,
 ): RenderableNavigationPath {
-  const walkable = buildWalkableAisleKeys(config.cells);
-  let merged: GridNode[] = [];
-  const legEndIndices: number[] = [];
-
-  for (const leg of legs) {
-    merged = mergeLegNodes(merged, leg, walkable);
-    legEndIndices.push(Math.max(0, merged.length - 1));
-  }
-
+  const continuous = mergeAisleLegsIntoContinuousPath(legs, config);
   return {
-    nodes: sanitizeWalkablePath(merged, walkable),
-    legEndIndices,
+    nodes: continuous.nodes,
+    legEndIndices: continuous.legEndIndices,
   };
 }
 
