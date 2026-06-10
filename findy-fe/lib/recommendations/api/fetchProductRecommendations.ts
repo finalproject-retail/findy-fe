@@ -34,6 +34,7 @@ function mapRecommendationDtoToProductDto(
   return {
     productId: dto.productId,
     productName: dto.productName,
+    brandName: dto.brandName,
     imageUrl: dto.imageUrl,
     originalPrice: dto.originalPrice ?? salePrice,
     salePrice,

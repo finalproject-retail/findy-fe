@@ -20,9 +20,15 @@ export function mapNotificationProductToProduct(
   }
 
   const id = String(rawId);
-  const name =
-    dto?.productName?.trim() ||
-    (dto?.brandName ? `[${dto.brandName}] 상품` : "추천 상품");
+  const rawName = dto?.productName?.trim();
+  const brand = dto?.brandName?.trim();
+  const name = rawName
+    ? !brand || rawName.includes(brand) || rawName.startsWith("[")
+      ? rawName
+      : `[${brand}] ${rawName}`
+    : brand
+      ? `[${brand}] 상품`
+      : "추천 상품";
 
   const aligned = alignProductDtoWithShoppingPrice({
     productId: id,

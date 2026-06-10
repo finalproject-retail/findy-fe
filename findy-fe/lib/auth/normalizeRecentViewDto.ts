@@ -32,6 +32,9 @@ export function normalizeRecentViewDto(raw: unknown): RecentViewApiDto | null {
     (nested
       ? readString(nested.productName ?? nested.product_name)
       : null);
+  const brandName =
+    readString(item.brandName ?? item.brand_name) ??
+    (nested ? readString(nested.brandName ?? nested.brand_name) : null);
   const price =
     readNumber(item.price ?? item.salePrice ?? item.sale_price) ??
     (nested
@@ -76,6 +79,7 @@ export function normalizeRecentViewDto(raw: unknown): RecentViewApiDto | null {
   return {
     productId,
     productName,
+    brandName,
     price,
     thumbnailUrl,
     viewedAt: viewedAt ?? "",
