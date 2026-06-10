@@ -12,6 +12,21 @@ function resolveId(dto: ProductApiDto): string {
   return String(raw);
 }
 
+/** 장바구니(쇼핑 API)와 동일하게 `[브랜드] 상품명` 형식으로 통일 */
+function resolveDisplayName(dto: ProductApiDto): string | undefined {
+  const name = (dto.name ?? dto.productName)?.trim();
+  if (!name) {
+    return undefined;
+  }
+
+  const brand = dto.brandName?.trim();
+  if (!brand || name.includes(brand) || name.startsWith("[")) {
+    return name;
+  }
+
+  return `[${brand}] ${name}`;
+}
+
 function resolveImageSource(dto: ProductApiDto): Product["image"] {
   return resolveProductImageSource(
     dto.imageUrl ?? (typeof dto.image === "string" ? dto.image : null),
@@ -78,7 +93,7 @@ function resolveDiscountPercent(salePrice: number, originalPrice: number) {
 
 export function mapProductFromApi(dto: ProductApiDto): Product | null {
   const id = resolveId(dto);
-  const name = dto.name ?? dto.productName;
+  const name = resolveDisplayName(dto);
   if (!id || !name) {
     return null;
   }

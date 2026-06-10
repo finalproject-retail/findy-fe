@@ -35,6 +35,7 @@ export type UserProfile = {
 export type RecentViewApiDto = {
   productId: number;
   productName: string;
+  brandName?: string | null;
   price: number;
   thumbnailUrl: string | null;
   viewedAt: string;
