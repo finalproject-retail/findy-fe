@@ -59,3 +59,39 @@ export function splitRouteAtShoppingGoals(
 
   return legs;
 }
+
+/** API 경로 첫 칸이 지도 현재 위치와 다를 때 출발 구간을 현위치에 맞춤 */
+export function adjustPathLegsToStartFromLocation(
+  config: StoreMapConfig,
+  location: CurrentLocationMock,
+  legs: GridNode[][],
+): GridNode[][] {
+  if (legs.length === 0) {
+    return legs;
+  }
+
+  const walkable = buildWalkableAisleKeys(config.cells);
+  const start = nearestWalkableNode(
+    location.gridX,
+    location.gridY,
+    walkable,
+    config.cols,
+    config.rows,
+  );
+  if (!start) {
+    return legs;
+  }
+
+  const firstLeg = legs[0];
+  const firstNode = firstLeg[0];
+  if (firstNode.x === start.x && firstNode.y === start.y) {
+    return legs;
+  }
+
+  const connector = bfsPath(start, firstNode, walkable);
+  if (!connector || connector.length < 2) {
+    return [{ ...firstLeg, 0: start }, ...legs.slice(1)];
+  }
+
+  return [[...connector.slice(0, -1), ...firstLeg], ...legs.slice(1)];
+}

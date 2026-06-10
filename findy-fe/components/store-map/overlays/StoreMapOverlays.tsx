@@ -16,7 +16,10 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
 import { MAP_OVERLAY_MARKER_HEIGHT, MAP_OVERLAY_RECO_HEIGHT } from "./constants";
 import { scaledMarkerSize } from "./utils/overlayScale";
-import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
+import {
+  adjustPathLegsToStartFromLocation,
+  splitRouteAtShoppingGoals,
+} from "./utils/aislePathfinding";
 import { buildNavigationPathSegmentsFromAisleLegs } from "./utils/buildNavigationPath";
 import { orderShoppingMinimumRoute } from "./utils/orderShoppingRoute";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
@@ -92,11 +95,16 @@ export function StoreMapOverlays({
       return [];
     }
     if (routeSnapshot.pathNavigation?.legs.length) {
-      return routeSnapshot.pathNavigation.legs.map((leg) =>
+      const legs = routeSnapshot.pathNavigation.legs.map((leg) =>
         leg.pathGridIds.map((gridId): GridNode => {
           const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
           return { x: gridX, y: gridY };
         }),
+      );
+      return adjustPathLegsToStartFromLocation(
+        config,
+        routeSnapshot.currentLocation,
+        legs,
       );
     }
     return splitRouteAtShoppingGoals(

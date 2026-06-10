@@ -22,6 +22,7 @@ import { createShoppingPath } from "@/lib/map/api/fetchShoppingPath";
 import {
   applyGridIdToShoppingItem,
   destinationGridIdsFromMapItems,
+  gridPointToGridId,
   orderShoppingItemsByDestinationGridIds,
   remainingTripLineItems,
   resolveTripDestinationGridIds,
@@ -293,7 +294,10 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       }
 
       try {
-        const path = await createShoppingPath(storeId, gridIdsToRequest);
+        const { gridX, gridY } = navigationData.currentLocation;
+        const path = await createShoppingPath(storeId, gridIdsToRequest, {
+          currentGridId: gridPointToGridId(gridX, gridY, gridCols),
+        });
         applyRouteFromPath(allMapItems, path, gridCols);
         return true;
       } catch (error) {
@@ -309,6 +313,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [
       applyRouteFromPath,
       destinationGridIds,
+      navigationData.currentLocation,
       navigationData.shoppingItems,
       pickedQuantityByProductId,
       tripLineItems,
