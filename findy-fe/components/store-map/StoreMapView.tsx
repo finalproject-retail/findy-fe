@@ -31,6 +31,7 @@ import type {
 } from "./overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { StoreMapShelfLayer } from "./StoreMapShelfLayer";
 import { StoreMapZoneLayer } from "./StoreMapZoneLayer";
 import { getDetailBlend } from "./utils/zoomLevel";
@@ -60,6 +61,7 @@ type StoreMapViewProps = {
   pickedQuantityByProductId?: Record<string, number>;
   selectedMarkerProductId?: string | null;
   tripLineItems?: CartLineItem[];
+  tripZoneItems?: TripZoneLineItem[];
   recommendedProductsById?: Record<string, Product>;
   onShoppingMarkerPress?: (productId: string) => void;
   onRecommendedMarkerPress?: (productId: string) => void;
@@ -87,6 +89,7 @@ export function StoreMapView({
   pickedQuantityByProductId = {},
   selectedMarkerProductId = null,
   tripLineItems = [],
+  tripZoneItems = [],
   recommendedProductsById = {},
   onShoppingMarkerPress,
   onRecommendedMarkerPress,
@@ -404,6 +407,21 @@ export function StoreMapView({
     followUserRef.current = false;
   }, []);
 
+  const gestureJsRef = useRef({
+    markMapManuallyAdjusted,
+    syncRenderFromScale,
+    applyPanClamp,
+    onDismissMarkerCallout,
+    onMapTapDismiss,
+  });
+  gestureJsRef.current = {
+    markMapManuallyAdjusted,
+    syncRenderFromScale,
+    applyPanClamp,
+    onDismissMarkerCallout,
+    onMapTapDismiss,
+  };
+
   const focusOnUserLocationRef = useRef(focusOnUserLocation);
   focusOnUserLocationRef.current = focusOnUserLocation;
 
@@ -477,88 +495,120 @@ export function StoreMapView({
     shelfOpacity.value = blend;
   };
 
-  const pinch = Gesture.Pinch()
-    .shouldCancelWhenOutside(false)
-    .onStart(() => {
-      runOnJS(markMapManuallyAdjusted)();
-      savedScale.value = scale.value;
-      savedPanX.value = panX.value;
-      savedPanY.value = panY.value;
-    })
-    .onUpdate((e) => {
-      const prevScale = scale.value;
-      const next = clamp(savedScale.value * e.scale, minZoomSv.value, maxZoomSv.value);
-      const ratio = prevScale > 0 ? next / prevScale : 1;
-      scale.value = next;
-      syncOpacityWorklet(next);
-      runOnJS(syncRenderFromScale)(next);
+  const composed = useMemo(() => {
+    const invokeMarkAdjusted = () => {
+      gestureJsRef.current.markMapManuallyAdjusted();
+    };
+    const invokeSyncRender = (nextScale: number) => {
+      gestureJsRef.current.syncRenderFromScale(nextScale);
+    };
+    const invokeApplyPanClamp = (nextScale: number) => {
+      gestureJsRef.current.applyPanClamp(nextScale);
+    };
+    const invokeDismissCallout = () => {
+      gestureJsRef.current.onDismissMarkerCallout?.();
+    };
+    const invokeMapTapDismiss = () => {
+      gestureJsRef.current.onMapTapDismiss?.();
+    };
 
-      const vw = viewportW.value;
-      const vh = viewportH.value - contentBottomInsetSv.value;
-      const sw = mapW.value * next;
-      const sh = mapH.value * next;
+    const pinch = Gesture.Pinch()
+      .shouldCancelWhenOutside(false)
+      .onStart(() => {
+        runOnJS(invokeMarkAdjusted)();
+        savedScale.value = scale.value;
+        savedPanX.value = panX.value;
+        savedPanY.value = panY.value;
+      })
+      .onUpdate((e) => {
+        const prevScale = scale.value;
+        const next = clamp(savedScale.value * e.scale, minZoomSv.value, maxZoomSv.value);
+        const ratio = prevScale > 0 ? next / prevScale : 1;
+        scale.value = next;
+        syncOpacityWorklet(next);
+        runOnJS(invokeSyncRender)(next);
 
-      if (next <= minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
-        panX.value = (vw - sw) / 2;
-        panY.value = (vh - sh) / 2;
-      } else {
-        const cx = vw / 2;
-        const cy = vh / 2;
-        const nextPanX = cx - (cx - panX.value) * ratio;
-        const nextPanY = cy - (cy - panY.value) * ratio;
-        const p = clampPanWorklet(nextPanX, nextPanY, next);
+        const vw = viewportW.value;
+        const vh = viewportH.value - contentBottomInsetSv.value;
+        const sw = mapW.value * next;
+        const sh = mapH.value * next;
+
+        if (next <= minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
+          panX.value = (vw - sw) / 2;
+          panY.value = (vh - sh) / 2;
+        } else {
+          const cx = vw / 2;
+          const cy = vh / 2;
+          const nextPanX = cx - (cx - panX.value) * ratio;
+          const nextPanY = cy - (cy - panY.value) * ratio;
+          const p = clampPanWorklet(nextPanX, nextPanY, next);
+          panX.value = p.x;
+          panY.value = p.y;
+        }
+      })
+      .onEnd(() => {
+        savedScale.value = scale.value;
+        savedPanX.value = panX.value;
+        savedPanY.value = panY.value;
+        if (scale.value > minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
+          runOnJS(invokeApplyPanClamp)(scale.value);
+        }
+      });
+
+    const pan = Gesture.Pan()
+      .minDistance(4)
+      .shouldCancelWhenOutside(false)
+      .onStart(() => {
+        runOnJS(invokeMarkAdjusted)();
+        if (hasSelectedMarkerSv.value) {
+          runOnJS(invokeDismissCallout)();
+        }
+        savedPanX.value = panX.value;
+        savedPanY.value = panY.value;
+      })
+      .onUpdate((e) => {
+        if (scale.value <= minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
+          return;
+        }
+        const p = clampPanWorklet(
+          savedPanX.value + e.translationX,
+          savedPanY.value + e.translationY,
+          scale.value
+        );
         panX.value = p.x;
         panY.value = p.y;
-      }
-    })
-    .onEnd(() => {
-      savedScale.value = scale.value;
-      savedPanX.value = panX.value;
-      savedPanY.value = panY.value;
-      if (scale.value > minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
-        runOnJS(applyPanClamp)(scale.value);
-      }
-    });
+      })
+      .onEnd(() => {
+        savedPanX.value = panX.value;
+        savedPanY.value = panY.value;
+      });
 
-  const pan = Gesture.Pan()
-    .minDistance(4)
-    .shouldCancelWhenOutside(false)
-    .onStart(() => {
-      runOnJS(markMapManuallyAdjusted)();
-      if (hasSelectedMarkerSv.value && onDismissMarkerCallout) {
-        runOnJS(onDismissMarkerCallout)();
-      }
-      savedPanX.value = panX.value;
-      savedPanY.value = panY.value;
-    })
-    .onUpdate((e) => {
-      if (scale.value <= minZoomSv.value * (1 + FIT_SCALE_EPSILON)) {
-        return;
-      }
-      const p = clampPanWorklet(
-        savedPanX.value + e.translationX,
-        savedPanY.value + e.translationY,
-        scale.value
-      );
-      panX.value = p.x;
-      panY.value = p.y;
-    })
-    .onEnd(() => {
-      savedPanX.value = panX.value;
-      savedPanY.value = panY.value;
-    });
+    const tapDismiss = Gesture.Tap()
+      .maxDistance(14)
+      .onEnd(() => {
+        if (hasSelectedMarkerSv.value) {
+          runOnJS(invokeMapTapDismiss)();
+        }
+      });
 
-  const tapDismiss = Gesture.Tap()
-    .maxDistance(14)
-    .onEnd(() => {
-      if (hasSelectedMarkerSv.value && onMapTapDismiss) {
-        runOnJS(onMapTapDismiss)();
-      }
-    });
-
-  const composed = selectedMarkerProductId
-    ? Gesture.Simultaneous(pinch, pan, tapDismiss)
-    : Gesture.Simultaneous(pinch, pan);
+    return Gesture.Simultaneous(pinch, pan, tapDismiss);
+    // Shared values + gestureJsRef only — never rebuild when selection/callbacks change.
+  }, [
+    hasSelectedMarkerSv,
+    maxZoomSv,
+    minZoomSv,
+    panX,
+    panY,
+    savedPanX,
+    savedPanY,
+    savedScale,
+    scale,
+    viewportH,
+    viewportW,
+    contentBottomInsetSv,
+    mapH,
+    mapW,
+  ]);
 
   const animatedMapStyle = useAnimatedStyle(() => {
     const s = scale.value;
@@ -651,6 +701,7 @@ export function StoreMapView({
                   pickedQuantityByProductId={pickedQuantityByProductId}
                   selectedMarkerProductId={selectedMarkerProductId}
                   tripLineItems={tripLineItems}
+                  tripZoneItems={tripZoneItems}
                   recommendedProductsById={recommendedProductsById}
                   onShoppingMarkerPress={onShoppingMarkerPress}
                   onRecommendedMarkerPress={onRecommendedMarkerPress}

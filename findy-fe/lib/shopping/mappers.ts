@@ -233,6 +233,7 @@ export function mapShoppingListApiToCategoryLineItems(
     return [
       {
         ...zone,
+        gridId: item.category.gridId ?? zone.gridId ?? null,
         shoppingListItemId: String(item.shoppingListItemId),
       },
     ];

@@ -18,6 +18,9 @@ import {
   getSheetMapBottomInset,
 } from "./shopping-sheet/constants";
 
+/** 화면 캡처 등 — BLE 디버그 패널 잠깐 숨길 때 false */
+const SHOW_MAP_DEV_PANEL = false;
+
 export function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -28,6 +31,7 @@ export function MapScreen() {
     navigationRefreshKey,
     refreshNavigationOverlay,
     tripLineItems,
+    tripZoneItems,
     recommendedProductsById,
     pickedQuantityByProductId,
   } = useMapNavigation();
@@ -97,13 +101,20 @@ export function MapScreen() {
     setSelectedMarkerProductId(null);
   }, []);
 
+  const markerPressBusyRef = useRef(false);
+
   const handleMarkerPress = useCallback((productId: string) => {
+    if (markerPressBusyRef.current) {
+      return;
+    }
+    markerPressBusyRef.current = true;
     suppressMapTapDismissRef.current = true;
     setSelectedMarkerProductId((prev) =>
       prev === productId ? null : productId,
     );
     requestAnimationFrame(() => {
       suppressMapTapDismissRef.current = false;
+      markerPressBusyRef.current = false;
     });
   }, []);
 
@@ -165,6 +176,7 @@ export function MapScreen() {
             pickedQuantityByProductId={pickedQuantityByProductId}
             selectedMarkerProductId={selectedMarkerProductId}
             tripLineItems={tripLineItems}
+            tripZoneItems={tripZoneItems}
             recommendedProductsById={recommendedProductsById}
             onShoppingMarkerPress={handleMarkerPress}
             onRecommendedMarkerPress={handleMarkerPress}
@@ -197,7 +209,7 @@ export function MapScreen() {
         />
       ) : null}
 
-      {__DEV__ ? (
+      {__DEV__ && SHOW_MAP_DEV_PANEL ? (
         <View
           style={[
             styles.devBeaconHost,
