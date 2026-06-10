@@ -5,7 +5,7 @@ import { View } from "react-native";
 
 export default function ChatbotRoute() {
   return (
-    <SafeView className="flex-1">
+    <SafeView className="flex-1 bg-white">
       <Header showBack showCenterLogo />
       <View style={{ height: 1, backgroundColor: "#E5E7EB" }} />
       <View className="min-h-0 flex-1">
