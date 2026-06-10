@@ -1,5 +1,4 @@
 import { SquareButton } from "@/components/common/SquareButton";
-import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Pressable, Text, View } from "react-native";
@@ -32,9 +31,7 @@ export function CartZoneFooter({
       <View className="flex-row items-center justify-between">
         <Text className="text-lg text-text-main" style={pretendard(400)}>
           총 방문 구역{" "}
-          <Text style={pretendard(700)}>
-            {zoneCount} / {MAX_SHOPPING_ZONES}
-          </Text>
+          <Text style={pretendard(700)}>{zoneCount}개</Text>
         </Text>
         {zoneCount > 0 ? (
           <Pressable

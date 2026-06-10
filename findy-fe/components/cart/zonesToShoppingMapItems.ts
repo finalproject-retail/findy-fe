@@ -2,6 +2,7 @@ import type { CartZoneItem } from "@/components/category";
 import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
 import type { CategoryZone } from "@/components/store-map/types";
 import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 
 function zoneCenter(zone: CategoryZone) {
   return {
@@ -32,9 +33,25 @@ function findMapZone(zone: CartZoneItem): CategoryZone | null {
   return config.zones[0] ?? null;
 }
 
+type ZoneMapInput = CartZoneItem & { gridId?: number | null };
+
 /** 담은 소분류 구역 → 지도 방문 지점 */
-export function zonesToShoppingMapItems(zones: CartZoneItem[]): ShoppingMapItem[] {
+export function zonesToShoppingMapItems(zones: ZoneMapInput[]): ShoppingMapItem[] {
+  const config = getEmartStoreMapConfig();
+
   return zones.map((zone, index) => {
+    if (zone.gridId != null) {
+      const { gridX, gridY } = gridIdToGridPoint(zone.gridId, config.cols);
+      return {
+        id: `zone-${zone.categoryId}`,
+        name: zone.label,
+        gridX,
+        gridY,
+        gridId: zone.gridId,
+        visitOrder: index + 1,
+      };
+    }
+
     const mapZone = findMapZone(zone);
     const { gridX, gridY } = mapZone
       ? zoneCenter(mapZone)

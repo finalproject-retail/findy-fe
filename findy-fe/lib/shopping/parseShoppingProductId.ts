@@ -1,5 +1,15 @@
 import { resolveCatalogProductId } from "@/components/product/resolveCatalogProductId";
 
+/** shopping-service에 등록된 숫자 상품 id인지 (목 데이터 slug 제외) */
+export function isShoppingApiProductId(productId: string | number): boolean {
+  try {
+    parseShoppingProductId(productId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** API용 숫자 productId — 검색용 `-search-` 접미사·비숫자 id 제거 */
 export function parseShoppingProductId(productId: string | number): number {
   if (typeof productId === "number") {

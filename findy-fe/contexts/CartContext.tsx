@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/lib/api/client";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
+import { getApiErrorMessage } from "@/lib/api";
+import { isAxiosError } from "axios";
 import {
   addCartItem,
   changeCartItemChecked,
@@ -11,6 +13,7 @@ import {
   getCart,
   removeCartItem,
 } from "@/lib/shopping/api";
+import { isShoppingApiProductId } from "@/lib/shopping/parseShoppingProductId";
 import {
   clearCartZoneItems,
   loadCartZoneItems,
@@ -83,6 +86,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartLineItem[]>([]);
   const [zoneItems, setZoneItemsState] = useState<CartZoneItem[]>([]);
   const zoneUserIdRef = useRef<string | null>(null);
+  const removingCartItemIdsRef = useRef(new Set<string>());
 
   const persistZoneItems = useCallback(
     async (nextItems: CartZoneItem[], userId = zoneUserIdRef.current) => {
@@ -159,17 +163,63 @@ export function CartProvider({ children }: PropsWithChildren) {
   );
 
   const addToCart = useCallback(async (product: Product, quantity = 1) => {
-    const cart = await addCartItem(product.id, quantity);
-    applyCartResponse(cart);
+    if (!isShoppingApiProductId(product.id)) {
+      throw new Error(
+        "이 상품은 데모 데이터라 장바구니에 담을 수 없습니다. 로그인 후 상품 목록을 다시 불러와 주세요.",
+      );
+    }
+    if (!isAvailable(product)) {
+      throw new Error("재고가 없거나 이 매장에서 판매하지 않는 상품입니다.");
+    }
+
+    try {
+      const cart = await addCartItem(product.id, quantity);
+      applyCartResponse(cart);
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error));
+    }
   }, [applyCartResponse]);
 
   const removeFromCart = useCallback(async (productId: string) => {
-    const target = items.find((item) => item.productId === productId);
-    if (!target?.cartItemId) return;
+    let cartItemId: string | null = null;
+    let removedItem: CartLineItem | null = null;
 
-    const cart = await removeCartItem(target.cartItemId);
-    applyCartResponse(cart);
-  }, [applyCartResponse, items]);
+    setItems((prev) => {
+      const target = prev.find((item) => item.productId === productId);
+      if (!target?.cartItemId) return prev;
+      if (removingCartItemIdsRef.current.has(target.cartItemId)) return prev;
+
+      cartItemId = target.cartItemId;
+      removedItem = target;
+      removingCartItemIdsRef.current.add(target.cartItemId);
+      return prev.filter((item) => item.cartItemId !== target.cartItemId);
+    });
+
+    if (!cartItemId) return;
+
+    try {
+      const cart = await removeCartItem(cartItemId);
+      applyCartResponse(cart);
+    } catch (error) {
+      const alreadyRemoved =
+        isAxiosError(error) && error.response?.status === 404;
+      if (alreadyRemoved) {
+        try {
+          applyCartResponse(await getCart());
+        } catch {
+          // optimistic removal stands
+        }
+      } else if (removedItem) {
+        setItems((prev) => {
+          if (prev.some((item) => item.cartItemId === cartItemId)) return prev;
+          return [...prev, removedItem!];
+        });
+        console.error(getApiErrorMessage(error));
+      }
+    } finally {
+      removingCartItemIdsRef.current.delete(cartItemId);
+    }
+  }, [applyCartResponse]);
 
   const removeFromCartMany = useCallback((productIds: string[]) => {
     if (productIds.length === 0) return;

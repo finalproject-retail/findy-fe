@@ -1,6 +1,5 @@
 import { SquareButton } from "@/components/common/SquareButton";
 import { CART_ZONE_FOOTER_HEIGHT } from "@/components/cart";
-import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import { SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Text, View } from "react-native";
@@ -33,10 +32,8 @@ export function ZonePickFooter({
     >
       <View className="flex-row items-center justify-between">
         <Text className="text-lg text-text-main" style={pretendard(400)}>
-          최대 방문 구역{" "}
-          <Text style={pretendard(700)}>
-            {selectedCount} / {MAX_SHOPPING_ZONES}
-          </Text>
+          선택한 구역{" "}
+          <Text style={pretendard(700)}>{selectedCount}개</Text>
         </Text>
       </View>
 

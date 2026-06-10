@@ -1,7 +1,6 @@
 import { CartCheckbox } from "@/components/cart/CartCheckbox";
 import type { CategoryMiddle } from "@/components/category";
 import { SPACING } from "@/constants/theme";
-import { MAX_SHOPPING_ZONES } from "@/constants/shoppingCourse";
 import { pretendard } from "@/utils/pretendard";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -18,8 +17,6 @@ export function ZonePickSubList({
   onToggle,
   bottomInset = 100,
 }: ZonePickSubListProps) {
-  const atMax = selectedIds.size >= MAX_SHOPPING_ZONES;
-
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -47,19 +44,13 @@ export function ZonePickSubList({
 
           {middle.subs.map((sub) => {
             const checked = selectedIds.has(sub.categoryId);
-            const disabled = atMax && !checked;
 
             return (
               <Pressable
                 key={sub.categoryId}
-                onPress={() => {
-                  if (!disabled) {
-                    onToggle(sub.categoryId);
-                  }
-                }}
-                disabled={disabled}
+                onPress={() => onToggle(sub.categoryId)}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked, disabled }}
+                accessibilityState={{ checked }}
                 accessibilityLabel={`${sub.label} 구역`}
                 style={{
                   flexDirection: "row",
@@ -67,12 +58,10 @@ export function ZonePickSubList({
                   paddingHorizontal: SPACING.md,
                   paddingVertical: 14,
                   gap: SPACING.sm,
-                  opacity: disabled ? 0.45 : 1,
                 }}
               >
                 <CartCheckbox
                   checked={checked}
-                  disabled={disabled}
                   accessibilityLabel={`${sub.label} 선택`}
                 />
                 <Text
