@@ -5,6 +5,11 @@ import {
   postChatbotMessage,
   postChatbotVoiceMessage,
 } from "@/lib/chatbot/api/chatbot";
+import {
+  enrichChatbotProductRecommendation,
+  enrichChatbotRecipeRecommendation,
+  enrichChatMessagesWithCatalogImages,
+} from "@/lib/chatbot/enrichChatbotProductImages";
 import { mapChatbotHistoryMessages } from "@/lib/chatbot/mapChatbotMessages";
 import {
   CHATBOT_DEFAULT_LIMIT,
@@ -26,6 +31,12 @@ function pickLatestSession(
   )[0]!;
 }
 
+/** 챗봇 화면을 나갔다 들어와도 채팅 내역 유지 (채팅 종료하기 전까지) */
+let chatbotSessionCache: {
+  sessionId: number | null;
+  messages: ChatMessage[];
+} | null = null;
+
 export function useChatbot(storeId: number) {
   const { isLoggedIn, isLoading: authLoading, accessToken } = useAuth();
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -40,6 +51,7 @@ export function useChatbot(storeId: number) {
     }
 
     if (!isLoggedIn || !accessToken) {
+      chatbotSessionCache = null;
       setSessionId(null);
       setMessages(CHATBOT_WELCOME_MESSAGES);
       setError(
@@ -47,6 +59,15 @@ export function useChatbot(storeId: number) {
           ? null
           : "로그인 정보가 만료되었습니다. 다시 로그인해 주세요.",
       );
+      setLoading(false);
+      return;
+    }
+
+    // 같은 앱 세션 안에서 재진입 시 이전 대화 복원
+    if (chatbotSessionCache) {
+      setSessionId(chatbotSessionCache.sessionId);
+      setMessages(chatbotSessionCache.messages);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -65,9 +86,8 @@ export function useChatbot(storeId: number) {
       }
 
       const history = await fetchChatbotSessionMessages(latestSession.sessionId);
-      const mapped = mapChatbotHistoryMessages(
-        history.messages,
-        history.sessionId,
+      const mapped = await enrichChatMessagesWithCatalogImages(
+        mapChatbotHistoryMessages(history.messages, history.sessionId),
       );
 
       setSessionId(history.sessionId);
@@ -92,6 +112,24 @@ export function useChatbot(storeId: number) {
   useEffect(() => {
     void loadInitial();
   }, [loadInitial]);
+
+  useEffect(() => {
+    if (loading || !isLoggedIn) {
+      return;
+    }
+    chatbotSessionCache = { sessionId, messages };
+  }, [isLoggedIn, loading, messages, sessionId]);
+
+  /** 채팅 종료하기 — 내역 비우고 새 대화로 시작 (재진입 시 이전 세션 복원 안 함) */
+  const endChat = useCallback(() => {
+    chatbotSessionCache = {
+      sessionId: null,
+      messages: CHATBOT_WELCOME_MESSAGES,
+    };
+    setSessionId(null);
+    setMessages(CHATBOT_WELCOME_MESSAGES);
+    setError(null);
+  }, []);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -118,6 +156,14 @@ export function useChatbot(storeId: number) {
           storeId,
           limit: CHATBOT_DEFAULT_LIMIT,
         });
+        const [recipeRecommendation, productRecommendation] = await Promise.all([
+          enrichChatbotRecipeRecommendation(
+            response.recipeRecommendation ?? undefined,
+          ),
+          enrichChatbotProductRecommendation(
+            response.productRecommendation ?? undefined,
+          ),
+        ]);
         setSessionId(response.sessionId);
         setMessages((current) => [
           ...current.filter((item) => item.id !== pendingId),
@@ -130,8 +176,8 @@ export function useChatbot(storeId: number) {
             id: `bot-${response.sessionId}-${Date.now() + 1}`,
             sender: "bot",
             text: response.answer,
-            recipeRecommendation: response.recipeRecommendation ?? undefined,
-            productRecommendation: response.productRecommendation ?? undefined,
+            recipeRecommendation,
+            productRecommendation,
           },
         ]);
       } catch (err) {
@@ -179,6 +225,14 @@ export function useChatbot(storeId: number) {
           storeId,
           limit: CHATBOT_DEFAULT_LIMIT,
         });
+        const [recipeRecommendation, productRecommendation] = await Promise.all([
+          enrichChatbotRecipeRecommendation(
+            response.recipeRecommendation ?? undefined,
+          ),
+          enrichChatbotProductRecommendation(
+            response.productRecommendation ?? undefined,
+          ),
+        ]);
         setSessionId(response.sessionId);
         setMessages((current) => [
           ...current.filter((item) => item.id !== pendingId),
@@ -191,8 +245,8 @@ export function useChatbot(storeId: number) {
             id: `bot-${response.sessionId}-${Date.now() + 1}`,
             sender: "bot",
             text: response.answer,
-            recipeRecommendation: response.recipeRecommendation ?? undefined,
-            productRecommendation: response.productRecommendation ?? undefined,
+            recipeRecommendation,
+            productRecommendation,
           },
         ]);
       } catch (err) {
@@ -220,6 +274,7 @@ export function useChatbot(storeId: number) {
     error,
     sendMessage,
     sendVoiceMessage,
+    endChat,
     reload: loadInitial,
   };
 }

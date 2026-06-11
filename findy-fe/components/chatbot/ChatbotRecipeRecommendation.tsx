@@ -8,42 +8,59 @@ import { pretendard } from "@/utils/pretendard";
 import { FlatList, Text, View } from "react-native";
 
 const CARD_GAP = 10;
+/** 재료별로 최대 2개씩만 골라 한 줄로 노출 */
+const MAX_PRODUCTS_PER_INGREDIENT = 2;
 
 type ChatbotRecipeRecommendationProps = {
   recommendation: ChatbotRecipeRecommendationModel;
 };
 
-function IngredientProductCarousel({
-  ingredientName,
-  quantityText,
-  products,
-}: {
-  ingredientName: string;
-  quantityText: string;
-  products: ChatbotRecipeRecommendationModel["ingredients"][number]["products"];
-}) {
+function pickRecipeProducts(
+  ingredients: ChatbotRecipeRecommendationModel["ingredients"],
+) {
+  const seen = new Set<string>();
+  const products: ChatbotRecipeRecommendationModel["ingredients"][number]["products"] =
+    [];
+
+  for (const ingredient of ingredients) {
+    let pickedCount = 0;
+    for (const product of ingredient.products) {
+      if (pickedCount >= MAX_PRODUCTS_PER_INGREDIENT) {
+        break;
+      }
+      if (seen.has(product.id)) {
+        continue;
+      }
+      seen.add(product.id);
+      products.push(product);
+      pickedCount += 1;
+    }
+  }
+
+  return products;
+}
+
+export function ChatbotRecipeRecommendation({
+  recommendation,
+}: ChatbotRecipeRecommendationProps) {
+  const products = pickRecipeProducts(recommendation.ingredients);
+
+  if (products.length === 0) {
+    return null;
+  }
+
   return (
-    <View style={{ gap: SPACING.xs }}>
-      <View style={{ gap: 2 }}>
-        <Text
-          className="text-text-main"
-          style={{ ...pretendard(600), fontSize: TYPOGRAPHY.size.sm }}
-        >
-          {ingredientName}
-        </Text>
-        {quantityText ? (
-          <Text
-            className="text-text-sub"
-            style={{ ...pretendard(400), fontSize: TYPOGRAPHY.size.xs }}
-          >
-            {quantityText}
-          </Text>
-        ) : null}
-      </View>
+    <View style={{ marginTop: SPACING.sm, gap: SPACING.xs, maxWidth: "100%" }}>
+      <Text
+        className="text-text-main"
+        style={{ ...pretendard(700), fontSize: TYPOGRAPHY.size.sm }}
+      >
+        {recommendation.recipeName} 재료 추천
+      </Text>
 
       <FlatList
         data={products}
-        keyExtractor={(item) => `${ingredientName}-${item.id}`}
+        keyExtractor={(item) => `recipe-product-${item.id}`}
         horizontal
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
@@ -53,34 +70,6 @@ function IngredientProductCarousel({
         contentContainerStyle={{ gap: CARD_GAP, paddingRight: SPACING.sm }}
         renderItem={({ item }) => <ChatbotRecommendProductCard product={item} />}
       />
-    </View>
-  );
-}
-
-export function ChatbotRecipeRecommendation({
-  recommendation,
-}: ChatbotRecipeRecommendationProps) {
-  if (recommendation.ingredients.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={{ marginTop: SPACING.sm, gap: SPACING.md, maxWidth: "100%" }}>
-      <Text
-        className="text-text-main"
-        style={{ ...pretendard(700), fontSize: TYPOGRAPHY.size.sm }}
-      >
-        {recommendation.recipeName} 재료 추천
-      </Text>
-
-      {recommendation.ingredients.map((ingredient) => (
-        <IngredientProductCarousel
-          key={ingredient.ingredientName}
-          ingredientName={ingredient.ingredientName}
-          quantityText={ingredient.quantityText}
-          products={ingredient.products}
-        />
-      ))}
     </View>
   );
 }

@@ -2,6 +2,7 @@ import type { Product } from "@/components/product";
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import { DEFAULT_API_STORE_ID } from "@/components/home/storeOptions";
 import type { ApiEnvelope } from "@/lib/map/types";
+import { fetchProductDetail } from "@/lib/products/api/fetchProductDetail";
 import {
   alignProductDtoWithShoppingPrice,
   mapProductsFromApi,
@@ -61,15 +62,29 @@ function isRecommendationNotFound(error: unknown): boolean {
   return false;
 }
 
-function mapRecommendationProducts(
+/**
+ * 추천 서비스 스냅샷에는 재고·가격 정보가 없거나 0으로 내려옴
+ * → 쇼핑 서비스 상품 상세로 보강 후 품절 필터 적용.
+ */
+async function mapRecommendationProducts(
   items: ProductRecommendationApiDto[],
   sourceProductId: string,
-): Product[] {
+): Promise<Product[]> {
   const mapped = mapProductsFromApi(
     items.map(mapRecommendationDtoToProductDto).map(alignProductDtoWithShoppingPrice),
   ).filter((product): product is Product => product != null);
 
-  return filterInStockProducts(mapped).filter(
+  const enriched = await Promise.all(
+    mapped.map(async (product) => {
+      try {
+        return await fetchProductDetail(product.id);
+      } catch {
+        return product;
+      }
+    }),
+  );
+
+  return filterInStockProducts(enriched).filter(
     (product) => product.id !== sourceProductId,
   );
 }
@@ -92,7 +107,7 @@ async function fetchRecommendationList(
       throw new Error(body?.message ?? "상품 추천을 불러오지 못했습니다.");
     }
 
-    return mapRecommendationProducts(
+    return await mapRecommendationProducts(
       unwrapRecommendationItems(body.data),
       sourceProductId,
     );
