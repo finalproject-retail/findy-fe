@@ -35,9 +35,14 @@ function normalizeLimit(limit?: number) {
 function mapRewardHistoriesResult(
   data: RewardHistoriesResult,
 ): FetchRewardHistoriesResult {
+  // 변동 포인트 0인 내역(예: 0P 적립)은 표시하지 않음
+  const histories = data.histories
+    .map(mapRewardHistoryFromApi)
+    .filter((item) => item.amount !== 0);
+
   return {
-    histories: data.histories.map(mapRewardHistoryFromApi),
-    count: data.count,
+    histories,
+    count: histories.length,
   };
 }
 

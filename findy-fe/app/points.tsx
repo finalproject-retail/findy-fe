@@ -88,7 +88,7 @@ export default function PointsScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           <PointSummaryCard balance={balance} expiringThisMonth={0} />
-          <View style={{ paddingHorizontal: SPACING.screen, gap: SPACING.lg }}>
+          <View style={{ paddingHorizontal: SPACING.screen }}>
             <PeriodInquiry value={period} onChange={setPeriod} />
             <PointHistoryFilter value={filter} onChange={setFilter} />
             {loading ? (
