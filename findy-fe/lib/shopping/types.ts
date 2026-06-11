@@ -128,6 +128,7 @@ export type TripZoneLineItem = {
   topLabel: string;
   middleLabel: string;
   emoji: string;
+  /** 쇼핑리스트 API category.gridId */
   gridId?: number | null;
   shoppingListItemId?: string;
 };

@@ -45,7 +45,8 @@ export function MapShoppingSheetItem({
   const { width: screenWidth } = useWindowDimensions();
   const [showAlternatives, setShowAlternatives] = useState(false);
   const { product, quantity } = item;
-  const soldOut = isOutOfStock(product);
+  /** 내가 이미 스캔한 상품은 재고가 0이 되어도(내가 마지막 재고를 가져간 경우) 품절 처리하지 않음 */
+  const soldOut = isOutOfStock(product) && pickedQuantity <= 0;
   const isFullyPicked = pickedQuantity >= quantity;
   const unitPrice = getUnitPrice(product);
   const showDiscount = hasProductDiscount(product);
@@ -301,7 +302,7 @@ export function MapShoppingSheetItem({
             </Pressable>
           </View>
 
-          {lowStock ? (
+          {lowStock || stockCount <= 0 ? (
             <Text
               style={{
                 ...pretendard(400),
@@ -309,7 +310,9 @@ export function MapShoppingSheetItem({
                 color: COLORS.redText,
               }}
             >
-              품절임박 {stockCount}개 남음
+              {stockCount <= 0
+                ? "남은 재고 0개"
+                : `품절임박 ${stockCount}개 남음`}
             </Text>
           ) : (
             <Text

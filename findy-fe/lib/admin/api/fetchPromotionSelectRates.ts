@@ -38,18 +38,18 @@ async function fetchSelectRates(
   }
 }
 
-/** GET /api/v1/admin/analytics/promotions/select-rate */
+/** GET /api/v1/analytics/promotions/select-rate */
 export function fetchPromotionSelectRates(params: FetchPromotionSelectRateParams) {
   return fetchSelectRates(
-    "/api/v1/admin/analytics/promotions/select-rate",
+    "/api/v1/analytics/promotions/select-rate",
     params,
   );
 }
 
-/** GET /api/v1/admin/analytics/alternatives/select-rate — 품절 대응 퍼널 */
+/** GET /api/v1/analytics/alternatives/select-rate — 품절 대응 퍼널 */
 export function fetchAlternativeSelectRates(params: FetchPromotionSelectRateParams) {
   return fetchSelectRates(
-    "/api/v1/admin/analytics/alternatives/select-rate",
+    "/api/v1/analytics/alternatives/select-rate",
     params,
   );
 }

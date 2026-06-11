@@ -8,19 +8,22 @@ import { RecommendationAdMarkerLayer } from "./layers/RecommendationAdMarkerLaye
 import { ShoppingItemMarkerLayer } from "./layers/ShoppingItemMarkerLayer";
 import { UserLocationMarker } from "./layers/UserLocationMarker";
 import { MapProductMarkerCallout } from "./MapProductMarkerCallout";
+import { MapZoneMarkerCallout } from "./MapZoneMarkerCallout";
 import type {
   NavigationRouteSnapshot,
   StoreMapNavigationMock,
 } from "./types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
+import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { MAP_OVERLAY_MARKER_HEIGHT, MAP_OVERLAY_RECO_HEIGHT } from "./constants";
 import { scaledMarkerSize } from "./utils/overlayScale";
-import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
 import {
-  buildNavigationPathSegmentsFromAisleLegs,
-  pathLegsFromNavigation,
-} from "./utils/buildNavigationPath";
+  buildAisleLegsForShoppingItems,
+  buildRenderableNavigationPath,
+  buildRenderablePathFromLocalLegs,
+} from "./utils/aislePathfinding";
+import { buildNavigationPathSegmentsFromNodes } from "./utils/buildNavigationPath";
 import { orderShoppingMinimumRoute } from "./utils/orderShoppingRoute";
 import { orderShoppingItemsByDestinationGridIds } from "@/lib/map/pathUtils";
 import {
@@ -45,6 +48,7 @@ type StoreMapOverlaysProps = {
   pickedQuantityByProductId?: Record<string, number>;
   selectedMarkerProductId?: string | null;
   tripLineItems?: CartLineItem[];
+  tripZoneItems?: TripZoneLineItem[];
   recommendedProductsById?: Record<string, Product>;
   onShoppingMarkerPress?: (productId: string) => void;
   onRecommendedMarkerPress?: (productId: string) => void;
@@ -64,6 +68,7 @@ export function StoreMapOverlays({
   pickedQuantityByProductId = {},
   selectedMarkerProductId = null,
   tripLineItems = [],
+  tripZoneItems = [],
   recommendedProductsById = {},
   onShoppingMarkerPress,
   onRecommendedMarkerPress,
@@ -88,23 +93,37 @@ export function StoreMapOverlays({
     );
   }, [config, routeSnapshot]);
 
-  const aisleLegs = useMemo(() => {
+  const [activeLegIndex, setActiveLegIndex] = useState(0);
+
+  const renderablePath = useMemo(() => {
     if (!routeSnapshot || routeOrder.length === 0) {
-      return [];
+      return { nodes: [], legEndIndices: [] };
     }
     if (routeSnapshot.pathNavigation) {
-      return pathLegsFromNavigation(routeSnapshot.pathNavigation, config.cols);
+      return buildRenderableNavigationPath(
+        routeSnapshot.pathNavigation,
+        config,
+      );
     }
-    return splitRouteAtShoppingGoals(
+    const localLegs = buildAisleLegsForShoppingItems(
       config,
       routeSnapshot.currentLocation,
       routeOrder,
     );
+    return buildRenderablePathFromLocalLegs(localLegs, config);
   }, [config, routeSnapshot, routeOrder]);
 
-  const [activeLegIndex, setActiveLegIndex] = useState(0);
+  const navigationLegCount = useMemo(() => {
+    if (routeSnapshot?.pathNavigation?.legs.length) {
+      return routeSnapshot.pathNavigation.legs.length;
+    }
+    return renderablePath.legEndIndices.length;
+  }, [
+    renderablePath.legEndIndices.length,
+    routeSnapshot?.pathNavigation?.legs.length,
+  ]);
 
-  const maxLegIndex = Math.max(0, aisleLegs.length - 1);
+  const maxLegIndex = Math.max(0, navigationLegCount - 1);
 
   useEffect(() => {
     setActiveLegIndex((prev) => Math.min(prev, maxLegIndex));
@@ -138,30 +157,33 @@ export function StoreMapOverlays({
     setActiveLegIndex((prev) => Math.min(prev + 1, maxLegIndex));
   }, [maxLegIndex]);
 
-  const pathSegments = useMemo(
-    () =>
-      buildNavigationPathSegmentsFromAisleLegs(
-        aisleLegs,
-        cellPx,
-        (legIndex) => {
-          if (legIndex < activeLegIndex) {
-            return true;
-          }
-          const target = routeOrder[legIndex];
-          if (!target) {
-            return false;
-          }
-          return (pickedQuantityByProductId[target.id] ?? 0) > 0;
-        },
-      ),
-    [
-      aisleLegs,
+  const pathSegments = useMemo(() => {
+    const isLegDashed = (legIndex: number) => {
+      if (legIndex < activeLegIndex) {
+        return true;
+      }
+      const target = routeOrder[legIndex];
+      if (!target) {
+        return false;
+      }
+      return (pickedQuantityByProductId[target.id] ?? 0) > 0;
+    };
+
+    return buildNavigationPathSegmentsFromNodes(
+      renderablePath.nodes,
       cellPx,
-      activeLegIndex,
-      routeOrder,
-      pickedQuantityByProductId,
-    ],
-  );
+      config,
+      renderablePath.legEndIndices,
+      isLegDashed,
+    );
+  }, [
+    renderablePath,
+    cellPx,
+    config,
+    activeLegIndex,
+    routeOrder,
+    pickedQuantityByProductId,
+  ]);
 
   const shoppingMarkerItems = useMemo(() => {
     if (routeSnapshot?.shoppingItems.length) {
@@ -185,6 +207,17 @@ export function StoreMapOverlays({
         : undefined,
     [selectedMarkerProductId, tripLineItems],
   );
+
+  const selectedTripZone = useMemo(() => {
+    if (!selectedMarkerProductId?.startsWith("zone-")) {
+      return undefined;
+    }
+    const categoryId = Number(selectedMarkerProductId.slice("zone-".length));
+    if (!Number.isFinite(categoryId)) {
+      return undefined;
+    }
+    return tripZoneItems.find((zone) => zone.categoryId === categoryId);
+  }, [selectedMarkerProductId, tripZoneItems]);
 
   const selectedMarker = useMemo(
     () =>
@@ -261,6 +294,13 @@ export function StoreMapOverlays({
         <MapProductMarkerCallout
           product={selectedTripLine.product}
           quantity={selectedTripLine.quantity}
+          anchor={selectedMarker.center}
+          pinHeight={pinHeight}
+        />
+      ) : null}
+      {selectedTripZone && selectedMarker && !selectedTripLine ? (
+        <MapZoneMarkerCallout
+          zone={selectedTripZone}
           anchor={selectedMarker.center}
           pinHeight={pinHeight}
         />

@@ -35,9 +35,9 @@ export type { AdminProductListPageResult } from "@/lib/admin/mockProductPerforma
 export const ADMIN_PRODUCT_LIST_PAGE_SIZE = 20;
 const PERFORMANCE_SUMMARY_LIMIT = 100;
 
-const PERFORMANCE_SUMMARY_PATH = "/api/v1/admin/analytics/products/performance-summary";
-const PURCHASE_CONVERSION_PATH = "/api/v1/admin/analytics/recommendations/purchase-conversion";
-const CLICK_RATE_PATH = "/api/v1/admin/analytics/recommendations/click-rate";
+const PERFORMANCE_SUMMARY_PATH = "/api/v1/analytics/products/performance-summary";
+const PURCHASE_CONVERSION_PATH = "/api/v1/analytics/purchase-conversion";
+const CLICK_RATE_PATH = "/api/v1/analytics/recommendations/click-rate";
 const ADMIN_PRODUCT_PATH = "/api/v1/admin/products";
 
 export type AdminProductPerformanceMap = Map<number, ProductPerformanceItemDto>;

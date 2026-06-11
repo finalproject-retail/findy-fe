@@ -27,8 +27,12 @@ export function sortTripLineItemsForChecklist(
         return a.index - b.index;
       }
 
-      const aSoldOut = isOutOfStock(a.item.product);
-      const bSoldOut = isOutOfStock(b.item.product);
+      const aSoldOut =
+        isOutOfStock(a.item.product) &&
+        (pickedQuantityByProductId[a.item.productId] ?? 0) <= 0;
+      const bSoldOut =
+        isOutOfStock(b.item.product) &&
+        (pickedQuantityByProductId[b.item.productId] ?? 0) <= 0;
       if (aSoldOut !== bSoldOut) return aSoldOut ? -1 : 1;
 
       const aDone =

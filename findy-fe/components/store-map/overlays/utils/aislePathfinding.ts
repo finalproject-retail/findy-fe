@@ -1,5 +1,7 @@
 import type { StoreMapConfig } from "../../types";
 import type { CurrentLocationMock, ShoppingMapItem } from "../types";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
+import type { PathNavigationApi } from "@/lib/map/types";
 import {
   bfsPath,
   buildWalkableAisleKeys,
@@ -18,13 +20,220 @@ export {
   nodesToPixelPath,
 } from "./aisleGraph";
 
-/**
- * 현위치 → 최소 통로 동선 순으로 각 상품 통로 — 구간별 BFS 최단
- */
-export function splitRouteAtShoppingGoals(
+function cellKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+function isAdjacent(a: GridNode, b: GridNode): boolean {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
+}
+
+function dedupeConsecutiveNodes(nodes: GridNode[]): GridNode[] {
+  const result: GridNode[] = [];
+  for (const node of nodes) {
+    const last = result[result.length - 1];
+    if (last && last.x === node.x && last.y === node.y) {
+      continue;
+    }
+    result.push(node);
+  }
+  return result;
+}
+
+function pathGridIdsToNodes(
+  pathGridIds: number[],
+  cols: number,
+): GridNode[] {
+  return pathGridIds.map((gridId) => {
+    const { gridX, gridY } = gridIdToGridPoint(gridId, cols);
+    return { x: gridX, y: gridY };
+  });
+}
+
+function goalAisleForItem(
+  item: ShoppingMapItem,
+  config: StoreMapConfig,
+  walkable: Set<string>,
+): GridNode | null {
+  const { gridX, gridY } =
+    item.gridId != null
+      ? gridIdToGridPoint(item.gridId, config.cols)
+      : { gridX: item.gridX, gridY: item.gridY };
+
+  return goalAisleForGridCell(
+    gridX,
+    gridY,
+    walkable,
+    config.cols,
+    config.rows,
+  );
+}
+
+/** 통로 격자만 남기고, 비인접 구간은 BFS로만 연결 (대각선 직선 금지) */
+export function sanitizeWalkablePath(
+  nodes: GridNode[],
+  walkable: Set<string>,
+): GridNode[] {
+  const walkableNodes = nodes.filter((node) =>
+    walkable.has(cellKey(node.x, node.y)),
+  );
+  if (walkableNodes.length < 2) {
+    return walkableNodes;
+  }
+
+  const result: GridNode[] = [walkableNodes[0]!];
+  for (let i = 1; i < walkableNodes.length; i++) {
+    const prev = result[result.length - 1]!;
+    const next = walkableNodes[i]!;
+
+    if (prev.x === next.x && prev.y === next.y) {
+      continue;
+    }
+
+    if (isAdjacent(prev, next)) {
+      result.push(next);
+      continue;
+    }
+
+    const bridge = bfsPath(prev, next, walkable);
+    if (bridge && bridge.length > 1) {
+      result.push(...bridge.slice(1));
+    }
+  }
+
+  return dedupeConsecutiveNodes(result);
+}
+
+function mergeLegNodes(
+  merged: GridNode[],
+  legNodes: GridNode[],
+  walkable: Set<string>,
+): GridNode[] {
+  if (legNodes.length === 0) {
+    return merged;
+  }
+
+  if (merged.length === 0) {
+    return [...legNodes];
+  }
+
+  const combined = [...merged, ...legNodes];
+  return sanitizeWalkablePath(combined, walkable);
+}
+
+/** fullPathGridIds 상에서 각 leg 도착 통로 칸 인덱스 (앞 leg 이후 구간만 탐색) */
+function resolveLegEndIndices(
+  nodes: GridNode[],
+  legs: PathNavigationApi["legs"],
+  cols: number,
+): number[] {
+  let searchFrom = 0;
+  return legs.map((leg) => {
+    const { gridX, gridY } = gridIdToGridPoint(leg.toGridId, cols);
+    let endIndex = searchFrom;
+    for (let i = searchFrom; i < nodes.length; i++) {
+      const node = nodes[i]!;
+      if (node.x === gridX && node.y === gridY) {
+        endIndex = i;
+      }
+    }
+    searchFrom = endIndex;
+    return endIndex;
+  });
+}
+
+export type RenderableNavigationPath = {
+  nodes: GridNode[];
+  legEndIndices: number[];
+};
+
+export function buildRenderableNavigationPath(
+  pathNavigation: PathNavigationApi,
+  config: StoreMapConfig,
+): RenderableNavigationPath {
+  const walkable = buildWalkableAisleKeys(config.cells);
+
+  if (pathNavigation.fullPathGridIds.length >= 2) {
+    const rawNodes = pathGridIdsToNodes(
+      pathNavigation.fullPathGridIds,
+      config.cols,
+    );
+    const nodes = sanitizeWalkablePath(rawNodes, walkable);
+    return {
+      nodes,
+      legEndIndices: resolveLegEndIndices(
+        nodes,
+        pathNavigation.legs,
+        config.cols,
+      ),
+    };
+  }
+
+  let merged: GridNode[] = [];
+  const legEndIndices: number[] = [];
+
+  for (const apiLeg of pathNavigation.legs) {
+    const legNodes = pathGridIdsToNodes(apiLeg.pathGridIds, config.cols);
+    merged = mergeLegNodes(merged, legNodes, walkable);
+    legEndIndices.push(Math.max(0, merged.length - 1));
+  }
+
+  const nodes = sanitizeWalkablePath(merged, walkable);
+  const normalizedLegEnds = legEndIndices.map((endIndex) => {
+    const target = merged[Math.min(endIndex, merged.length - 1)];
+    if (!target) {
+      return nodes.length - 1;
+    }
+    const idx = nodes.findIndex(
+      (node) => node.x === target.x && node.y === target.y,
+    );
+    return idx >= 0 ? idx : nodes.length - 1;
+  });
+
+  return { nodes, legEndIndices: normalizedLegEnds };
+}
+
+export function buildRenderablePathFromLocalLegs(
+  legs: GridNode[][],
+  config: StoreMapConfig,
+): RenderableNavigationPath {
+  const continuous = mergeAisleLegsIntoContinuousPath(legs, config);
+  return {
+    nodes: continuous.nodes,
+    legEndIndices: continuous.legEndIndices,
+  };
+}
+
+/** @deprecated buildRenderableNavigationPath 사용 */
+export type ContinuousAislePath = {
+  nodes: GridNode[];
+  legEndIndices: number[];
+};
+
+export function buildContinuousAislePathFromNavigation(
+  pathNavigation: PathNavigationApi,
+  config: StoreMapConfig,
+): ContinuousAislePath {
+  const walkable = buildWalkableAisleKeys(config.cells);
+  let merged: GridNode[] = [];
+  const legEndIndices: number[] = [];
+
+  for (const apiLeg of pathNavigation.legs) {
+    const legNodes = pathGridIdsToNodes(apiLeg.pathGridIds, config.cols);
+    merged = mergeLegNodes(merged, legNodes, walkable);
+    legEndIndices.push(Math.max(0, merged.length - 1));
+  }
+
+  return {
+    nodes: sanitizeWalkablePath(merged, walkable),
+    legEndIndices,
+  };
+}
+
+export function buildAisleLegsForShoppingItems(
   config: StoreMapConfig,
   location: CurrentLocationMock,
-  items: ShoppingMapItem[]
+  items: ShoppingMapItem[],
 ): GridNode[][] {
   const walkable = buildWalkableAisleKeys(config.cells);
   const legs: GridNode[][] = [];
@@ -34,64 +243,53 @@ export function splitRouteAtShoppingGoals(
     location.gridY,
     walkable,
     config.cols,
-    config.rows
+    config.rows,
   );
   if (!cursor) {
     return legs;
   }
 
   for (const item of items) {
-    const goal = goalAisleForGridCell(
-      item.gridX,
-      item.gridY,
-      walkable,
-      config.cols,
-      config.rows
-    );
-    if (!goal) continue;
+    const goal = goalAisleForItem(item, config, walkable);
+    if (!goal) {
+      continue;
+    }
 
-    const leg = bfsPath(cursor, goal, walkable);
-    if (!leg || leg.length < 2) continue;
+    let leg: GridNode[];
+    if (cursor.x === goal.x && cursor.y === goal.y) {
+      leg = [cursor];
+    } else {
+      const path = bfsPath(cursor, goal, walkable);
+      if (!path || path.length === 0) {
+        continue;
+      }
+      leg = path;
+    }
 
-    legs.push(leg);
+    if (leg.length >= 1) {
+      legs.push(leg);
+    }
     cursor = goal;
   }
 
   return legs;
 }
 
-/** API 경로 첫 칸이 지도 현재 위치와 다를 때 출발 구간을 현위치에 맞춤 */
-export function adjustPathLegsToStartFromLocation(
-  config: StoreMapConfig,
-  location: CurrentLocationMock,
+export function mergeAisleLegsIntoContinuousPath(
   legs: GridNode[][],
-): GridNode[][] {
-  if (legs.length === 0) {
-    return legs;
-  }
-
+  config: StoreMapConfig,
+): ContinuousAislePath {
   const walkable = buildWalkableAisleKeys(config.cells);
-  const start = nearestWalkableNode(
-    location.gridX,
-    location.gridY,
-    walkable,
-    config.cols,
-    config.rows,
-  );
-  if (!start) {
-    return legs;
+  let merged: GridNode[] = [];
+  const legEndIndices: number[] = [];
+
+  for (const leg of legs) {
+    merged = mergeLegNodes(merged, leg, walkable);
+    legEndIndices.push(Math.max(0, merged.length - 1));
   }
 
-  const firstLeg = legs[0];
-  const firstNode = firstLeg[0];
-  if (firstNode.x === start.x && firstNode.y === start.y) {
-    return legs;
-  }
-
-  const connector = bfsPath(start, firstNode, walkable);
-  if (!connector || connector.length < 2) {
-    return [{ ...firstLeg, 0: start }, ...legs.slice(1)];
-  }
-
-  return [[...connector.slice(0, -1), ...firstLeg], ...legs.slice(1)];
+  return {
+    nodes: sanitizeWalkablePath(merged, walkable),
+    legEndIndices,
+  };
 }

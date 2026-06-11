@@ -1,4 +1,5 @@
 import { getApiErrorMessage } from "@/lib/api";
+import { isAxiosError } from "axios";
 import { shoppingApiClient } from "@/lib/products/api/productClient";
 import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
 import { resolveShoppingUserId } from "@/lib/shopping/shoppingUserId";
@@ -62,6 +63,9 @@ export async function removeCartItem(
     );
     return unwrap(response.data);
   } catch (error) {
+    if (isAxiosError(error)) {
+      throw error;
+    }
     throw new Error(getApiErrorMessage(error));
   }
 }

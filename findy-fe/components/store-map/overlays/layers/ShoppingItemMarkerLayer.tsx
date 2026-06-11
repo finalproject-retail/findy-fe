@@ -1,6 +1,7 @@
 import MarkerGreyIcon from "@/assets/icons/marker-grey.svg";
 import MarkerIcon from "@/assets/icons/marker.svg";
-import { Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import { Pressable } from "react-native-gesture-handler";
 import { MAP_OVERLAY_MARKER_HEIGHT, MAP_OVERLAY_MARKER_WIDTH } from "../constants";
 import type { ResolvedGridMarker } from "../types";
 import { pinTopLeftFromCenter } from "../utils/gridToPixel";

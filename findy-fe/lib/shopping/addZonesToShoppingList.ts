@@ -22,7 +22,8 @@ export async function addZonesToShoppingList(
     await cancelActiveShoppingListIfExists();
   }
 
-  let shoppingList = existingShoppingList;
+  let shoppingList: ShoppingListApi | null = existingShoppingList ?? null;
+
   for (const zone of zones) {
     shoppingList = await addCategoryShoppingListItem({
       categoryId: zone.categoryId,

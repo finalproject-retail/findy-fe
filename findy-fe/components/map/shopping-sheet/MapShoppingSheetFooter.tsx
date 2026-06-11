@@ -26,7 +26,11 @@ export function MapShoppingSheetFooter({
   bottomInset = 0,
 }: MapShoppingSheetFooterProps) {
   const productItems = tripLineItems.filter(
-    (item) => isProductLineItem(item) && !isOutOfStock(item.product),
+    (item) =>
+      isProductLineItem(item) &&
+      // 내가 이미 스캔한 상품은 품절이 되어도 합계에 포함 (내가 재고를 소진한 경우)
+      (!isOutOfStock(item.product) ||
+        (pickedQuantityByProductId[item.productId] ?? 0) > 0),
   );
   const totalQuantity =
     productItems.reduce((sum, item) => sum + item.quantity, 0) +

@@ -20,6 +20,9 @@ export function AddToCartButton({ product, onPress }: AddToCartButtonProps) {
       showToast(TOAST_MESSAGES.addedToCart);
       onPress?.();
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "장바구니에 담지 못했습니다.";
+      showToast(message);
       console.error(error);
     }
   };

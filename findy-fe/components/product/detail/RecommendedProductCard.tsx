@@ -6,10 +6,11 @@ import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
 import { pretendard } from "@/utils/pretendard";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import { isOutOfStock } from "../isOutOfStock";
 import { ProductDiscountPriceRow } from "../ProductDiscountPriceRow";
+import { ProductThumbnail } from "../ProductThumbnail";
 import type { Product } from "../types";
 
 const PRODUCT_NAME_LINE_HEIGHT = 20;
@@ -32,6 +33,7 @@ export function RecommendedProductCard({
   const { addToCart } = useCart();
   const isShoppingListMode = useProductAddMode(shoppingListAddMode);
   const { addProductToShoppingTrip } = useMapNavigation();
+  const soldOut = isOutOfStock(product);
 
   const openProductDetail = () => {
     router.push(
@@ -64,32 +66,30 @@ export function RecommendedProductCard({
           accessibilityRole="button"
           accessibilityLabel={`${product.name} 상세 보기`}
         >
-          <Image
-            source={product.image}
-            style={{ width, height: width, borderRadius: 3 }}
-            contentFit="cover"
-          />
+          <ProductThumbnail product={product} width={width} />
         </Pressable>
-        <Pressable
-          onPress={handleAddPress}
-          accessibilityRole="button"
-          accessibilityLabel={
-            isShoppingListMode ? "쇼핑리스트 담기" : "장바구니에 담기"
-          }
-          style={{
-            position: "absolute",
-            right: 6,
-            bottom: 6,
-            width: CART_BUTTON_SIZE,
-            height: CART_BUTTON_SIZE,
-            borderRadius: RADIUS.full,
-            backgroundColor: COLORS.white,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <CartIcon width={18} height={18} />
-        </Pressable>
+        {!soldOut ? (
+          <Pressable
+            onPress={handleAddPress}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isShoppingListMode ? "쇼핑리스트 담기" : "장바구니에 담기"
+            }
+            style={{
+              position: "absolute",
+              right: 6,
+              bottom: 6,
+              width: CART_BUTTON_SIZE,
+              height: CART_BUTTON_SIZE,
+              borderRadius: RADIUS.full,
+              backgroundColor: COLORS.white,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <CartIcon width={18} height={18} />
+          </Pressable>
+        ) : null}
       </View>
 
       <Pressable

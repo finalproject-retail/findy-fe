@@ -11,12 +11,12 @@ function mapApiCellType(cellType: string): StoreCellType {
   switch (cellType) {
     case "AISLE":
     case "START":
-    case "COUNTER":
       return "aisle";
     case "SHELF":
+    case "COUNTER":
       return "shelf";
     default:
-      return "aisle";
+      return "shelf";
   }
 }
 

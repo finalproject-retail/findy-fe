@@ -127,7 +127,12 @@ export function ChatbotScreen() {
     error,
     sendMessage,
     sendVoiceMessage,
+    endChat,
   } = useChatbot(storeId);
+
+  const hasConversation = messages.some(
+    (message) => message.sender === "user",
+  );
 
   const canSend = draft.trim().length > 0 && !sending;
   const quickQuestions = useMemo(() => QUICK_QUESTIONS, []);
@@ -282,6 +287,35 @@ export function ChatbotScreen() {
               쇼핑 중 필요한 정보를 빠르게 확인할 수 있어요.
             </Text>
           </View>
+
+          {hasConversation ? (
+            <View
+              style={{
+                alignItems: "flex-end",
+                marginBottom: SPACING.sm,
+              }}
+            >
+              <Pressable
+                onPress={endChat}
+                disabled={sending}
+                accessibilityRole="button"
+                accessibilityLabel="채팅 종료하기"
+                className="rounded-full border-base border-gray bg-white"
+                style={{
+                  paddingHorizontal: SPACING.md,
+                  paddingVertical: 6,
+                  opacity: sending ? 0.6 : 1,
+                }}
+              >
+                <Text
+                  className="text-xs text-text-sub"
+                  style={pretendard(500)}
+                >
+                  채팅 종료하기
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           {error ? (
             <Text

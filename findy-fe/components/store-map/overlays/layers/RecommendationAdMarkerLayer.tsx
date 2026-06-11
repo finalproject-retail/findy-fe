@@ -1,5 +1,6 @@
 import RecoMarkerIcon from "@/assets/icons/reco_marker.svg";
-import { Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import { Pressable } from "react-native-gesture-handler";
 import { MAP_OVERLAY_RECO_HEIGHT, MAP_OVERLAY_RECO_WIDTH } from "../constants";
 import type { ResolvedGridMarker } from "../types";
 import { pinTopLeftFromCenter } from "../utils/gridToPixel";
