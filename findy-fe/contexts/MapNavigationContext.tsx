@@ -19,24 +19,30 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
 import { createShoppingPath } from "@/lib/map/api/fetchShoppingPath";
+import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 import {
   applyGridIdToShoppingItem,
   destinationGridIdsFromMapItems,
   gridPointToGridId,
-  orderShoppingItemsByDestinationGridIds,
   remainingTripLineItems,
   resolveTripDestinationGridIds,
 } from "@/lib/map/pathUtils";
+import {
+  mapShoppingListLineItemsToMapItems,
+  tripZoneItemsFromLineItems,
+} from "@/lib/shopping/mappers";
 import type { PathNavigationApi } from "@/lib/map/types";
 import { addProductToShoppingList } from "@/lib/shopping/addProductToShoppingList";
 import { getShoppingList, removeShoppingListItem } from "@/lib/shopping/api";
-import { buildTripShoppingMapItems } from "@/lib/shopping/buildTripShoppingMapItems";
 import {
   mapShoppingListApiToCategoryLineItems,
   mapShoppingListApiToLineItems,
 } from "@/lib/shopping/mappers";
 import { findShoppingListItemByProductId } from "@/lib/shopping/resolveShoppingListItem";
-import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
+import {
+  isCategoryLineItem,
+  isProductLineItem,
+} from "@/lib/shopping/shoppingListItemUtils";
 import type { TripZoneLineItem } from "@/lib/shopping/types";
 import { runSerializedShoppingListQuantityChange } from "@/lib/shopping/serializeShoppingListQuantityChange";
 import { applyShoppingListItemQuantity } from "@/lib/shopping/applyShoppingListItemQuantity";
@@ -116,16 +122,21 @@ function productTripLineItems(lineItems: CartLineItem[]): CartLineItem[] {
   return lineItems.filter(isProductLineItem);
 }
 
-function resolveTripMapItems(
-  lineItems: CartLineItem[],
-  zoneItems: TripZoneLineItem[],
-  fallbackItems: ShoppingMapItem[],
+function normalizeTripMapItems(
+  items: ShoppingMapItem[],
+  gridCols = GRID_COLS,
 ): ShoppingMapItem[] {
-  const productLines = productTripLineItems(lineItems);
-  if (productLines.length === 0 && zoneItems.length === 0) {
-    return fallbackItems;
-  }
-  return buildTripShoppingMapItems(productLines, zoneItems);
+  return items.map((item) => applyGridIdToShoppingItem(item, gridCols));
+}
+
+function buildTripMapItemsFromLineItems(
+  lineItems: CartLineItem[],
+  gridCols = GRID_COLS,
+): ShoppingMapItem[] {
+  return normalizeTripMapItems(
+    mapShoppingListLineItemsToMapItems(lineItems, gridCols),
+    gridCols,
+  );
 }
 
 function maxTripQuantity(product: Product) {
@@ -189,6 +200,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     useState<PathNavigationApi | null>(null);
   const [destinationGridIds, setDestinationGridIds] = useState<number[]>([]);
   const [navigationRefreshKey, setNavigationRefreshKey] = useState(0);
+  const [tripListItems, setTripListItems] = useState<CartLineItem[]>([]);
   const [tripLineItems, setTripLineItems] = useState<CartLineItem[]>([]);
   const [tripZoneItems, setTripZoneItems] = useState<TripZoneLineItem[]>([]);
   const [recommendedProductsById, setRecommendedProductsById] = useState<
@@ -201,10 +213,18 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [activeShoppingListId, setActiveShoppingListId] = useState<
     number | null
   >(null);
+  const tripListItemsRef = useRef(tripListItems);
+  tripListItemsRef.current = tripListItems;
   const tripLineItemsRef = useRef(tripLineItems);
   tripLineItemsRef.current = tripLineItems;
   const tripZoneItemsRef = useRef(tripZoneItems);
   tripZoneItemsRef.current = tripZoneItems;
+
+  const applyTripListState = useCallback((lineItems: CartLineItem[]) => {
+    setTripListItems(lineItems);
+    setTripLineItems(productTripLineItems(lineItems));
+    setTripZoneItems(tripZoneItemsFromLineItems(lineItems));
+  }, []);
   const generateShoppingPathRef = useRef<
     (
       storeId: number,
@@ -227,22 +247,22 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       const normalizedItems = mapItems.map((item) =>
         applyGridIdToShoppingItem(item, gridCols),
       );
-      const orderedItems = path
-        ? orderShoppingItemsByDestinationGridIds(
-            normalizedItems,
-            path.destinationGridIds,
-            gridCols,
-          )
-        : normalizedItems;
+
+      const routeLocation =
+        path != null
+          ? gridIdToGridPoint(path.currentGridId, gridCols)
+          : null;
 
       setPathNavigation(path);
       setNavigationData((prev) => {
+        const snapshotLocation = routeLocation ?? prev.currentLocation;
         setRouteSnapshot(
-          buildRouteSnapshot(prev.currentLocation, orderedItems, path),
+          buildRouteSnapshot(snapshotLocation, normalizedItems, path),
         );
         return {
           ...prev,
-          shoppingItems: orderedItems,
+          currentLocation: snapshotLocation,
+          shoppingItems: normalizedItems,
         };
       });
       setNavigationRefreshKey((key) => key + 1);
@@ -256,18 +276,18 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       gridCols = GRID_COLS,
       options?: GenerateShoppingPathOptions,
     ) => {
-      const lineItems = productTripLineItems(
-        options?.lineItems ?? tripLineItems,
-      );
-      const zoneItems = options?.zoneItems ?? tripZoneItems;
+      const listLineItems =
+        options?.lineItems ?? tripListItemsRef.current;
       const pickedMap =
         options?.pickedQuantityByProductId ?? pickedQuantityByProductId;
 
-      const remainingProducts = remainingTripLineItems(lineItems, pickedMap);
-      const allMapItems = resolveTripMapItems(
-        lineItems,
-        zoneItems,
-        navigationData.shoppingItems,
+      const remainingProducts = remainingTripLineItems(
+        productTripLineItems(listLineItems),
+        pickedMap,
+      );
+      const allMapItems = buildTripMapItemsFromLineItems(
+        listLineItems,
+        gridCols,
       );
 
       const apiDestinationGridIds =
@@ -276,7 +296,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
       const gridIdsToRequest = resolveTripDestinationGridIds(
         remainingProducts,
-        zoneItems,
+        options?.zoneItems ?? tripZoneItems,
         gridCols,
         apiDestinationGridIds,
       );
@@ -324,10 +344,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   generateShoppingPathRef.current = generateShoppingPath;
 
   const restoreActiveShoppingTrip = useCallback(async () => {
-    if (
-      tripLineItemsRef.current.length > 0 ||
-      tripZoneItemsRef.current.length > 0
-    ) {
+    if (tripListItemsRef.current.length > 0) {
       return;
     }
 
@@ -336,18 +353,14 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       if (shoppingList.items.length === 0) {
         return;
       }
-      if (
-        tripLineItemsRef.current.length > 0 ||
-        tripZoneItemsRef.current.length > 0
-      ) {
+      if (tripListItemsRef.current.length > 0) {
         return;
       }
 
-      const lineItems = productTripLineItems(
-        mapShoppingListApiToLineItems(shoppingList),
-      );
+      const lineItems = mapShoppingListApiToLineItems(shoppingList);
       const zoneItems = mapShoppingListApiToCategoryLineItems(shoppingList);
-      const pickedQuantityMap = lineItems.reduce<Record<string, number>>(
+      const productLines = productTripLineItems(lineItems);
+      const pickedQuantityMap = productLines.reduce<Record<string, number>>(
         (acc, item) => {
           acc[item.productId] = item.scannedQuantity ?? 0;
           return acc;
@@ -357,20 +370,12 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
       setShoppingTripActive(true);
       setActiveShoppingListId(shoppingList.shoppingListId);
-      setTripLineItems(lineItems);
-      setTripZoneItems(zoneItems);
+      applyTripListState(lineItems);
       setPickedQuantityByProductId(pickedQuantityMap);
-      setDestinationGridIds(
-        resolveTripDestinationGridIds(
-          remainingTripLineItems(lineItems, pickedQuantityMap),
-          zoneItems,
-          GRID_COLS,
-          shoppingList.destinationGridIds,
-        ),
-      );
+      setDestinationGridIds(shoppingList.destinationGridIds ?? []);
       setNavigationData((prev) => ({
         ...prev,
-        shoppingItems: buildTripShoppingMapItems(lineItems, zoneItems),
+        shoppingItems: buildTripMapItemsFromLineItems(lineItems),
       }));
 
       await generateShoppingPathRef.current(storeId, GRID_COLS, {
@@ -433,8 +438,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       clearPendingBarcodeRewards();
       setShoppingTripActive(true);
       setActiveShoppingListId(shoppingListId ?? null);
-      setTripLineItems(productTripLineItems(lineItems));
-      setTripZoneItems(zoneItems);
+      applyTripListState(lineItems);
       setPickedQuantityByProductId({});
       setRecommendedProductsById({});
       setPathNavigation(null);
@@ -443,13 +447,14 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
           ? nextDestinationGridIds
           : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
       setDestinationGridIds(resolvedDestinationGridIds);
+      const normalizedMapItems = normalizeTripMapItems(mapItems);
       setNavigationData((prev) => {
         setRouteSnapshot(
-          buildRouteSnapshot(prev.currentLocation, mapItems, null),
+          buildRouteSnapshot(prev.currentLocation, normalizedMapItems, null),
         );
         return {
           ...prev,
-          shoppingItems: mapItems,
+          shoppingItems: normalizedMapItems,
           recommendedItems: [],
         };
       });
@@ -469,11 +474,9 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         setActiveShoppingListId(shoppingListId);
       }
 
-      const nextZoneItems = zoneItems ?? tripZoneItemsRef.current;
-      const productLines = productTripLineItems(lineItems);
-      setTripLineItems(productLines);
-      setTripZoneItems(nextZoneItems);
+      applyTripListState(lineItems);
 
+      const productLines = productTripLineItems(lineItems);
       const pickedQuantityMap = productLines.reduce<Record<string, number>>(
         (acc, item) => {
           acc[item.productId] = item.scannedQuantity ?? 0;
@@ -484,18 +487,29 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
       setPickedQuantityByProductId(pickedQuantityMap);
       setDestinationGridIds(
-        resolveTripDestinationGridIds(
-          remainingTripLineItems(productLines, pickedQuantityMap),
-          nextZoneItems,
-          GRID_COLS,
-          apiDestinationGridIds,
-        ),
+        apiDestinationGridIds ??
+          resolveTripDestinationGridIds(
+            remainingTripLineItems(productLines, pickedQuantityMap),
+            tripZoneItemsFromLineItems(lineItems),
+            GRID_COLS,
+            apiDestinationGridIds,
+          ),
       );
+
+      const mapItems = buildTripMapItemsFromLineItems(lineItems);
 
       setNavigationData((prev) => ({
         ...prev,
-        shoppingItems: buildTripShoppingMapItems(productLines, nextZoneItems),
+        shoppingItems: mapItems,
       }));
+      setRouteSnapshot((prev) =>
+        prev
+          ? {
+              ...prev,
+              shoppingItems: mapItems.map((item) => ({ ...item })),
+            }
+          : null,
+      );
     },
     [],
   );
@@ -503,6 +517,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const endShoppingTrip = useCallback(() => {
     setShoppingTripActive(false);
     setActiveShoppingListId(null);
+    setTripListItems([]);
     setTripLineItems([]);
     setTripZoneItems([]);
     setPickedQuantityByProductId({});
@@ -557,27 +572,29 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   );
 
   const removeTripItem = useCallback((productId: string) => {
-    setTripLineItems((prev) => {
-      const next = prev.filter((item) => item.productId !== productId);
+    setTripListItems((prev) => {
+      const nextList = prev.filter((item) => item.productId !== productId);
+      setTripLineItems(productTripLineItems(nextList));
+      setTripZoneItems(tripZoneItemsFromLineItems(nextList));
       setPickedQuantityByProductId((pickedPrev) => {
         const nextPicked = { ...pickedPrev };
         delete nextPicked[productId];
 
         setDestinationGridIds(
           resolveTripDestinationGridIds(
-            remainingTripLineItems(next, nextPicked),
-            tripZoneItemsRef.current,
+            remainingTripLineItems(productTripLineItems(nextList), nextPicked),
+            tripZoneItemsFromLineItems(nextList),
             GRID_COLS,
           ),
         );
         setNavigationData((nav) => ({
           ...nav,
-          shoppingItems: buildTripShoppingMapItems(next, tripZoneItemsRef.current),
+          shoppingItems: buildTripMapItemsFromLineItems(nextList),
         }));
 
         return nextPicked;
       });
-      return next;
+      return nextList;
     });
   }, []);
 
@@ -590,16 +607,17 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     }
 
     const applyLocalRemoval = () => {
-      const nextZones = tripZoneItemsRef.current.filter(
-        (zone) => zone.categoryId !== categoryId,
+      const nextList = tripListItemsRef.current.filter(
+        (item) =>
+          !(
+            isCategoryLineItem(item) &&
+            item.category?.categoryId === categoryId
+          ),
       );
-      setTripZoneItems(nextZones);
+      applyTripListState(nextList);
       setNavigationData((nav) => ({
         ...nav,
-        shoppingItems: buildTripShoppingMapItems(
-          tripLineItemsRef.current,
-          nextZones,
-        ),
+        shoppingItems: buildTripMapItemsFromLineItems(nextList),
       }));
     };
 
@@ -657,20 +675,17 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
             return;
           }
 
-          const previousLineItems = tripLineItemsRef.current;
-          const optimisticItems = previousLineItems.map((item) =>
+          const previousListItems = tripListItemsRef.current;
+          const optimisticList = previousListItems.map((item) =>
             item.productId === syncedItem.productId
               ? { ...syncedItem, quantity: nextQty }
               : item,
           );
 
-          setTripLineItems(optimisticItems);
+          applyTripListState(optimisticList);
           setNavigationData((prev) => ({
             ...prev,
-            shoppingItems: buildTripShoppingMapItems(
-              optimisticItems,
-              tripZoneItemsRef.current,
-            ),
+            shoppingItems: buildTripMapItemsFromLineItems(optimisticList),
           }));
 
           try {
@@ -690,13 +705,10 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
               mapShoppingListApiToCategoryLineItems(updatedList),
             );
           } catch (error) {
-            setTripLineItems(previousLineItems);
+            applyTripListState(previousListItems);
             setNavigationData((prev) => ({
               ...prev,
-              shoppingItems: buildTripShoppingMapItems(
-                previousLineItems,
-                tripZoneItemsRef.current,
-              ),
+              shoppingItems: buildTripMapItemsFromLineItems(previousListItems),
             }));
             console.error("쇼핑리스트 수량 변경 실패:", error);
             throw error;

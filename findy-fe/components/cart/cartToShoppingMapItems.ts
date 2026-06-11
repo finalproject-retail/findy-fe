@@ -48,14 +48,13 @@ function getProductGridLocation(
     return resolveShelfGridForProduct(config, productId, category);
   }
 
-  const fallbackIds = Object.keys(PRODUCT_GRID_PREFERENCES);
-  const fallbackId = fallbackIds[fallbackIndex % fallbackIds.length] ?? productId;
-  return resolveShelfGridForProduct(
-    config,
-    productId,
-    undefined,
-    PRODUCT_GRID_PREFERENCES[fallbackId],
-  );
+  if (__DEV__) {
+    console.warn(
+      `[cartToShoppingMapItems] gridId 없음 — 마커 위치 부정확: productId=${productId}`,
+    );
+  }
+
+  return { gridX: 1, gridY: 16 };
 }
 
 function isPurchasable(item: CartLineItem) {

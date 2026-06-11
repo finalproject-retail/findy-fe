@@ -128,5 +128,6 @@ export type TripZoneLineItem = {
   topLabel: string;
   middleLabel: string;
   emoji: string;
+  gridId?: number | null;
   shoppingListItemId?: string;
 };

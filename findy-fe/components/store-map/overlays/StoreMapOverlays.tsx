@@ -16,15 +16,13 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
 import { MAP_OVERLAY_MARKER_HEIGHT, MAP_OVERLAY_RECO_HEIGHT } from "./constants";
 import { scaledMarkerSize } from "./utils/overlayScale";
+import { splitRouteAtShoppingGoals } from "./utils/aislePathfinding";
 import {
-  adjustPathLegsToStartFromLocation,
-  splitRouteAtShoppingGoals,
-} from "./utils/aislePathfinding";
-import { buildNavigationPathSegmentsFromAisleLegs } from "./utils/buildNavigationPath";
+  buildNavigationPathSegmentsFromAisleLegs,
+  pathLegsFromNavigation,
+} from "./utils/buildNavigationPath";
 import { orderShoppingMinimumRoute } from "./utils/orderShoppingRoute";
-import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 import { orderShoppingItemsByDestinationGridIds } from "@/lib/map/pathUtils";
-import type { GridNode } from "./utils/aisleGraph";
 import {
   assertAisleCell,
   isRoutingLegComplete,
@@ -94,18 +92,8 @@ export function StoreMapOverlays({
     if (!routeSnapshot || routeOrder.length === 0) {
       return [];
     }
-    if (routeSnapshot.pathNavigation?.legs.length) {
-      const legs = routeSnapshot.pathNavigation.legs.map((leg) =>
-        leg.pathGridIds.map((gridId): GridNode => {
-          const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
-          return { x: gridX, y: gridY };
-        }),
-      );
-      return adjustPathLegsToStartFromLocation(
-        config,
-        routeSnapshot.currentLocation,
-        legs,
-      );
+    if (routeSnapshot.pathNavigation) {
+      return pathLegsFromNavigation(routeSnapshot.pathNavigation, config.cols);
     }
     return splitRouteAtShoppingGoals(
       config,
@@ -175,9 +163,16 @@ export function StoreMapOverlays({
     ],
   );
 
+  const shoppingMarkerItems = useMemo(() => {
+    if (routeSnapshot?.shoppingItems.length) {
+      return routeSnapshot.shoppingItems;
+    }
+    return data.shoppingItems;
+  }, [data.shoppingItems, routeSnapshot?.shoppingItems]);
+
   const shoppingMarkers = useMemo(
-    () => resolveShoppingMarkers(config, data.shoppingItems, cellPx),
-    [cellPx, config, data.shoppingItems]
+    () => resolveShoppingMarkers(config, shoppingMarkerItems, cellPx),
+    [cellPx, config, shoppingMarkerItems],
   );
 
   const pinHeight = scaledMarkerSize(MAP_OVERLAY_MARKER_HEIGHT, cellPx);

@@ -1,5 +1,4 @@
 import { buildCartZoneItem } from "@/components/category";
-import { zonesToShoppingMapItems } from "@/components/cart/zonesToShoppingMapItems";
 import type { Product } from "@/components/product";
 import type { ProductSpec } from "@/components/product/types";
 import { getEmartStoreMapConfig } from "@/components/store-map/data/emart-floor-plan";
@@ -207,6 +206,34 @@ export function mapShoppingListApiToLineItems(
   return shoppingList.items.map(mapShoppingListItemApiToLineItem);
 }
 
+export function tripZoneItemsFromLineItems(
+  lineItems: CartLineItem[],
+): TripZoneLineItem[] {
+  return lineItems.flatMap((item) => {
+    if (!isCategoryLineItem(item) || item.category == null) {
+      return [];
+    }
+
+    const fromCatalog = buildCartZoneItem(item.category.categoryId);
+    const zone: TripZoneLineItem = fromCatalog ?? {
+      categoryId: item.category.categoryId,
+      label: item.category.categoryName,
+      path: item.category.categoryName,
+      topLabel: "",
+      middleLabel: "",
+      emoji: "📍",
+    };
+
+    return [
+      {
+        ...zone,
+        gridId: item.category.gridId ?? null,
+        shoppingListItemId: item.shoppingListItemId,
+      },
+    ];
+  });
+}
+
 export function mapShoppingListApiToCategoryLineItems(
   shoppingList: ShoppingListApi,
 ): TripZoneLineItem[] {
@@ -233,50 +260,62 @@ export function mapShoppingListApiToCategoryLineItems(
     return [
       {
         ...zone,
+        gridId: item.category.gridId ?? null,
         shoppingListItemId: String(item.shoppingListItemId),
       },
     ];
   });
 }
 
-export function categoryLineItemsToMapItems(
-  items: CartLineItem[],
-): ShoppingMapItem[] {
-  const config = getEmartStoreMapConfig();
+function resolveLineItemGridId(item: CartLineItem): number | null {
+  if (isCategoryLineItem(item)) {
+    return item.category?.gridId ?? item.product.gridId ?? null;
+  }
+  return item.product.gridId ?? null;
+}
 
-  return items.filter(isCategoryLineItem).map((item, index) => {
-    const gridId = item.category?.gridId;
-    if (gridId != null) {
-      const { gridX, gridY } = gridIdToGridPoint(gridId, config.cols);
+/** 쇼핑리스트 API 항목 순서·gridId 그대로 지도 마커로 변환 */
+export function mapShoppingListLineItemsToMapItems(
+  lineItems: CartLineItem[],
+  gridCols = getEmartStoreMapConfig().cols,
+): ShoppingMapItem[] {
+  return lineItems.map((item, index) => {
+    const gridId = resolveLineItemGridId(item);
+    const name = isCategoryLineItem(item)
+      ? (item.category?.categoryName ?? item.product.name)
+      : item.product.name;
+
+    if (gridId == null) {
+      if (__DEV__) {
+        console.warn(
+          `[mapShoppingListLineItemsToMapItems] gridId 없음: ${item.productId}`,
+        );
+      }
       return {
         id: item.productId,
-        name: item.category?.categoryName ?? item.product.name,
-        gridX,
-        gridY,
-        gridId,
+        name,
+        gridX: 1,
+        gridY: 16,
         visitOrder: index + 1,
       };
     }
 
-    const zone =
-      item.category?.categoryId != null
-        ? buildCartZoneItem(item.category.categoryId)
-        : null;
-
-    if (zone) {
-      const [mapItem] = zonesToShoppingMapItems([zone]);
-      return {
-        ...mapItem,
-        visitOrder: index + 1,
-      };
-    }
-
+    const { gridX, gridY } = gridIdToGridPoint(gridId, gridCols);
     return {
       id: item.productId,
-      name: item.category?.categoryName ?? item.product.name,
-      gridX: 14,
-      gridY: 10,
+      name,
+      gridX,
+      gridY,
+      gridId,
       visitOrder: index + 1,
     };
   });
+}
+
+export function categoryLineItemsToMapItems(
+  items: CartLineItem[],
+): ShoppingMapItem[] {
+  return mapShoppingListLineItemsToMapItems(
+    items.filter(isCategoryLineItem),
+  );
 }

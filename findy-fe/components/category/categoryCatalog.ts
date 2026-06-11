@@ -166,6 +166,8 @@ export type CartZoneItem = {
   topLabel: string;
   middleLabel: string;
   emoji: string;
+  /** 쇼핑리스트 API category.gridId (서버 응답 후에만 설정) */
+  gridId?: number | null;
 };
 
 export function buildCartZoneItem(categoryId: number): CartZoneItem | null {
