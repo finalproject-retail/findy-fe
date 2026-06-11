@@ -7,23 +7,23 @@ import {
   CartSelectAllRow,
   CartSoldOutItemRow,
   CartZoneItemRow,
-  cartToShoppingMapItems,
-  zonesToShoppingMapItems,
 } from "@/components/cart";
 import { Header } from "@/components/common";
 import { SafeView } from "@/components/layout";
 import { COLORS, SPACING } from "@/constants/theme";
-import { useCart, type CartLineItem } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/contexts/ToastContext";
 import { getApiErrorMessage } from "@/lib/api";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
-import { removeCartItem } from "@/lib/shopping/api";
+import { getShoppingList, removeCartItem } from "@/lib/shopping/api";
 import { addZonesToShoppingList } from "@/lib/shopping/addZonesToShoppingList";
 import { createShoppingListFromCart } from "@/lib/shopping/createShoppingListFromCart";
-import { mapShoppingListApiToLineItems } from "@/lib/shopping/mappers";
-import { isProductLineItem } from "@/lib/shopping/shoppingListItemUtils";
-import type { ShoppingListApi, TripZoneLineItem } from "@/lib/shopping/types";
-import { destinationGridIdsFromMapItems } from "@/lib/map/pathUtils";
+import {
+  mapShoppingListApiToCategoryLineItems,
+  mapShoppingListApiToLineItems,
+  mapShoppingListLineItemsToMapItems,
+} from "@/lib/shopping/mappers";
+import type { ShoppingListApi } from "@/lib/shopping/types";
 import { pretendard } from "@/utils/pretendard";
 import { GRID_COLS } from "@/components/store-map/grid/layout";
 import { type Href, useRouter } from "expo-router";
@@ -68,24 +68,13 @@ export default function CartScreen() {
     }
 
     try {
-      let shoppingListLines: CartLineItem[] = [];
-      let tripZoneLines: TripZoneLineItem[] = [];
-      let activeShoppingListId: number | null = null;
-      let serverDestinationGridIds: number[] = [];
-      let shoppingListForZones: ShoppingListApi | null = null;
+      let finalShoppingList: ShoppingListApi | null = null;
 
       if (hasSelectedProducts) {
-        const shoppingList = await createShoppingListFromCart(
+        finalShoppingList = await createShoppingListFromCart(
           availableItems,
           selectedLines,
         );
-
-        shoppingListLines = mapShoppingListApiToLineItems(shoppingList).filter(
-          isProductLineItem,
-        );
-        activeShoppingListId = shoppingList.shoppingListId;
-        serverDestinationGridIds = shoppingList.destinationGridIds ?? [];
-        shoppingListForZones = shoppingList;
 
         await Promise.all(
           selectedLines
@@ -96,46 +85,30 @@ export default function CartScreen() {
       }
 
       if (hasSelectedZones) {
-        const { shoppingList: shoppingListWithZones, zoneLines } =
-          await addZonesToShoppingList(zoneItems, shoppingListForZones);
-
-        tripZoneLines = zoneLines;
-        activeShoppingListId = shoppingListWithZones.shoppingListId;
-
-        if (shoppingListWithZones.destinationGridIds?.length) {
-          serverDestinationGridIds = shoppingListWithZones.destinationGridIds;
-        }
+        const { shoppingList } = await addZonesToShoppingList(
+          zoneItems,
+          finalShoppingList,
+        );
+        finalShoppingList = shoppingList;
       }
 
-      const productMapItems = hasSelectedProducts
-        ? cartToShoppingMapItems(
-            shoppingListLines.map((item) => ({ ...item, selected: true })),
-          )
-        : [];
+      if (finalShoppingList == null) {
+        finalShoppingList = await getShoppingList();
+      }
 
-      const zoneMapSource = tripZoneLines.length > 0 ? tripZoneLines : zoneItems;
-      const zoneMapItems = hasSelectedZones
-        ? zonesToShoppingMapItems(zoneMapSource)
-        : [];
-
-      const mapItems = [...productMapItems, ...zoneMapItems].map(
-        (item, index) => ({
-          ...item,
-          visitOrder: index + 1,
-        }),
+      const allLineItems = mapShoppingListApiToLineItems(finalShoppingList);
+      const mapItems = mapShoppingListLineItemsToMapItems(
+        allLineItems,
+        GRID_COLS,
       );
-
-      const resolvedDestinationGridIds =
-        serverDestinationGridIds.length > 0
-          ? serverDestinationGridIds
-          : destinationGridIdsFromMapItems(mapItems, GRID_COLS);
+      const zoneLines = mapShoppingListApiToCategoryLineItems(finalShoppingList);
 
       startShoppingTrip(
-        shoppingListLines,
+        allLineItems,
         mapItems,
-        activeShoppingListId,
-        resolvedDestinationGridIds,
-        tripZoneLines,
+        finalShoppingList.shoppingListId,
+        finalShoppingList.destinationGridIds ?? [],
+        zoneLines,
       );
 
       if (hasSelectedZones) {

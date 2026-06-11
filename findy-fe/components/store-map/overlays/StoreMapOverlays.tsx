@@ -99,7 +99,7 @@ export function StoreMapOverlays({
     if (!routeSnapshot || routeOrder.length === 0) {
       return { nodes: [], legEndIndices: [] };
     }
-    if (routeSnapshot.pathNavigation?.legs.length) {
+    if (routeSnapshot.pathNavigation) {
       return buildRenderableNavigationPath(
         routeSnapshot.pathNavigation,
         config,
@@ -185,9 +185,16 @@ export function StoreMapOverlays({
     pickedQuantityByProductId,
   ]);
 
+  const shoppingMarkerItems = useMemo(() => {
+    if (routeSnapshot?.shoppingItems.length) {
+      return routeSnapshot.shoppingItems;
+    }
+    return data.shoppingItems;
+  }, [data.shoppingItems, routeSnapshot?.shoppingItems]);
+
   const shoppingMarkers = useMemo(
-    () => resolveShoppingMarkers(config, data.shoppingItems, cellPx),
-    [cellPx, config, data.shoppingItems]
+    () => resolveShoppingMarkers(config, shoppingMarkerItems, cellPx),
+    [cellPx, config, shoppingMarkerItems],
   );
 
   const pinHeight = scaledMarkerSize(MAP_OVERLAY_MARKER_HEIGHT, cellPx);

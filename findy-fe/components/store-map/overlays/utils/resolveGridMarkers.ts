@@ -46,13 +46,16 @@ export function assertAisleCell(
   assertCellType(config, gridX, gridY, "aisle", label);
 }
 
-function toMarker<T extends MapGridPoint & { id: string; name: string }>(
+function toMarker<T extends MapGridPoint & { id: string; name: string; gridId?: number }>(
   config: StoreMapConfig,
   item: T,
   cellPx: number,
   label: string
 ): ResolvedGridMarker {
-  const shelf = snapToNearestShelf(config, item.gridX, item.gridY);
+  const shelf =
+    item.gridId != null
+      ? { gridX: item.gridX, gridY: item.gridY }
+      : snapToNearestShelf(config, item.gridX, item.gridY);
   assertShelfCell(config, shelf.gridX, shelf.gridY, label);
   return {
     id: item.id,
