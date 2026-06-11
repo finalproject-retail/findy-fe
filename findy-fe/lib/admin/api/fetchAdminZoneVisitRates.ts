@@ -6,13 +6,13 @@ import type {
   ZoneVisitRateData,
 } from "@/lib/admin/api/types";
 
-/** GET /api/v1/admin/analytics/zones/visit-rates */
+/** GET /api/v1/analytics/zones/visit-rates */
 export async function fetchAdminZoneVisitRates(
   params: FetchAdminZoneVisitRatesParams,
 ): Promise<ZoneVisitRateData> {
   try {
     const response = await analyticsApiClient.get<ApiEnvelope<ZoneVisitRateData>>(
-      "/api/v1/admin/analytics/zones/visit-rates",
+      "/api/v1/analytics/zones/visit-rates",
       {
         params: {
           startDate: params.startDate,

@@ -107,7 +107,7 @@ export function getPlaceholderAdminStats(): AdminStatCard[] {
   }));
 }
 
-/** GET /api/v1/admin/analytics/performance-summary → 운영 요약 카드 */
+/** GET /api/v1/analytics/performance-summary → 운영 요약 카드 */
 export function mapAnalyticsSummaryToStats(data: AnalyticsSummaryData): AdminStatCard[] {
   const summary = data.summary;
 
@@ -135,7 +135,7 @@ export function mapAnalyticsSummaryToStats(data: AnalyticsSummaryData): AdminSta
   ];
 }
 
-/** GET /api/v1/admin/analytics/zones/visit-rates → 구역별 방문 히트맵 */
+/** GET /api/v1/analytics/zones/visit-rates → 구역별 방문 히트맵 */
 export function mapZoneVisitRatesToMatrix(data: ZoneVisitRateData): AdminZoneMatrix {
   const matrix = buildEmptyZoneMatrix();
 

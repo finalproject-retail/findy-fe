@@ -35,22 +35,22 @@ async function fetchAnalytics<T>(
   }
 }
 
-/** GET /api/v1/admin/analytics/recommendations/click-rate */
+/** GET /api/v1/analytics/recommendations/click-rate */
 export function fetchRecommendationClickRateAnalytics(
   params: FetchAdminRecommendationAnalyticsParams,
 ) {
   return fetchAnalytics<RecommendationClickRateData>(
-    "/api/v1/admin/analytics/recommendations/click-rate",
+    "/api/v1/analytics/recommendations/click-rate",
     params,
   );
 }
 
-/** GET /api/v1/admin/analytics/recommendations/purchase-conversion */
+/** GET /api/v1/analytics/purchase-conversion */
 export function fetchRecommendationPurchaseConversionAnalytics(
   params: FetchAdminRecommendationAnalyticsParams,
 ) {
   return fetchAnalytics<RecommendationPurchaseConversionData>(
-    "/api/v1/admin/analytics/recommendations/purchase-conversion",
+    "/api/v1/analytics/purchase-conversion",
     params,
   );
 }

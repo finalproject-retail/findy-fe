@@ -3,6 +3,7 @@ import type { CartLineItem } from "@/contexts/CartContext";
 import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { CartCheckbox } from "./CartCheckbox";
 import { CartQuantityStepper } from "./CartQuantityStepper";
@@ -28,11 +29,16 @@ export function CartItemRow({
   onRemove,
   onQuantityChange,
 }: CartItemRowProps) {
+  const router = useRouter();
   const { product, quantity, selected } = item;
   const unitPrice = getUnitPrice(product);
   const stockCount = getStockCount(product);
   const maxQuantity = Math.max(stockCount, 1);
   const lowStock = isLowStock(product);
+
+  const openProductDetail = () => {
+    router.push(`/product/${product.id}`);
+  };
 
   return (
     <View
@@ -46,25 +52,38 @@ export function CartItemRow({
           accessibilityLabel={`${product.name} 선택`}
         />
 
-        <Image
-          source={product.image}
-          style={{
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            borderRadius: 3,
-          }}
-          contentFit="cover"
-        />
+        <Pressable
+          onPress={openProductDetail}
+          accessibilityRole="button"
+          accessibilityLabel={`${product.name} 상세 보기`}
+        >
+          <Image
+            source={product.image}
+            style={{
+              width: THUMB_SIZE,
+              height: THUMB_SIZE,
+              borderRadius: 3,
+            }}
+            contentFit="cover"
+          />
+        </Pressable>
 
         <View className="min-w-0 flex-1" style={{ gap: SPACING.xs }}>
           <View className="flex-row items-start justify-between gap-2">
-            <Text
-              className="flex-1 text-lg text-text-main"
-              numberOfLines={2}
-              style={pretendard(500)}
+            <Pressable
+              onPress={openProductDetail}
+              className="flex-1"
+              accessibilityRole="button"
+              accessibilityLabel={`${product.name} 상세 보기`}
             >
-              {product.name}
-            </Text>
+              <Text
+                className="text-lg text-text-main"
+                numberOfLines={2}
+                style={pretendard(500)}
+              >
+                {product.name}
+              </Text>
+            </Pressable>
             <Pressable
               onPress={onRemove}
               hitSlop={8}
