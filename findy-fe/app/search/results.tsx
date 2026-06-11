@@ -38,8 +38,10 @@ export default function SearchResultsScreen() {
     setQuery(initialQuery);
   }, [initialQuery]);
 
+  // 입력 중인 query가 아니라 제출된 검색어(q 파라미터)로만 검색 API 호출
+  // (타자마다 호출하면 백엔드가 "ㅇ", "오" 같은 조각을 인기 검색어로 집계함)
   const { products, loading, loadingMore, hasMore, error, loadMore } =
-    useProductSearch({ keyword: query, sort });
+    useProductSearch({ keyword: initialQuery, sort });
 
   const handleSubmit = useCallback(() => {
     const trimmed = query.trim();

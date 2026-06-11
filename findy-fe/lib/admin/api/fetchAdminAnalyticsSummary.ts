@@ -6,13 +6,13 @@ import type {
   FetchAdminDashboardAnalyticsParams,
 } from "@/lib/admin/api/types";
 
-/** GET /api/v1/admin/analytics/performance-summary */
+/** GET /api/v1/analytics/performance-summary */
 export async function fetchAdminAnalyticsSummary(
   params: FetchAdminDashboardAnalyticsParams,
 ): Promise<AnalyticsSummaryData> {
   try {
     const response = await analyticsApiClient.get<ApiEnvelope<AnalyticsSummaryData>>(
-      "/api/v1/admin/analytics/performance-summary",
+      "/api/v1/analytics/performance-summary",
       {
         params: {
           startDate: params.startDate,
