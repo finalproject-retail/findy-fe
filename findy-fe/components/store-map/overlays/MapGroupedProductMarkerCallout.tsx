@@ -12,7 +12,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { MAP_CALLOUT_WIDTH } from "./MapProductMarkerCallout";
 import type { MapPixelPoint } from "./types";
 
@@ -104,14 +104,6 @@ type MapGroupedProductMarkerCalloutProps = {
   zIndex?: number;
 };
 
-function stopWheelPropagation(event: {
-  stopPropagation?: () => void;
-  nativeEvent?: { stopPropagation?: () => void };
-}) {
-  event.stopPropagation?.();
-  event.nativeEvent?.stopPropagation?.();
-}
-
 export function MapGroupedProductMarkerCallout({
   items,
   anchor,
@@ -119,9 +111,14 @@ export function MapGroupedProductMarkerCallout({
   zIndex = 20,
 }: MapGroupedProductMarkerCalloutProps) {
   const scrollRef = useRef<ScrollView>(null);
+  const cardRef = useRef<View>(null);
   const scrollOffsetRef = useRef(0);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const isScrollable = items.length >= SCROLL_ITEM_THRESHOLD;
   const listHeight = getVisibleListHeight(items);
+  const listHeightRef = useRef(listHeight);
+  listHeightRef.current = listHeight;
   const contentHeight = CALLOUT_INSET * 2 + listHeight;
   const totalHeight = contentHeight + TAIL_HEIGHT + GAP_ABOVE_PIN;
   const left = anchor.x - MAP_CALLOUT_WIDTH / 2;
@@ -131,43 +128,46 @@ export function MapGroupedProductMarkerCallout({
     scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
   };
 
-  const handleWheel = (event: {
-    deltaY?: number;
-    preventDefault?: () => void;
-    stopPropagation?: () => void;
-    nativeEvent?: {
-      deltaY?: number;
-      preventDefault?: () => void;
-      stopPropagation?: () => void;
-    };
-  }) => {
-    if (!isScrollable) {
+  useEffect(() => {
+    if (Platform.OS !== "web" || !isScrollable) {
       return;
     }
 
-    stopWheelPropagation(event);
-
-    const deltaY = event.deltaY ?? event.nativeEvent?.deltaY ?? 0;
-    if (deltaY === 0) {
+    const element = cardRef.current as unknown as HTMLElement | null;
+    if (!element) {
       return;
     }
 
-    if (Platform.OS === "web") {
-      event.preventDefault?.();
-      event.nativeEvent?.preventDefault?.();
-    }
+    const onWheel = (event: WheelEvent) => {
+      event.stopPropagation();
 
-    const maxOffset = Math.max(0, getListContentHeight(items) - listHeight);
-    const nextOffset = Math.min(
-      maxOffset,
-      Math.max(0, scrollOffsetRef.current + deltaY),
-    );
+      const deltaY = event.deltaY;
+      if (deltaY === 0) {
+        return;
+      }
 
-    if (nextOffset !== scrollOffsetRef.current) {
+      const maxOffset = Math.max(
+        0,
+        getListContentHeight(itemsRef.current) - listHeightRef.current,
+      );
+      const nextOffset = Math.min(
+        maxOffset,
+        Math.max(0, scrollOffsetRef.current + deltaY),
+      );
+
+      event.preventDefault();
+
+      if (nextOffset === scrollOffsetRef.current) {
+        return;
+      }
+
       scrollOffsetRef.current = nextOffset;
       scrollRef.current?.scrollTo({ y: nextOffset, animated: false });
-    }
-  };
+    };
+
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [isScrollable]);
 
   const rows = items.map((item, index) => (
     <ProductRow
@@ -193,12 +193,12 @@ export function MapGroupedProductMarkerCallout({
       ]}
     >
       <View
+        ref={cardRef}
         style={[styles.card, { height: contentHeight }]}
         pointerEvents={isScrollable ? "auto" : "none"}
         {...(isScrollable && Platform.OS === "web"
           ? { dataSet: { mapCalloutScroll: "true" } }
           : {})}
-        onWheel={isScrollable ? handleWheel : undefined}
       >
         {isScrollable ? (
           <ScrollView
@@ -209,7 +209,6 @@ export function MapGroupedProductMarkerCallout({
             nestedScrollEnabled
             scrollEventThrottle={16}
             onScroll={handleScroll}
-            onWheel={handleWheel}
           >
             {rows}
           </ScrollView>
