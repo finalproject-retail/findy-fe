@@ -67,8 +67,18 @@ export type PathNavigationApi = {
   fullPathGridIds: number[];
 };
 
-/** map-service GET /api/v1/stores/{storeId}/grids/congestion */
+/** map-service 혼잡도 level */
 export type GridCongestionLevelApi = "LOW" | "MEDIUM" | "HIGH";
+
+/** map-service GET /api/v1/stores/{storeId}/congestion */
+export type StoreCongestionApi = {
+  storeId: number;
+  windowSeconds: number;
+  activeUserCount: number;
+  threshold: number;
+  congested: boolean;
+  level: GridCongestionLevelApi;
+};
 
 export type GridCongestionPointApi = {
   gridId: number;

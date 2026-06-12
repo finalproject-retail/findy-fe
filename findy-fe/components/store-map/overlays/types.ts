@@ -1,4 +1,4 @@
-import type { PathNavigationApi } from "@/lib/map/types";
+import type { GridCongestionLevelApi, PathNavigationApi } from "@/lib/map/types";
 
 /** 격자 좌표 (col = gridX, row = gridY, 0-index) */
 export type MapGridPoint = {
@@ -34,6 +34,8 @@ export type StoreMapNavigationMock = {
   shoppingItems: ShoppingMapItem[];
   recommendedItems: RecommendedMapItem[];
   beaconCongestion: BeaconCongestionPoint[];
+  /** map-service 매장 전체 혼잡도 */
+  storeCongestionLevel?: GridCongestionLevelApi | null;
 };
 
 /** 새로고침 시점의 현위치·방문 목록 — 경로 선은 이 스냅샷으로만 계산 */

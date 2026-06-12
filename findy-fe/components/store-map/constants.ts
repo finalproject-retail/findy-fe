@@ -18,13 +18,13 @@ export const USER_LOCATION_FOCUS_ZOOM_FACTOR = 2.4;
 
 /** 확대 시 하단(벽면) 매대까지 pan 여유 */
 export const MAP_PAN_BOTTOM_EXTRA_PX = 96;
-/** 확대 시 상단 pan 여유 (마커 말풍선) */
-export const MAP_PAN_TOP_EXTRA_PX = 56;
+/** 확대 시 상단 pan 여유 (마커·겹친 말풍선) */
+export const MAP_PAN_TOP_EXTRA_PX = 200;
 /** 확대 시 좌우 pan 여유 — 가장자리 마커 말풍선이 잘리지 않도록 */
 export const MAP_PAN_HORIZONTAL_EXTRA_PX = 120;
 /** 바텀시트 가림 높이 대비 추가 pan 비율 */
 export const MAP_PAN_INSET_BOTTOM_RATIO = 0.35;
-export const MAP_PAN_INSET_TOP_RATIO = 0.12;
+export const MAP_PAN_INSET_TOP_RATIO = 0.2;
 
 export const SHELF_BLOCK_RADIUS = 2;
 export const ZONE_BLOCK_RADIUS = 3;

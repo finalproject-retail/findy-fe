@@ -636,7 +636,20 @@ export function StoreMapView({
   const webWheelProps =
     Platform.OS === "web"
       ? {
-          onWheel: (e: { preventDefault?: () => void; deltaY: number }) => {
+          onWheel: (e: {
+            preventDefault?: () => void;
+            stopPropagation?: () => void;
+            deltaY: number;
+            target?: EventTarget | null;
+            nativeEvent?: { target?: EventTarget | null };
+          }) => {
+            const target = e.target ?? e.nativeEvent?.target;
+            if (
+              target instanceof Element &&
+              target.closest('[data-map-callout-scroll="true"]')
+            ) {
+              return;
+            }
             e.preventDefault?.();
             markMapManuallyAdjusted();
             const delta = e.deltaY > 0 ? -ZOOM_STEP * fitScale : ZOOM_STEP * fitScale;
