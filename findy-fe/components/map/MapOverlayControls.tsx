@@ -3,6 +3,8 @@ import MapBellIcon from "@/assets/icons/map_bell.svg";
 import MapMenuIcon from "@/assets/icons/map_menu.svg";
 import MapSearchIcon from "@/assets/icons/map_search.svg";
 import { MapLayerMenuPopover } from "@/components/map/MapLayerMenuPopover";
+import { MapStoreCongestionBadge } from "@/components/map/MapStoreCongestionBadge";
+import type { GridCongestionLevelApi } from "@/lib/map/types";
 import { COLORS, SPACING } from "@/constants/theme";
 import { pretendard } from "@/utils/pretendard";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,6 +35,7 @@ type MapOverlayControlsProps = {
   onBackPress?: () => void;
   showCongestion: boolean;
   showRoute: boolean;
+  storeCongestionLevel?: GridCongestionLevelApi | null;
   onToggleCongestion: () => void;
   onToggleRoute: () => void;
 };
@@ -77,6 +80,7 @@ export function MapOverlayControls({
   onBackPress,
   showCongestion,
   showRoute,
+  storeCongestionLevel,
   onToggleCongestion,
   onToggleRoute,
 }: MapOverlayControlsProps) {
@@ -206,6 +210,11 @@ export function MapOverlayControls({
           >
             <MapMenuIcon width={MAP_FLOATING_ICON_SIZE} height={MAP_FLOATING_ICON_SIZE} />
           </FloatingIconButton>
+          {showCongestion && storeCongestionLevel ? (
+            <View style={styles.congestionBadgeHost}>
+              <MapStoreCongestionBadge level={storeCongestionLevel} />
+            </View>
+          ) : null}
         </View>
       </View>
     </View>
@@ -221,5 +230,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: SPACING.screen,
     zIndex: 50,
+  },
+  congestionBadgeHost: {
+    alignItems: "center",
+    marginTop: 6,
   },
 });

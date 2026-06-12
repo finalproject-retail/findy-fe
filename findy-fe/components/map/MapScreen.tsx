@@ -19,6 +19,8 @@ import {
   getSheetMapBottomInset,
 } from "./shopping-sheet/constants";
 
+const SHOW_MAP_DEV_PANEL = false;
+
 export function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -157,6 +159,7 @@ export function MapScreen() {
     onBellPress: () => router.push("/notifications" as Href),
     showCongestion,
     showRoute,
+    storeCongestionLevel: navigationData.storeCongestionLevel,
     onToggleCongestion: () => setShowCongestion((v) => !v),
     onToggleRoute: () => setShowRoute((v) => !v),
     onRefreshPress: () => {
@@ -222,7 +225,7 @@ export function MapScreen() {
         />
       ) : null}
 
-      {__DEV__ ? (
+      {__DEV__ && SHOW_MAP_DEV_PANEL ? (
         <View
           style={[
             styles.devBeaconHost,

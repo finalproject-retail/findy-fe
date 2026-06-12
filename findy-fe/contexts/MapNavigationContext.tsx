@@ -7,6 +7,7 @@ import { GRID_COLS } from "@/components/store-map/grid/layout";
 import { toBeaconCongestionOverlayPoints } from "@/components/store-map/overlays/fetchCongestionOnRefresh";
 import { CONGESTION_WINDOW_SECONDS } from "@/constants/beacon";
 import { fetchGridCongestion } from "@/lib/map/api/fetchGridCongestion";
+import { fetchStoreCongestion } from "@/lib/map/api/fetchStoreCongestion";
 import { MAP_NAVIGATION_EMPTY } from "@/components/store-map/overlays/mock/mapNavigationEmpty";
 import type {
   NavigationRouteSnapshot,
@@ -394,14 +395,18 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   }, [storeId]);
 
   const refreshBeaconCongestion = useCallback(async (storeId: number) => {
+    const windowSeconds = CONGESTION_WINDOW_SECONDS;
+
     try {
-      const data = await fetchGridCongestion(storeId, {
-        windowSeconds: CONGESTION_WINDOW_SECONDS,
-      });
-      const beaconCongestion = toBeaconCongestionOverlayPoints(data.points);
+      const [gridData, storeData] = await Promise.all([
+        fetchGridCongestion(storeId, { windowSeconds }),
+        fetchStoreCongestion(storeId, { windowSeconds }),
+      ]);
+      const beaconCongestion = toBeaconCongestionOverlayPoints(gridData.points);
       setNavigationData((prev) => ({
         ...prev,
         beaconCongestion,
+        storeCongestionLevel: storeData.level,
       }));
     } catch (error) {
       const message =
@@ -409,6 +414,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       setNavigationData((prev) => ({
         ...prev,
         beaconCongestion: [],
+        storeCongestionLevel: null,
       }));
       if (__DEV__) {
         console.warn("Failed to refresh congestion overlay", message);

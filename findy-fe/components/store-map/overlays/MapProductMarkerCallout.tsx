@@ -12,12 +12,16 @@ const CALLOUT_INSET = SPACING.sm;
 const TAIL_HEIGHT = 7;
 const TAIL_WIDTH = 12;
 const GAP_ABOVE_PIN = 4;
+export const CALLOUT_STACK_GAP = 6;
 
 type MapProductMarkerCalloutProps = {
   product: Product;
   quantity: number;
   anchor: MapPixelPoint;
   pinHeight: number;
+  /** 같은 위치 상품 말풍선을 위로 쌓을 때 추가 오프셋(px) */
+  stackOffset?: number;
+  zIndex?: number;
 };
 
 export function getCalloutHeight(quantity: number) {
@@ -33,13 +37,15 @@ export function MapProductMarkerCallout({
   quantity,
   anchor,
   pinHeight,
+  stackOffset = 0,
+  zIndex = 20,
 }: MapProductMarkerCalloutProps) {
   const unitPrice = getUnitPrice(product);
   const showDiscount = hasProductDiscount(product);
   const calloutHeight = getCalloutHeight(quantity);
   const totalHeight = getCalloutTotalHeight(quantity);
   const left = anchor.x - MAP_CALLOUT_WIDTH / 2;
-  const top = anchor.y - pinHeight - totalHeight;
+  const top = anchor.y - pinHeight - totalHeight - stackOffset;
 
   return (
     <View
@@ -51,6 +57,7 @@ export function MapProductMarkerCallout({
           top,
           width: MAP_CALLOUT_WIDTH,
           height: totalHeight,
+          zIndex,
         },
       ]}
     >
@@ -84,7 +91,6 @@ const styles = StyleSheet.create({
   anchor: {
     position: "absolute",
     alignItems: "center",
-    zIndex: 20,
   },
   card: {
     width: "100%",
