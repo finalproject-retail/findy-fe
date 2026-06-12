@@ -10,7 +10,7 @@
     "ios": "expo run:ios",
     "prebuild": "expo prebuild",
     "web": "expo start --web",
-    "export:web": "expo export --platform web",
+    "export:web": "node ./scripts/export-web.js",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },
