@@ -1,4 +1,5 @@
 import { COLORS, SPACING } from "@/constants/theme";
+import { useProductDetailCoupons } from "@/hooks/useProductDetailCoupons";
 import { pretendard } from "@/utils/pretendard";
 import { Text, View, useWindowDimensions } from "react-native";
 import { ProductDiscountPriceRow } from "../ProductDiscountPriceRow";
@@ -14,13 +15,9 @@ const RECOMMEND_CARD_GAP = 12;
 
 type ProductDetailInfoProps = {
   product: Product;
-  onCouponPress?: () => void;
 };
 
-export function ProductDetailInfo({
-  product,
-  onCouponPress,
-}: ProductDetailInfoProps) {
+export function ProductDetailInfo({ product }: ProductDetailInfoProps) {
   const { width: screenWidth } = useWindowDimensions();
   const recommendCardWidth =
     (screenWidth - SPACING.screen * 2 - RECOMMEND_CARD_GAP) / 3.1;
@@ -30,6 +27,13 @@ export function ProductDetailInfo({
   const showDiscount = hasProductDiscount(product);
   const stockCount = product.stockCount;
   const soldOut = isOutOfStock(product);
+  const {
+    visible: showCouponButton,
+    allDownloaded: allCouponsDownloaded,
+    maxDiscountPercent,
+    downloading: downloadingCoupons,
+    downloadAll,
+  } = useProductDetailCoupons(product);
 
   return (
     <View
@@ -72,10 +76,12 @@ export function ProductDetailInfo({
         </View>
       </View>
 
-      {product.availableCoupons ? (
+      {showCouponButton ? (
         <ProductDetailCouponButton
-          availableCoupons={product.availableCoupons}
-          onCouponPress={onCouponPress}
+          maxDiscountPercent={maxDiscountPercent}
+          allDownloaded={allCouponsDownloaded}
+          downloading={downloadingCoupons}
+          onDownload={() => void downloadAll()}
         />
       ) : null}
 

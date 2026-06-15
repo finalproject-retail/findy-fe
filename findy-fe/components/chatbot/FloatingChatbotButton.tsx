@@ -1,4 +1,5 @@
 import { COLORS, LAYOUT, RADIUS, SPACING } from "@/constants/theme";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useSegments, type Href } from "expo-router";
 import { Pressable } from "react-native";
@@ -12,7 +13,12 @@ export function FloatingChatbotButton() {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
+  const isAuthReady = useAuthReady();
   const rootSegment = segments[0];
+
+  if (!isAuthReady) {
+    return null;
+  }
 
   if (rootSegment != null && HIDDEN_ROOT_SEGMENTS.has(rootSegment)) {
     return null;
