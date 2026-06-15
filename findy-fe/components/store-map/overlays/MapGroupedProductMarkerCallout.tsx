@@ -13,7 +13,7 @@ import {
   type NativeScrollEvent,
 } from "react-native";
 import { useEffect, useRef } from "react";
-import { MAP_CALLOUT_WIDTH } from "./MapProductMarkerCallout";
+import { MAP_CALLOUT_WIDTH, MAP_CALLOUT_CARD_SHADOW } from "./MapProductMarkerCallout";
 import type { MapPixelPoint } from "./types";
 
 const CALLOUT_INSET = SPACING.sm;
@@ -192,29 +192,31 @@ export function MapGroupedProductMarkerCallout({
         },
       ]}
     >
-      <View
-        ref={cardRef}
-        style={[styles.card, { height: contentHeight }]}
-        pointerEvents={isScrollable ? "auto" : "none"}
-        {...(isScrollable && Platform.OS === "web"
-          ? { dataSet: { mapCalloutScroll: "true" } }
-          : {})}
-      >
-        {isScrollable ? (
-          <ScrollView
-            ref={scrollRef}
-            style={{ height: listHeight }}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator
-            nestedScrollEnabled
-            scrollEventThrottle={16}
-            onScroll={handleScroll}
-          >
-            {rows}
-          </ScrollView>
-        ) : (
-          <View style={styles.list}>{rows}</View>
-        )}
+      <View style={[styles.shadowShell, { height: contentHeight }]}>
+        <View
+          ref={cardRef}
+          style={[styles.card, { height: contentHeight }]}
+          pointerEvents={isScrollable ? "auto" : "none"}
+          {...(isScrollable && Platform.OS === "web"
+            ? { dataSet: { mapCalloutScroll: "true" } }
+            : {})}
+        >
+          {isScrollable ? (
+            <ScrollView
+              ref={scrollRef}
+              style={{ height: listHeight }}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              scrollEventThrottle={16}
+              onScroll={handleScroll}
+            >
+              {rows}
+            </ScrollView>
+          ) : (
+            <View style={styles.list}>{rows}</View>
+          )}
+        </View>
       </View>
       <View style={styles.tail} />
     </View>
@@ -226,24 +228,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     alignItems: "center",
   },
+  shadowShell: {
+    width: "100%",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.white,
+    ...MAP_CALLOUT_CARD_SHADOW,
+  },
   card: {
     width: "100%",
     padding: CALLOUT_INSET,
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.md,
     overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.14,
-        shadowRadius: 8,
-      },
-      android: { elevation: 6 },
-      default: {
-        boxShadow: "0 2px 10px rgba(0,0,0,0.14)",
-      },
-    }),
   },
   list: {
     width: "100%",

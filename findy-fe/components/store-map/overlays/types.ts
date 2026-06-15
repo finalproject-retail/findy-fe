@@ -18,10 +18,14 @@ export type ShoppingMapItem = MapGridPoint & {
 };
 
 /** 추천(광고)·행사 — 지도에 항상 표시, 쇼핑 경로 계산에는 미포함 */
+export type RecommendedMapItemSource = "promotion" | "scan";
+
 export type RecommendedMapItem = MapGridPoint & {
   id: string;
   name: string;
   gridId?: number;
+  /** scan: 바코드 추천 알림(초록 핀), promotion: 행사 API(보라 핀) */
+  source?: RecommendedMapItemSource;
 };
 
 export type BeaconCongestionLevel = "HIGH" | "MEDIUM";

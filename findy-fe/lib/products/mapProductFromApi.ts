@@ -111,6 +111,7 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
     couponPrice: salePrice,
     stockCount: stockCount ?? undefined,
     category: dto.category,
+    gridId: dto.gridId ?? undefined,
   };
 }
 

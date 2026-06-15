@@ -3,6 +3,7 @@ import { resolveShelfGridForProduct } from "@/components/store-map/overlays/shel
 import type {
   MapGridPoint,
   RecommendedMapItem,
+  RecommendedMapItemSource,
   ShoppingMapItem,
 } from "@/components/store-map/overlays/types";
 import type { CartLineItem } from "@/contexts/CartContext";
@@ -65,6 +66,7 @@ function isPurchasable(item: CartLineItem) {
 export function productToRecommendedMapItem(
   product: Product,
   fallbackIndex = 0,
+  source: RecommendedMapItemSource = "scan",
 ): RecommendedMapItem {
   const { gridX, gridY } = getProductGridLocation(
     product.id,
@@ -78,6 +80,7 @@ export function productToRecommendedMapItem(
     name: product.name,
     gridX,
     gridY,
+    source,
     ...(product.gridId != null ? { gridId: product.gridId } : {}),
   };
 }

@@ -19,9 +19,18 @@ import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
+import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
+import { getAccessToken } from "@/lib/api/client";
 import { fetchProductDetail } from "@/lib/products/api/fetchProductDetail";
 import { fetchAllActivePromotionProducts } from "@/lib/promotions/api/fetchActivePromotionProducts";
 import { buildPromotionMapOverlay } from "@/lib/promotions/buildPromotionMapOverlay";
+import {
+  clearScanRecommendations,
+  deserializeScanRecommendationProducts,
+  loadScanRecommendations,
+  mergeScanRecommendationItems,
+  saveScanRecommendations,
+} from "@/lib/map/scanRecommendationStorage";
 import { createShoppingPath } from "@/lib/map/api/fetchShoppingPath";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 import {
@@ -106,7 +115,7 @@ type MapNavigationContextValue = {
   markProductPicked: (productId: string, amount?: number) => void;
   updateShoppingItems: (items: ShoppingMapItem[]) => void;
   patchNavigationData: (patch: Partial<StoreMapNavigationMock>) => void;
-  addRecommendedMapItem: (product: Product) => void;
+  addRecommendedMapItem: (product: Product) => Promise<Product>;
   ensureRecommendedProduct: (productId: string) => Promise<Product | null>;
   removeTripItem: (productId: string) => void;
   removeTripZoneItem: (categoryId: number) => Promise<void>;
@@ -225,6 +234,10 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [activeShoppingListId, setActiveShoppingListId] = useState<
     number | null
   >(null);
+  const activeShoppingListIdRef = useRef(activeShoppingListId);
+  activeShoppingListIdRef.current = activeShoppingListId;
+  const restoredScanListIdRef = useRef<number | null>(null);
+  const scanRecommendationsHydratedRef = useRef(false);
   const tripListItemsRef = useRef(tripListItems);
   tripListItemsRef.current = tripListItems;
   const tripLineItemsRef = useRef(tripLineItems);
@@ -462,6 +475,35 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     }
   }, [isLoggedIn]);
 
+  const restoreScanRecommendationMarkers = useCallback(async () => {
+    const userId = getUserIdFromAccessToken(getAccessToken());
+    const shoppingListId = activeShoppingListIdRef.current;
+    if (!userId || shoppingListId == null) {
+      return;
+    }
+
+    const persisted = await loadScanRecommendations(
+      userId,
+      storeId,
+      shoppingListId,
+    );
+    if (!persisted || persisted.items.length === 0) {
+      return;
+    }
+
+    setNavigationData((prev) => ({
+      ...prev,
+      recommendedItems: mergeScanRecommendationItems(
+        prev.recommendedItems,
+        persisted.items,
+      ),
+    }));
+    setRecommendedProductsById((prev) => ({
+      ...prev,
+      ...deserializeScanRecommendationProducts(persisted.productsById),
+    }));
+  }, [storeId]);
+
   const refreshNavigationOverlay = useCallback(
     async (storeId: number, gridCols = GRID_COLS) => {
       await Promise.all([
@@ -566,6 +608,12 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   );
 
   const endShoppingTrip = useCallback(() => {
+    const userId = getUserIdFromAccessToken(getAccessToken());
+    if (userId) {
+      void clearScanRecommendations(userId);
+    }
+    restoredScanListIdRef.current = null;
+    scanRecommendationsHydratedRef.current = false;
     setShoppingTripActive(false);
     setActiveShoppingListId(null);
     setTripListItems([]);
@@ -611,6 +659,71 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     storeId,
     shouldRestoreActiveShoppingTrip,
     restoreActiveShoppingTrip,
+  ]);
+
+  useEffect(() => {
+    if (!isLoggedIn || isLoading || activeShoppingListId == null) {
+      return;
+    }
+    if (restoredScanListIdRef.current === activeShoppingListId) {
+      scanRecommendationsHydratedRef.current = true;
+      return;
+    }
+
+    scanRecommendationsHydratedRef.current = false;
+    void restoreScanRecommendationMarkers().then(() => {
+      restoredScanListIdRef.current = activeShoppingListId;
+      scanRecommendationsHydratedRef.current = true;
+    });
+  }, [
+    activeShoppingListId,
+    isLoading,
+    isLoggedIn,
+    restoreScanRecommendationMarkers,
+  ]);
+
+  useEffect(() => {
+    if (!isLoggedIn || activeShoppingListId == null) {
+      return;
+    }
+    if (!scanRecommendationsHydratedRef.current) {
+      return;
+    }
+
+    const userId = getUserIdFromAccessToken(getAccessToken());
+    if (!userId) {
+      return;
+    }
+
+    const scanItems = navigationData.recommendedItems.filter(
+      (item) => item.source !== "promotion",
+    );
+
+    if (scanItems.length === 0) {
+      void clearScanRecommendations(userId);
+      return;
+    }
+
+    const productsById: Record<string, Product> = {};
+    for (const item of scanItems) {
+      const product = recommendedProductsById[item.id];
+      if (product) {
+        productsById[item.id] = product;
+      }
+    }
+
+    void saveScanRecommendations(userId, {
+      storeId,
+      shoppingListId: activeShoppingListId,
+      items: scanItems,
+      productsById,
+    });
+  }, [
+    activeShoppingListId,
+    isLoggedIn,
+    navigationData.recommendedItems,
+    recommendedProductsById,
+    storeId,
   ]);
 
   const markProductPicked = useCallback(
@@ -800,23 +913,52 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  const addRecommendedMapItem = useCallback((product: Product) => {
-    const item = productToRecommendedMapItem(product);
+  const addRecommendedMapItem = useCallback(async (product: Product) => {
+    let resolved = product;
+    if (resolved.gridId == null) {
+      try {
+        resolved = await fetchProductDetail(resolved.id);
+      } catch (error) {
+        if (__DEV__) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "추천 상품 위치 조회 실패";
+          console.warn("Failed to resolve recommended product gridId", message);
+        }
+      }
+    }
+
+    const item = productToRecommendedMapItem(resolved, 0, "scan");
     setNavigationData((prev) => {
-      if (prev.recommendedItems.some((existing) => existing.id === item.id)) {
-        return prev;
+      const index = prev.recommendedItems.findIndex(
+        (existing) => existing.id === item.id,
+      );
+      if (index >= 0) {
+        const existing = prev.recommendedItems[index]!;
+        const nextItem = { ...item, source: "scan" as const };
+        if (
+          existing.gridId === nextItem.gridId &&
+          existing.gridX === nextItem.gridX &&
+          existing.gridY === nextItem.gridY &&
+          existing.source === nextItem.source
+        ) {
+          return prev;
+        }
+        const next = [...prev.recommendedItems];
+        next[index] = nextItem;
+        return { ...prev, recommendedItems: next };
       }
       return {
         ...prev,
         recommendedItems: [...prev.recommendedItems, item],
       };
     });
-    setRecommendedProductsById((prev) => {
-      if (prev[product.id]) {
-        return prev;
-      }
-      return { ...prev, [product.id]: product };
-    });
+    setRecommendedProductsById((prev) => ({
+      ...prev,
+      [resolved.id]: { ...prev[resolved.id], ...resolved },
+    }));
+    return resolved;
   }, []);
 
   const ensureRecommendedProduct = useCallback(async (productId: string) => {
@@ -827,7 +969,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
 
     try {
       const product = await fetchProductDetail(productId);
-      const item = productToRecommendedMapItem(product);
+      const item = productToRecommendedMapItem(product, 0, "scan");
       setRecommendedProductsById((prev) => ({ ...prev, [product.id]: product }));
       setNavigationData((prev) => {
         if (prev.recommendedItems.some((existing) => existing.id === item.id)) {

@@ -36,6 +36,7 @@ export type ProductApiDto = {
   volume?: string | null;
   allergyInfo?: string | null;
   barcode?: string | null;
+  gridId?: number | null;
 };
 
 /** 목록 API data 필드 — 배열 직접 또는 페이지 래핑 */

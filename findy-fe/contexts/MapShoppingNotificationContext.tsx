@@ -182,30 +182,35 @@ export function MapShoppingNotificationProvider({
   }, [tripLineItems]);
 
   const applyShoppingNotificationResult = useCallback(
-    (
+    async (
       result: ShoppingRecommendationNotificationResult,
       sourceProduct?: Product,
-    ): boolean => {
+    ): Promise<boolean> => {
       const notification = buildNotificationFromApi(result, sourceProduct);
       if (!notification) {
         return false;
       }
 
+      const resolvedProduct = await addRecommendedMapItem(notification.relatedProduct);
+      const enrichedNotification: MapShoppingNotification = {
+        ...notification,
+        relatedProduct: resolvedProduct,
+      };
+
       shownProductIdsRef.current = [
         ...shownProductIdsRef.current,
-        notification.relatedProduct.id,
+        enrichedNotification.relatedProduct.id,
       ];
-      addRecommendedMapItem(notification.relatedProduct);
       setNotifications((prev) => {
         const exists = prev.some(
-          (item) => item.notificationId === notification.notificationId,
+          (item) => item.notificationId === enrichedNotification.notificationId,
         );
         if (exists) {
           return prev;
         }
-        return [notification, ...prev];
+        return [enrichedNotification, ...prev];
       });
-      enqueueToast(notification, setActiveToast, toastQueueRef);
+      enqueueToast(enrichedNotification, setActiveToast, toastQueueRef);
       return true;
     },
     [addRecommendedMapItem],
@@ -260,7 +265,10 @@ export function MapShoppingNotificationProvider({
             )?.product
           : undefined;
 
-        const shown = applyShoppingNotificationResult(result, sourceProduct);
+        const shown = await applyShoppingNotificationResult(
+          result,
+          sourceProduct,
+        );
         if (options?.scanMilestone != null && shown) {
           lastNotifiedScanMilestoneRef.current = options.scanMilestone;
         }
