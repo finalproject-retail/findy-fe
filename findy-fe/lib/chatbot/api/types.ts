@@ -64,7 +64,8 @@ export type ChatbotShoppingContextDto = {
 };
 
 export type ChatbotMessageResponseApiDto = {
-  sessionId: number;
+  sessionId?: number;
+  chatSessionId?: number;
   answer: string;
   shoppingContext?: ChatbotShoppingContextDto | null;
   recipeRecommendation?: ChatbotRecipeRecommendationDto | null;
@@ -74,11 +75,18 @@ export type ChatbotMessageResponseApiDto = {
 };
 
 export type ChatbotSessionApiDto = {
+  sessionId?: number;
+  chatSessionId?: number;
+  /** 일부 API 응답은 id 필드만 내려줌 */
+  id?: number;
+  title?: string;
+  lastMessage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type NormalizedChatbotSessionApiDto = ChatbotSessionApiDto & {
   sessionId: number;
-  title: string;
-  lastMessage: string;
-  createdAt: string;
-  updatedAt: string;
 };
 
 export type ChatbotSessionsApiData = {
@@ -86,15 +94,26 @@ export type ChatbotSessionsApiData = {
 };
 
 export type ChatbotHistoryMessageApiDto = {
-  senderType: string;
-  message: string;
+  chatMessageId?: number;
+  senderType?: string;
+  sender?: string;
+  role?: string;
+  message?: string;
+  content?: string;
+  text?: string;
+  answer?: string;
   intent?: string | null;
   createdAt: string;
+  recipeRecommendation?: ChatbotRecipeRecommendationDto | null;
+  shoppingContext?: ChatbotShoppingContextDto | null;
 };
 
 export type ChatbotSessionMessagesApiData = {
-  sessionId: number;
-  messages: ChatbotHistoryMessageApiDto[];
+  sessionId?: number;
+  chatSessionId?: number;
+  id?: number;
+  messages?: ChatbotHistoryMessageApiDto[];
+  chatMessages?: ChatbotHistoryMessageApiDto[];
 };
 
 export type ChatbotSttApiData = {

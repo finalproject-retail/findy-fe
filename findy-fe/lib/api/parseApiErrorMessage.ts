@@ -1,3 +1,4 @@
+import { PublicUserApiError } from "@/lib/auth/api/publicUserApiFetch";
 import { isAxiosError } from "axios";
 
 type ApiErrorPayload = {
@@ -7,11 +8,21 @@ type ApiErrorPayload = {
 };
 
 export function parseApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof PublicUserApiError) {
+    return error.message;
+  }
+
   if (isAxiosError(error)) {
+    const data = error.response?.data as ApiErrorPayload | undefined;
     if (error.response?.status === 401) {
+      if (typeof data?.message === "string" && data.message) {
+        return data.message;
+      }
+      if (Array.isArray(data?.message) && data.message.length > 0) {
+        return data.message.join("\n");
+      }
       return "로그인이 만료되었습니다. 다시 로그인해 주세요.";
     }
-    const data = error.response?.data as ApiErrorPayload | undefined;
     if (data?.errors?.length) {
       const lines = data.errors
         .map((item) => item.defaultMessage ?? item.message)

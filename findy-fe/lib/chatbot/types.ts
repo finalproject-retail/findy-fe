@@ -40,3 +40,6 @@ export const CHATBOT_WELCOME_MESSAGES: ChatMessage[] = [
 ];
 
 export const CHATBOT_DEFAULT_LIMIT = 10;
+
+/** LLM·레시피 추천 등 — 일반 API(15s)보다 길게 */
+export const CHATBOT_MESSAGE_TIMEOUT_MS = 90_000;
