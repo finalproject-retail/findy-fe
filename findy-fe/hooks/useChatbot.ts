@@ -1,16 +1,12 @@
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  fetchChatbotSessionMessages,
-  fetchChatbotSessions,
   postChatbotMessage,
   postChatbotVoiceMessage,
 } from "@/lib/chatbot/api/chatbot";
 import {
   enrichChatbotProductRecommendation,
   enrichChatbotRecipeRecommendation,
-  enrichChatMessagesWithCatalogImages,
 } from "@/lib/chatbot/enrichChatbotProductImages";
-import { mapChatbotHistoryMessages } from "@/lib/chatbot/mapChatbotMessages";
 import {
   CHATBOT_DEFAULT_LIMIT,
   CHATBOT_WELCOME_MESSAGES,
@@ -18,20 +14,30 @@ import {
 } from "@/lib/chatbot/types";
 import { useCallback, useEffect, useState } from "react";
 
-function pickLatestSession(
-  sessions: Awaited<ReturnType<typeof fetchChatbotSessions>>,
-) {
-  if (sessions.length === 0) {
-    return null;
-  }
-
-  return [...sessions].sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  )[0]!;
+function isWelcomeOnlyMessages(messages: ChatMessage[]): boolean {
+  return messages.every((message) =>
+    CHATBOT_WELCOME_MESSAGES.some((welcome) => welcome.id === message.id),
+  );
 }
 
-/** 챗봇 화면을 나갔다 들어와도 채팅 내역 유지 (채팅 종료하기 전까지) */
+function isValidCachedMessages(messages: ChatMessage[]): boolean {
+  if (isWelcomeOnlyMessages(messages)) {
+    return true;
+  }
+
+  return !messages.some((message) => {
+    if (message.sender === "user") {
+      return message.text.trim().length === 0;
+    }
+    return (
+      message.text.trim().length === 0 &&
+      !message.recipeRecommendation &&
+      !message.productRecommendation
+    );
+  });
+}
+
+/** 챗봇 화면을 나갔다 들어와도 채팅 내역 유지 (채팅 종료하기 전까지, 앱 세션 내) */
 let chatbotSessionCache: {
   sessionId: number | null;
   messages: ChatMessage[];
@@ -64,7 +70,10 @@ export function useChatbot(storeId: number) {
     }
 
     // 같은 앱 세션 안에서 재진입 시 이전 대화 복원
-    if (chatbotSessionCache) {
+    if (
+      chatbotSessionCache &&
+      isValidCachedMessages(chatbotSessionCache.messages)
+    ) {
       setSessionId(chatbotSessionCache.sessionId);
       setMessages(chatbotSessionCache.messages);
       setError(null);
@@ -72,41 +81,12 @@ export function useChatbot(storeId: number) {
       return;
     }
 
-    setLoading(true);
+    chatbotSessionCache = null;
+
+    setSessionId(null);
+    setMessages(CHATBOT_WELCOME_MESSAGES);
     setError(null);
-
-    try {
-      const sessions = await fetchChatbotSessions();
-      const latestSession = pickLatestSession(sessions);
-
-      if (!latestSession) {
-        setSessionId(null);
-        setMessages(CHATBOT_WELCOME_MESSAGES);
-        return;
-      }
-
-      const history = await fetchChatbotSessionMessages(latestSession.sessionId);
-      const mapped = await enrichChatMessagesWithCatalogImages(
-        mapChatbotHistoryMessages(history.messages, history.sessionId),
-      );
-
-      setSessionId(history.sessionId);
-      setMessages(mapped.length > 0 ? mapped : CHATBOT_WELCOME_MESSAGES);
-    } catch (err) {
-      setSessionId(null);
-      setMessages(CHATBOT_WELCOME_MESSAGES);
-      // 초기 히스토리 로드 실패는 UX상 치명적이지 않아서 조용히 웰컴으로 fallback.
-      // (재진입 시 일시적인 네트워크 오류가 사용자에게 “에러 고정”으로 보이는 문제 방지)
-      setError(null);
-      if (__DEV__) {
-        console.warn(
-          "[chatbot] initial load failed",
-          err instanceof Error ? err.message : err,
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }, [accessToken, authLoading, isLoggedIn]);
 
   useEffect(() => {
@@ -120,7 +100,7 @@ export function useChatbot(storeId: number) {
     chatbotSessionCache = { sessionId, messages };
   }, [isLoggedIn, loading, messages, sessionId]);
 
-  /** 채팅 종료하기 — 내역 비우고 새 대화로 시작 (재진입 시 이전 세션 복원 안 함) */
+  /** 채팅 종료하기 — 내역 비우고 새 대화 (서버 세션 자동 복원 없음) */
   const endChat = useCallback(() => {
     chatbotSessionCache = {
       sessionId: null,
