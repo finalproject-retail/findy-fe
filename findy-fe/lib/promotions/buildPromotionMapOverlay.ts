@@ -18,6 +18,7 @@ function promotionToRecommendedMapItem(
     gridX,
     gridY,
     gridId: promotion.gridId,
+    source: "promotion",
   };
 }
 

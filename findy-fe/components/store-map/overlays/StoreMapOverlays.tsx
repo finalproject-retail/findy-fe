@@ -16,6 +16,7 @@ import { MapZoneMarkerCallout } from "./MapZoneMarkerCallout";
 import type {
   MapMarkerSelectionKind,
   NavigationRouteSnapshot,
+  ResolvedGridMarker,
   StoreMapNavigationMock,
 } from "./types";
 import type { CartLineItem } from "@/contexts/CartContext";
@@ -264,26 +265,55 @@ export function StoreMapOverlays({
 
   const recommendedMarkers = useMemo(
     () => resolveRecommendedMarkers(config, data.recommendedItems, cellPx),
-    [cellPx, config, data.recommendedItems]
+    [cellPx, config, data.recommendedItems],
   );
 
   const isRecommendedSelection =
     selectedMarkerKind === "recommended" && selectedMarkerProductId != null;
 
-  const selectedRecommendedMarker = useMemo(
+  const selectedRecommendedMapItem = useMemo(
     () =>
-      isRecommendedSelection
-        ? recommendedMarkers.find(
-            (marker) => marker.id === selectedMarkerProductId,
-          )
+      selectedMarkerProductId
+        ? data.recommendedItems.find((item) => item.id === selectedMarkerProductId)
         : undefined,
-    [isRecommendedSelection, recommendedMarkers, selectedMarkerProductId],
+    [data.recommendedItems, selectedMarkerProductId],
   );
 
+  const selectedRecommendedMarker = useMemo(() => {
+    if (!isRecommendedSelection || !selectedMarkerProductId || !selectedRecommendedMapItem) {
+      return undefined;
+    }
+
+    const direct = recommendedMarkers.find(
+      (marker) => marker.id === selectedMarkerProductId,
+    );
+    if (direct) {
+      return direct;
+    }
+
+    return recommendedMarkers.find((marker) => {
+      const markerItem = data.recommendedItems.find((item) => item.id === marker.id);
+      return (
+        markerItem != null &&
+        itemsShareGridCell(selectedRecommendedMapItem, markerItem, config.cols)
+      );
+    });
+  }, [
+    config.cols,
+    data.recommendedItems,
+    isRecommendedSelection,
+    recommendedMarkers,
+    selectedMarkerProductId,
+    selectedRecommendedMapItem,
+  ]);
+
+  const selectedRecommendedPinHeight = recoPinHeight;
+
   const colocatedRecommendedProducts = useMemo(() => {
-    if (!isRecommendedSelection || !selectedMarkerProductId) {
+    if (!isRecommendedSelection || !selectedMarkerProductId || !selectedRecommendedMapItem) {
       return [];
     }
+
     return findColocatedRecommendedProducts(
       config,
       selectedMarkerProductId,
@@ -296,6 +326,7 @@ export function StoreMapOverlays({
     isRecommendedSelection,
     recommendedProductsById,
     selectedMarkerProductId,
+    selectedRecommendedMapItem,
   ]);
 
   const isShoppingMarkerSelected = useCallback(
@@ -319,7 +350,7 @@ export function StoreMapOverlays({
   );
 
   const isRecommendedMarkerSelected = useCallback(
-    (marker: (typeof recommendedMarkers)[number]) => {
+    (marker: ResolvedGridMarker) => {
       if (!isRecommendedSelection || !selectedMarkerProductId) {
         return false;
       }
@@ -371,18 +402,18 @@ export function StoreMapOverlays({
           cellPx={cellPx}
         />
       ) : null}
-      <RecommendationAdMarkerLayer
-        markers={recommendedMarkers}
-        cellPx={cellPx}
-        isMarkerSelected={isRecommendedMarkerSelected}
-        onMarkerPress={onRecommendedMarkerPress}
-      />
       <ShoppingItemMarkerLayer
         markers={shoppingMarkers}
         cellPx={cellPx}
         pickedMarkerIds={pickedMarkerIds}
         isMarkerSelected={isShoppingMarkerSelected}
         onMarkerPress={onShoppingMarkerPress}
+      />
+      <RecommendationAdMarkerLayer
+        markers={recommendedMarkers}
+        cellPx={cellPx}
+        isMarkerSelected={isRecommendedMarkerSelected}
+        onMarkerPress={onRecommendedMarkerPress}
       />
       {selectedMarkerKind === "shopping" &&
       selectedMarker &&
@@ -428,7 +459,7 @@ export function StoreMapOverlays({
                   quantity: 1,
                 }))}
                 anchor={selectedRecommendedMarker.center}
-                pinHeight={recoPinHeight}
+                pinHeight={selectedRecommendedPinHeight}
               />
             )
           : (
@@ -436,7 +467,7 @@ export function StoreMapOverlays({
                 product={colocatedRecommendedProducts[0]!}
                 quantity={1}
                 anchor={selectedRecommendedMarker.center}
-                pinHeight={recoPinHeight}
+                pinHeight={selectedRecommendedPinHeight}
               />
             )
         : null}
