@@ -16,8 +16,8 @@ export type UserMeApiDto = {
   reward: number;
   role?: string | null;
   /** Jackson may emit `firstLogin` for record field `isFirstLogin`. */
-  isFirstLogin?: boolean;
-  firstLogin?: boolean;
+  isFirstLogin?: boolean | string;
+  firstLogin?: boolean | string;
 };
 
 export type UserProfile = {

@@ -1,4 +1,5 @@
 import { normalizeMembershipGrade } from "@/lib/coupon/membershipGrade";
+import { parseIsFirstLoginFromRecord } from "@/lib/auth/parseIsFirstLoginFlag";
 import { isAdminRole } from "@/lib/auth/roles";
 import type { UserMeApiDto, UserProfile } from "@/lib/auth/types";
 
@@ -7,13 +8,7 @@ export function mapMembershipGrade(raw: string | null | undefined) {
 }
 
 function resolveIsFirstLogin(dto: UserMeApiDto): boolean {
-  if (typeof dto.isFirstLogin === "boolean") {
-    return dto.isFirstLogin;
-  }
-  if (typeof dto.firstLogin === "boolean") {
-    return dto.firstLogin;
-  }
-  return true;
+  return parseIsFirstLoginFromRecord(dto, true);
 }
 
 export function mapUserProfileFromApi(dto: UserMeApiDto): UserProfile {
