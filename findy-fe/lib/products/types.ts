@@ -36,6 +36,9 @@ export type ProductApiDto = {
   volume?: string | null;
   allergyInfo?: string | null;
   barcode?: string | null;
+  recommendationLogId?: number | null;
+  recommendationSourceProductId?: string | null;
+  recommendationRank?: number | null;
   gridId?: number | null;
 };
 

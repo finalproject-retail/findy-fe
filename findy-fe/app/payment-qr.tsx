@@ -16,6 +16,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { createOrder } from "@/lib/shopping/api";
+import { reportPurchaseConversionForOrder } from "@/lib/recommendations/recommendationLogTracker";
 
 const QR_SIZE = 176;
 
@@ -74,6 +75,10 @@ export default function PaymentQrScreen() {
   const handleMockQrScan = async () => {
     try {
       const order = await createOrder(selectedCoupon?.userCouponId ?? undefined);
+      reportPurchaseConversionForOrder(
+        order.orderId,
+        checkoutItems.map((item) => item.productId),
+      );
       setLastCreatedOrder({
         orderId: order.orderId,
         finalAmount: order.finalAmount,

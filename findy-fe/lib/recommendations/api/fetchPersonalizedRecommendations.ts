@@ -10,6 +10,8 @@ import {
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import { enrichProductsWithShoppingStock } from "@/lib/products/enrichProductsWithShoppingStock";
 import { SHOPPING_API_MAX_SECTION_SIZE } from "@/lib/products/constants";
+import { attachRecommendationImpressionLogs } from "@/lib/recommendations/attachRecommendationImpressionLogs";
+import { RECOMMENDATION_DISPLAY_LOCATION } from "@/lib/recommendations/constants";
 import type { PersonalizedRecommendationsApiData } from "@/lib/recommendations/types";
 import { recommendationApiClient } from "./recommendationClient";
 
@@ -80,8 +82,18 @@ export async function fetchPersonalizedRecommendationsInStock(
   const enriched = await enrichProductsWithShoppingStock(result.products);
   const inStock = filterInStockProducts(enriched).slice(0, size);
 
+  const productsWithLogs = await attachRecommendationImpressionLogs({
+    products: inStock.map((product, index) => ({
+      ...product,
+      recommendationRank: product.recommendationRank ?? index + 1,
+    })),
+    recommendationType: "PERSONALIZED",
+    displayLocation: RECOMMENDATION_DISPLAY_LOCATION.homePersonalized,
+    storeId,
+  });
+
   return {
     ...result,
-    products: inStock,
+    products: productsWithLogs,
   };
 }

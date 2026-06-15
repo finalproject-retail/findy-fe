@@ -1,7 +1,7 @@
 import { getAccessToken } from "@/lib/api/client";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 
-/** recommendation-service 쿼리 userId (JWT sub 우선) */
+/** recommendation-service 쿼리·body userId (JWT sub 우선) */
 export function resolveRecommendationUserId(): string {
   const fromToken = getUserIdFromAccessToken(getAccessToken());
   if (fromToken) {
@@ -12,4 +12,9 @@ export function resolveRecommendationUserId(): string {
     return fromEnv;
   }
   return "1";
+}
+
+export function resolveRecommendationUserIdNumber(): number | null {
+  const parsed = Number(resolveRecommendationUserId());
+  return Number.isFinite(parsed) ? parsed : null;
 }

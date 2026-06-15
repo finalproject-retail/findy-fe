@@ -3,6 +3,7 @@ import type { Product } from "@/components/product";
 export type MapShoppingNotification = {
   id: string;
   notificationId: number;
+  recommendationLogId?: number;
   createdAt: number;
   notificationType?: string;
   isRead?: boolean;

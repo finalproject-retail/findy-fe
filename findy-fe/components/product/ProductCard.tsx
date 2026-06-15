@@ -1,4 +1,5 @@
 import { TYPOGRAPHY } from "@/constants/theme";
+import { reportRecommendationClick } from "@/lib/recommendations/recommendationLogTracker";
 import { pretendard } from "@/utils/pretendard";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
@@ -23,6 +24,13 @@ export function ProductCard({ product, width, onAddToCart }: ProductCardProps) {
   const soldOut = isOutOfStock(product);
 
   const openProductDetail = () => {
+    if (product.recommendationLogId != null) {
+      reportRecommendationClick({
+        recommendationLogId: product.recommendationLogId,
+        productId: product.id,
+        sourceProductId: product.recommendationSourceProductId,
+      });
+    }
     router.push(`/product/${product.id}`);
   };
 
