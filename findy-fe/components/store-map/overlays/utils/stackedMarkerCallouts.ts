@@ -2,7 +2,7 @@ import type { StoreMapConfig } from "../../types";
 import type { RecommendedMapItem, ShoppingMapItem } from "../types";
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { Product } from "@/components/product";
-import { itemsShareShelfGrid } from "./resolveGridMarkers";
+import { itemsShareGridCell } from "./resolveGridMarkers";
 
 function orderSelectedFirst<T>(
   items: T[],
@@ -38,7 +38,7 @@ export function findColocatedTripLines(
     if (!mapItem) {
       return line.productId === selectedProductId;
     }
-    return itemsShareShelfGrid(config, selectedMapItem, mapItem);
+    return itemsShareGridCell(selectedMapItem, mapItem, config.cols);
   });
 
   return orderSelectedFirst(colocated, selectedProductId, (line) => line.productId);
@@ -59,7 +59,7 @@ export function findColocatedRecommendedProducts(
   }
 
   const products = recommendedItems
-    .filter((item) => itemsShareShelfGrid(config, selectedMapItem, item))
+    .filter((item) => itemsShareGridCell(selectedMapItem, item, config.cols))
     .map((item) => recommendedProductsById[item.id])
     .filter((product): product is Product => product != null);
 

@@ -78,6 +78,7 @@ export function productToRecommendedMapItem(
     name: product.name,
     gridX,
     gridY,
+    ...(product.gridId != null ? { gridId: product.gridId } : {}),
   };
 }
 

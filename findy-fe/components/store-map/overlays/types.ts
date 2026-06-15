@@ -17,10 +17,11 @@ export type ShoppingMapItem = MapGridPoint & {
   gridId?: number;
 };
 
-/** 추천(광고) — 경로 제외, 격자 한 칸 중심 */
+/** 추천(광고)·행사 — 지도에 항상 표시, 쇼핑 경로 계산에는 미포함 */
 export type RecommendedMapItem = MapGridPoint & {
   id: string;
   name: string;
+  gridId?: number;
 };
 
 export type BeaconCongestionLevel = "HIGH" | "MEDIUM";
@@ -45,6 +46,8 @@ export type NavigationRouteSnapshot = {
   /** map-service 경로 API 응답 — 있으면 로컬 pathfinding 대신 사용 */
   pathNavigation?: PathNavigationApi | null;
 };
+
+export type MapMarkerSelectionKind = "shopping" | "recommended";
 
 export type MapPixelPoint = {
   x: number;
