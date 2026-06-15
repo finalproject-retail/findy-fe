@@ -42,4 +42,10 @@ export type Product = {
   availableCoupons?: ProductCoupon[];
   /** 최근 본 상품 API — 조회 시각 */
   viewedAt?: string;
+  /** 추천 클릭·구매 전환 로그 ID */
+  recommendationLogId?: number;
+  /** 연관/대체 추천 기준 상품 ID */
+  recommendationSourceProductId?: string;
+  /** 추천 API 응답 순위 (있을 때) */
+  recommendationRank?: number;
 };

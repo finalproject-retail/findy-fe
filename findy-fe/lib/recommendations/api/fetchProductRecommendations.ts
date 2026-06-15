@@ -2,6 +2,9 @@ import type { Product } from "@/components/product";
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import { DEFAULT_API_STORE_ID } from "@/components/home/storeOptions";
 import type { ApiEnvelope } from "@/lib/map/types";
+import { attachRecommendationImpressionLogs } from "@/lib/recommendations/attachRecommendationImpressionLogs";
+import { RECOMMENDATION_DISPLAY_LOCATION } from "@/lib/recommendations/constants";
+import type { RecommendationType } from "@/lib/recommendations/types";
 import { fetchProductDetail } from "@/lib/products/api/fetchProductDetail";
 import {
   alignProductDtoWithShoppingPrice,
@@ -29,6 +32,10 @@ function unwrapRecommendationItems(
 
 function mapRecommendationDtoToProductDto(
   dto: ProductRecommendationApiDto,
+  meta?: {
+    sourceProductId?: string;
+    recommendationRank?: number;
+  },
 ): ProductApiDto {
   const salePrice = dto.salePrice ?? dto.originalPrice ?? 0;
 
@@ -40,6 +47,9 @@ function mapRecommendationDtoToProductDto(
     originalPrice: dto.originalPrice ?? salePrice,
     salePrice,
     stockStatus: dto.stockStatus,
+    recommendationLogId: dto.recommendationLogId ?? undefined,
+    recommendationSourceProductId: meta?.sourceProductId,
+    recommendationRank: dto.recommendationRank ?? meta?.recommendationRank,
   };
 }
 
@@ -71,7 +81,12 @@ async function mapRecommendationProducts(
   sourceProductId: string,
 ): Promise<Product[]> {
   const mapped = mapProductsFromApi(
-    items.map(mapRecommendationDtoToProductDto).map(alignProductDtoWithShoppingPrice),
+    items.map((item, index) =>
+      mapRecommendationDtoToProductDto(item, {
+        sourceProductId,
+        recommendationRank: item.recommendationRank ?? index + 1,
+      }),
+    ).map(alignProductDtoWithShoppingPrice),
   ).filter((product): product is Product => product != null);
 
   const enriched = await Promise.all(
@@ -93,6 +108,11 @@ async function fetchRecommendationList(
   path: string,
   params: Record<string, string | number>,
   sourceProductId: string,
+  logging: {
+    recommendationType: RecommendationType;
+    displayLocation: string;
+    storeId?: number | null;
+  },
 ): Promise<Product[]> {
   try {
     const response = await recommendationApiClient.get<
@@ -107,10 +127,18 @@ async function fetchRecommendationList(
       throw new Error(body?.message ?? "상품 추천을 불러오지 못했습니다.");
     }
 
-    return await mapRecommendationProducts(
+    const products = await mapRecommendationProducts(
       unwrapRecommendationItems(body.data),
       sourceProductId,
     );
+
+    return attachRecommendationImpressionLogs({
+      products,
+      sourceProductId,
+      recommendationType: logging.recommendationType,
+      displayLocation: logging.displayLocation,
+      storeId: logging.storeId,
+    });
   } catch (error) {
     if (isRecommendationNotFound(error)) {
       return [];
@@ -136,6 +164,10 @@ export async function fetchRelatedProductRecommendations(
       size,
     },
     String(apiProductId),
+    {
+      recommendationType: "RELATED",
+      displayLocation: RECOMMENDATION_DISPLAY_LOCATION.productDetailRelated,
+    },
   );
 }
 
@@ -158,5 +190,10 @@ export async function fetchSubstituteProductRecommendations(
       size,
     },
     String(apiProductId),
+    {
+      recommendationType: "SUBSTITUTE",
+      displayLocation: RECOMMENDATION_DISPLAY_LOCATION.substituteRecommendation,
+      storeId,
+    },
   );
 }

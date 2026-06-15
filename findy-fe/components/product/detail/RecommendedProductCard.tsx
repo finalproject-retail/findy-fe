@@ -2,6 +2,11 @@ import CartIcon from "@/assets/icons/cart-icon.svg";
 import { COLORS, RADIUS, TYPOGRAPHY } from "@/constants/theme";
 import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
 import { useProductAddMode } from "@/components/product/useProductAddMode";
+import type { ProductRecommendationVariant } from "@/hooks/useProductRecommendations";
+import {
+  reportRecommendationClick,
+  reportSubstituteSelection,
+} from "@/lib/recommendations/recommendationLogTracker";
 import { useCart } from "@/contexts/CartContext";
 import { useMapNavigation } from "@/contexts/MapNavigationContext";
 import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
@@ -21,12 +26,41 @@ type RecommendedProductCardProps = {
   product: Product;
   width: number;
   shoppingListAddMode?: boolean;
+  recommendationVariant?: ProductRecommendationVariant;
 };
+
+function reportRecommendationInteraction(
+  product: Product,
+  variant?: ProductRecommendationVariant,
+) {
+  if (product.recommendationLogId == null) {
+    return;
+  }
+
+  if (
+    variant === "substitute" &&
+    product.recommendationSourceProductId
+  ) {
+    reportSubstituteSelection({
+      recommendationLogId: product.recommendationLogId,
+      sourceProductId: product.recommendationSourceProductId,
+      selectedProductId: product.id,
+    });
+    return;
+  }
+
+  reportRecommendationClick({
+    recommendationLogId: product.recommendationLogId,
+    productId: product.id,
+    sourceProductId: product.recommendationSourceProductId,
+  });
+}
 
 export function RecommendedProductCard({
   product,
   width,
   shoppingListAddMode = false,
+  recommendationVariant,
 }: RecommendedProductCardProps) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -36,6 +70,7 @@ export function RecommendedProductCard({
   const soldOut = isOutOfStock(product);
 
   const openProductDetail = () => {
+    reportRecommendationInteraction(product, recommendationVariant);
     router.push(
       isShoppingListMode
         ? {

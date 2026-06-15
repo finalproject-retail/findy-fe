@@ -17,6 +17,10 @@ import {
 } from "@/lib/notifications/api";
 import type { ShoppingRecommendationNotificationResult } from "@/lib/notifications/api";
 import {
+  reportRecommendationClick,
+  trackRecommendationImpressionLog,
+} from "@/lib/recommendations/recommendationLogTracker";
+import {
   createContext,
   useCallback,
   useContext,
@@ -84,6 +88,7 @@ function buildNotificationFromApi(
   return {
     id: String(result.notificationId),
     notificationId: result.notificationId,
+    recommendationLogId: result.recommendationLogId,
     createdAt: Date.now(),
     notificationType: result.notificationType,
     pickedProductId: sourceProduct?.id ?? "",
@@ -195,6 +200,13 @@ export function MapShoppingNotificationProvider({
         ...shownProductIdsRef.current,
         notification.relatedProduct.id,
       ];
+      if (notification.recommendationLogId != null) {
+        trackRecommendationImpressionLog({
+          recommendationLogId: notification.recommendationLogId,
+          productId: notification.relatedProduct.id,
+          sourceProductId: notification.pickedProductId || sourceProduct?.id,
+        });
+      }
       addRecommendedMapItem(notification.relatedProduct);
       setNotifications((prev) => {
         const exists = prev.some(
@@ -321,6 +333,14 @@ export function MapShoppingNotificationProvider({
     async (notification: MapShoppingNotification) => {
       try {
         const result = await clickNotification(notification.notificationId);
+        if (notification.recommendationLogId != null) {
+          reportRecommendationClick({
+            recommendationLogId: notification.recommendationLogId,
+            productId: notification.relatedProduct.id,
+            sourceProductId:
+              notification.pickedProductId || notification.relatedProduct.id,
+          });
+        }
         setNotifications((prev) =>
           prev.map((item) =>
             item.notificationId === notification.notificationId

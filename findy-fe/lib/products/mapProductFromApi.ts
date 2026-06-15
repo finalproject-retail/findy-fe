@@ -111,6 +111,10 @@ export function mapProductFromApi(dto: ProductApiDto): Product | null {
     couponPrice: salePrice,
     stockCount: stockCount ?? undefined,
     category: dto.category,
+    recommendationLogId: dto.recommendationLogId ?? undefined,
+    recommendationSourceProductId:
+      dto.recommendationSourceProductId?.trim() || undefined,
+    recommendationRank: dto.recommendationRank ?? undefined,
   };
 }
 

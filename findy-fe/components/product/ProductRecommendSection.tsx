@@ -104,6 +104,7 @@ export function ProductRecommendSection({
             product={item}
             width={cardWidth}
             shoppingListAddMode={shoppingListAddMode}
+            recommendationVariant={variant}
           />
         )}
       />
