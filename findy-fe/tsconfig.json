@@ -4,6 +4,11 @@
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
+    "jsx": "react-native",
+    "lib": ["DOM", "ESNext"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
     "paths": {
       "@/*": ["./*"]
     }
