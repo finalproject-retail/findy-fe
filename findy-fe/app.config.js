@@ -1,7 +1,7 @@
 /** @type {import('expo/config').ExpoConfig} */
 export default ({ config }) => ({
   ...config,
-  name: "findy-fe",
+  name: "Findy",
   slug: "findy-fe",
   plugins: [
     "expo-router",
@@ -29,9 +29,10 @@ export default ({ config }) => ({
   android: {
     ...config.android,
     usesCleartextTraffic: true,
+    icon: "./assets/images/app-icon.png",
     adaptiveIcon: {
       backgroundColor: "#FFFFFF",
-      foregroundImage: "./assets/images/splash-logo.png",
+      foregroundImage: "./assets/images/adaptive-icon.png",
     },
     permissions: [
       ...(config.android?.permissions ?? []),
