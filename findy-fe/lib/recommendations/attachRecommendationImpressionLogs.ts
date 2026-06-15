@@ -8,7 +8,7 @@ import { parseShoppingProductId } from "@/lib/shopping/parseShoppingProductId";
 
 type AttachRecommendationImpressionLogsParams = {
   products: Product[];
-  sourceProductId: string;
+  sourceProductId?: string;
   recommendationType: RecommendationType;
   displayLocation: string;
   storeId?: number | null;
