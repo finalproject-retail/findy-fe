@@ -70,7 +70,7 @@ export function usePersonalizedRecommendSection({
 
         setTitle(sectionTitle);
 
-        if (recommendations.products.length === 0) {
+        if (recommendations.products.length === 0 && __DEV__) {
           setProducts(getInStockProducts().slice(0, limit));
         } else {
           setProducts(recommendations.products);
@@ -99,7 +99,7 @@ export function usePersonalizedRecommendSection({
         }
 
         if (!cancelled) {
-          setProducts(getInStockProducts().slice(0, limit));
+          setProducts(__DEV__ ? getInStockProducts().slice(0, limit) : []);
           setVisible(true);
         }
       } finally {

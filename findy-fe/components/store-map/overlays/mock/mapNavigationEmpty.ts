@@ -7,4 +7,5 @@ export const MAP_NAVIGATION_EMPTY: StoreMapNavigationMock = {
   shoppingItems: [],
   recommendedItems: [],
   beaconCongestion: [],
+  storeCongestionLevel: null,
 };

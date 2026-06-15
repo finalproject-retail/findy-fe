@@ -14,10 +14,16 @@ function resolveAuthToken(): string | null {
   return fromEnv || null;
 }
 
+export type CreateShoppingPathOptions = {
+  /** 지도 파란 점 위치(BLE 또는 기본 출입구). 서버가 경로 시작점으로 사용 */
+  currentGridId?: number;
+};
+
 /** 경로 생성·재탐색 — POST /api/v1/path */
 export async function createShoppingPath(
   storeId: number,
   destinationGridIds: number[],
+  options: CreateShoppingPathOptions = {},
 ): Promise<PathNavigationApi> {
   const token = resolveAuthToken();
   if (!token) {
@@ -35,7 +41,13 @@ export async function createShoppingPath(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ storeId, destinationGridIds }),
+    body: JSON.stringify({
+      storeId,
+      destinationGridIds,
+      ...(options.currentGridId != null
+        ? { currentGridId: options.currentGridId }
+        : {}),
+    }),
   });
 
   await handleUnauthorizedHttpResponse(response, PATH_API_URL);

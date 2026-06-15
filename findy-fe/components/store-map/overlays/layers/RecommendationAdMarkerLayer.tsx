@@ -9,14 +9,14 @@ import { scaledMarkerSize } from "../utils/overlayScale";
 type RecommendationAdMarkerLayerProps = {
   markers: ResolvedGridMarker[];
   cellPx: number;
-  selectedMarkerId?: string | null;
+  isMarkerSelected?: (marker: ResolvedGridMarker) => boolean;
   onMarkerPress?: (markerId: string) => void;
 };
 
 export function RecommendationAdMarkerLayer({
   markers,
   cellPx,
-  selectedMarkerId,
+  isMarkerSelected,
   onMarkerPress,
 }: RecommendationAdMarkerLayerProps) {
   const width = scaledMarkerSize(MAP_OVERLAY_RECO_WIDTH, cellPx);
@@ -26,7 +26,7 @@ export function RecommendationAdMarkerLayer({
     <>
       {markers.map((marker) => {
         const { x, y } = pinTopLeftFromCenter(marker.center, width, height);
-        const isSelected = selectedMarkerId === marker.id;
+        const isSelected = isMarkerSelected?.(marker) ?? false;
 
         return (
           <Pressable

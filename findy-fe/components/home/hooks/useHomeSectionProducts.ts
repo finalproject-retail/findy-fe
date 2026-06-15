@@ -30,6 +30,10 @@ type UseHomeSectionProductsOptions = {
 };
 
 function getMockFallback(kind: HomeSectionProductKind, limit: number): Product[] {
+  if (!__DEV__) {
+    return [];
+  }
+
   switch (kind) {
     case "popular":
       return MOCK_POPULAR_PRODUCTS.slice(0, limit);
@@ -106,7 +110,7 @@ export function useHomeSectionProducts({
 
         const inStock = filterInStockProducts(fetched);
 
-        if (inStock.length === 0) {
+        if (inStock.length === 0 && __DEV__) {
           setProducts(getMockFallback(kind, resolvedLimit));
           setUsingFallback(true);
           return;
@@ -123,8 +127,9 @@ export function useHomeSectionProducts({
             error instanceof Error ? error.message : error,
           );
         }
-        setProducts(getMockFallback(kind, resolvedLimit));
-        setUsingFallback(true);
+        const fallback = getMockFallback(kind, resolvedLimit);
+        setProducts(fallback);
+        setUsingFallback(fallback.length > 0);
       } finally {
         if (!cancelled) {
           setLoading(false);

@@ -2,7 +2,8 @@ import { tripLineItemsToShoppingMapItems } from "@/components/cart/cartToShoppin
 import type { CartLineItem } from "@/contexts/CartContext";
 import type { ShoppingMapItem } from "@/components/store-map/overlays/types";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
-import { buildTripShoppingMapItems } from "@/lib/shopping/buildTripShoppingMapItems";
+import { zonesToShoppingMapItems } from "@/components/cart/zonesToShoppingMapItems";
+import { mapShoppingListLineItemsToMapItems } from "@/lib/shopping/mappers";
 import { isCategoryLineItem } from "@/lib/shopping/shoppingListItemUtils";
 import type { TripZoneLineItem } from "@/lib/shopping/types";
 
@@ -121,7 +122,10 @@ export function resolveTripDestinationGridIds(
   }
 
   return destinationGridIdsFromMapItems(
-    buildTripShoppingMapItems(productLineItems, zoneItems),
+    [
+      ...mapShoppingListLineItemsToMapItems(productLineItems, gridCols),
+      ...zonesToShoppingMapItems(zoneItems),
+    ],
     gridCols,
   );
 }

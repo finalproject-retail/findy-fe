@@ -128,7 +128,7 @@ export type TripZoneLineItem = {
   topLabel: string;
   middleLabel: string;
   emoji: string;
-  /** map-service 격자 — 있으면 지도 마커·경로에 우선 사용 */
+  /** 쇼핑리스트 API category.gridId */
   gridId?: number | null;
   shoppingListItemId?: string;
 };
