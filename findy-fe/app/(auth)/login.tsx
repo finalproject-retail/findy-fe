@@ -17,6 +17,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -44,21 +45,20 @@ const styles = StyleSheet.create({
   kavWeb: {
     alignItems: "center",
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: SPACING.screen,
-    paddingTop: 130,
-    paddingBottom: 36,
+    paddingVertical: 32,
   },
-  contentWeb: {
+  scrollContentWeb: {
     width: "100%",
     maxWidth: LOGIN_WEB_MAX_WIDTH,
-    paddingTop: 100,
     alignSelf: "center",
   },
   logoSection: {
     alignItems: "center",
-    marginBottom: 52,
+    marginBottom: 40,
   },
   brandLogo: {
     width: 64,
@@ -167,7 +167,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 28,
     columnGap: 28,
   },
   socialButton: {
@@ -256,12 +255,20 @@ export default function LoginScreen() {
   const isSocialBusy = socialLoadingProvider != null;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         style={[styles.kav, isWeb && styles.kavWeb]}
         behavior={isWeb ? undefined : Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={[styles.content, isWeb && styles.contentWeb]}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isWeb && styles.scrollContentWeb,
+          ]}
+        >
           <View style={styles.logoSection}>
             <Image
               source={require("@/assets/images/splash-logo.png")}
@@ -394,7 +401,7 @@ export default function LoginScreen() {
               )}
             </View>
           </Form>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
