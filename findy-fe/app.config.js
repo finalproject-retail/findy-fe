@@ -1,7 +1,7 @@
 /** @type {import('expo/config').ExpoConfig} */
 export default ({ config }) => ({
   ...config,
-  name: "findy-fe",
+  name: "Findy",
   slug: "findy-fe",
   plugins: [
     "expo-router",
