@@ -28,6 +28,20 @@ export function buildUserApiHeaders(
   return headers;
 }
 
+/** JWT만 — X-User-Id / X-USER-ID 없음 (챗봇 서비스 등) */
+export function buildTokenOnlyApiHeaders(
+  options: BuildUserApiHeadersOptions = {},
+): Record<string, string> {
+  const token = requireAccessToken();
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+  };
+  if (options.includeJsonContentType) {
+    headers["Content-Type"] = "application/json";
+  }
+  return headers;
+}
+
 export function requireAccessToken(): string {
   const token = getAccessToken();
   if (!token) {
