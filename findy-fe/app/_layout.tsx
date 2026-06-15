@@ -30,7 +30,8 @@ function RootLayoutNav() {
         <Stack.Screen name="product/[id]" />
         <Stack.Screen name="points" />
         <Stack.Screen name="recently-viewed" />
-        <Stack.Screen name="purchase-history" />
+        <Stack.Screen name="purchase-history/index" />
+        <Stack.Screen name="purchase-history/[orderId]" />
         <Stack.Screen name="faq" />
         <Stack.Screen name="search" />
         <Stack.Screen name="category" />
