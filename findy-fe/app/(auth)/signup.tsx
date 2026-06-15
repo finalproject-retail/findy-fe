@@ -3,13 +3,14 @@ import EyeOffIcon from "@/assets/icons/eye_off.svg";
 import EyeOnIcon from "@/assets/icons/eye_on.svg";
 import RadioButtonFillIcon from "@/assets/icons/radio-button-fill.svg";
 import RadioButtonIcon from "@/assets/icons/radio-button.svg";
+import { EmailVerificationSection } from "@/components/auth/EmailVerificationSection";
 import { SignupSuccessModal } from "@/components/auth/SignupSuccessModal";
 import { Button } from "@/components/common/Button";
 import { DatePickerModal } from "@/components/common/DatePicker";
 import { Header } from "@/components/common/Header";
 import { Input } from "@/components/common/Input";
 import { useAuth } from "@/contexts/AuthContext";
-import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
+import { mapSignupApiError } from "@/lib/auth/mapSignupApiError";
 import { postSignup } from "@/lib/auth/api/signup";
 import {
   isValidSignupEmail,
@@ -17,7 +18,7 @@ import {
   isValidSignupPhone,
 } from "@/lib/auth/signupValidation";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -96,6 +97,7 @@ export default function SignupScreen() {
   const { signOut } = useAuth();
   const [name, setName] = useState("");
   const [id, setId] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -119,7 +121,12 @@ export default function SignupScreen() {
     message: string;
   }>({ visible: false, message: "" });
 
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false); 
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+
+  /** 만료된 세션이 남아 있으면 공개 API가 401을 반환할 수 있어 진입 시 정리 */
+  useEffect(() => {
+    void signOut();
+  }, [signOut]);
 
   const handleBirthdatePress = () => {
     setIsDatePickerVisible(true);
@@ -145,6 +152,9 @@ export default function SignupScreen() {
       isValid = false;
     } else if (!isValidSignupEmail(id)) {
       setIdError("* 올바른 이메일 형식으로 입력해 주세요. (예: name@gmail.com)");
+      isValid = false;
+    } else if (!emailVerified) {
+      setIdError("* 이메일 인증을 완료해 주세요.");
       isValid = false;
     }
     if (!password) {
@@ -213,10 +223,12 @@ export default function SignupScreen() {
       }
     } catch (error: unknown) {
       setIsLoading(false);
-      Alert.alert(
-        "회원가입 실패",
-        parseApiErrorMessage(error, "회원가입 중 오류가 발생했습니다."),
-      );
+      const signupError = mapSignupApiError(error);
+      if (signupError.field === "email") {
+        setIdError(`* ${signupError.message}`);
+        return;
+      }
+      Alert.alert("회원가입 실패", signupError.message);
     }
   };
 
@@ -252,17 +264,21 @@ export default function SignupScreen() {
             />
           </View>
 
-          {/* 2. 아이디 필드 (시안대로 버튼 없이 깔끔하게 변경) */}
+          {/* 2. 이메일 필드 + 이메일 인증 */}
           <View className="mb-md">
             <Text className="font-pretendard text-sm font-bold text-text-main mb-[10px]">이메일</Text>
-            <Input
-              placeholder="xxxxxxx@gmail.com"
-              value={id}
-              onChangeText={setId}
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={idError}
+            <EmailVerificationSection
+              variant="signup"
+              email={id}
+              onEmailChange={(next) => {
+                setId(next);
+                setIdError("");
+              }}
+              onVerifiedChange={setEmailVerified}
             />
+            {idError ? (
+              <Text className="mt-[6px] font-pretendard text-xs text-text-red">{idError}</Text>
+            ) : null}
           </View>
 
           {/* 3. 비밀번호 필드 */}

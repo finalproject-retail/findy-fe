@@ -387,7 +387,10 @@ export default function LoginScreen() {
                   </View>
 
                   <View style={styles.linksRow}>
-                    <Pressable accessibilityRole="button">
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push("/find-password")}
+                    >
                       <Text style={styles.linkText}>비밀번호 찾기</Text>
                     </Pressable>
                     <Text style={styles.linkSep}>|</Text>

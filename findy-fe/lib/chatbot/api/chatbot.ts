@@ -1,11 +1,9 @@
 import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
-import { authenticatedUserApiClient } from "@/lib/auth/api/authenticatedUserApiClient";
-import {
-  buildAuthenticatedApiHeaders,
-  buildUserApiHeaders,
-} from "@/lib/auth/api/userApiHeaders";
+import { buildTokenOnlyApiHeaders } from "@/lib/auth/api/userApiHeaders";
 import { assertChatbotSuccess } from "@/lib/chatbot/api/assertChatbotSuccess";
 import { CHATBOT_API_BASE } from "@/lib/chatbot/api/chatbotClient";
+import { chatbotApiClient } from "@/lib/chatbot/api/chatbotApiClient";
+import { resolveChatbotSessionId } from "@/lib/chatbot/api/resolveChatbotSessionId";
 import type {
   ChatbotApiEnvelope,
   ChatbotMessageResponseApiDto,
@@ -16,6 +14,7 @@ import type {
   ChatbotSttApiData,
   ChatbotVoiceMessageApiData,
   ChatbotVoiceMessageResult,
+  NormalizedChatbotSessionApiDto,
 } from "@/lib/chatbot/api/types";
 import {
   hasChatbotRecipeRecommendation,
@@ -25,7 +24,7 @@ import {
   hasChatbotProductRecommendation,
   mapChatbotShoppingProductRecommendation,
 } from "@/lib/chatbot/mapChatbotShoppingContext";
-import { CHATBOT_DEFAULT_LIMIT } from "@/lib/chatbot/types";
+import { CHATBOT_DEFAULT_LIMIT, CHATBOT_MESSAGE_TIMEOUT_MS } from "@/lib/chatbot/types";
 import { Platform } from "react-native";
 
 export type PostChatbotMessageParams = {
@@ -51,7 +50,7 @@ function mapMessageResponse(
   const productRecommendation = mapChatbotShoppingProductRecommendation(dto);
 
   return {
-    sessionId: dto.sessionId,
+    sessionId: resolveChatbotSessionId(dto) ?? 0,
     answer: dto.answer,
     recipeRecommendation: hasChatbotRecipeRecommendation(recipeRecommendation)
       ? recipeRecommendation
@@ -113,6 +112,7 @@ function buildVoiceFormData(params: PostChatbotVoiceMessageParams) {
 
   if (params.sessionId != null) {
     formData.append("sessionId", String(params.sessionId));
+    formData.append("chatSessionId", String(params.sessionId));
   }
   if (params.storeId != null) {
     formData.append("storeId", String(params.storeId));
@@ -129,17 +129,21 @@ export async function postChatbotMessage(
   params: PostChatbotMessageParams,
 ): Promise<ChatbotMessageResult> {
   try {
-    const response = await authenticatedUserApiClient.post<
+    const response = await chatbotApiClient.post<
       ChatbotApiEnvelope<ChatbotMessageResponseApiDto>
     >(
       `${CHATBOT_API_BASE}/messages`,
       {
         sessionId: params.sessionId ?? null,
+        chatSessionId: params.sessionId ?? null,
         storeId: params.storeId,
         limit: params.limit ?? CHATBOT_DEFAULT_LIMIT,
         message: params.message,
       },
-      { headers: buildAuthenticatedApiHeaders({ includeJsonContentType: true }) },
+      {
+        headers: buildTokenOnlyApiHeaders({ includeJsonContentType: true }),
+        timeout: CHATBOT_MESSAGE_TIMEOUT_MS,
+      },
     );
 
     assertChatbotSuccess(response.data, "챗봇 메시지 전송에 실패했습니다.");
@@ -156,21 +160,27 @@ export async function postChatbotMessage(
 }
 
 /** GET /api/v1/chatbot/sessions */
-export async function fetchChatbotSessions(): Promise<ChatbotSessionApiDto[]> {
+export async function fetchChatbotSessions(): Promise<
+  NormalizedChatbotSessionApiDto[]
+> {
   try {
-    const response = await authenticatedUserApiClient.get<
+    const response = await chatbotApiClient.get<
       ChatbotApiEnvelope<ChatbotSessionsApiData | ChatbotSessionApiDto[]>
     >(`${CHATBOT_API_BASE}/sessions`, {
-      headers: buildAuthenticatedApiHeaders(),
+      headers: buildTokenOnlyApiHeaders(),
     });
 
     assertChatbotSuccess(response.data, "채팅 세션 목록을 불러오지 못했습니다.");
 
     const data = response.data.data;
-    if (Array.isArray(data)) {
-      return data;
-    }
-    return data?.sessions ?? [];
+    const rawSessions = Array.isArray(data) ? data : (data?.sessions ?? []);
+    return rawSessions.flatMap((session) => {
+      const sessionId = resolveChatbotSessionId(session);
+      if (sessionId == null) {
+        return [];
+      }
+      return [{ ...session, sessionId }];
+    });
   } catch (error) {
     throw new Error(
       parseApiErrorMessage(error, "채팅 세션 목록을 불러오지 못했습니다."),
@@ -180,11 +190,15 @@ export async function fetchChatbotSessions(): Promise<ChatbotSessionApiDto[]> {
 
 /** GET /api/v1/chatbot/sessions/{sessionId}/messages */
 export async function fetchChatbotSessionMessages(sessionId: number) {
+  if (!Number.isFinite(sessionId) || sessionId <= 0) {
+    throw new Error("유효하지 않은 채팅 세션입니다.");
+  }
+
   try {
-    const response = await authenticatedUserApiClient.get<
+    const response = await chatbotApiClient.get<
       ChatbotApiEnvelope<ChatbotSessionMessagesApiData>
     >(`${CHATBOT_API_BASE}/sessions/${sessionId}/messages`, {
-      headers: buildAuthenticatedApiHeaders(),
+      headers: buildTokenOnlyApiHeaders(),
     });
 
     assertChatbotSuccess(response.data, "채팅 메시지를 불러오지 못했습니다.");
@@ -192,7 +206,17 @@ export async function fetchChatbotSessionMessages(sessionId: number) {
       throw new Error("채팅 메시지를 불러오지 못했습니다.");
     }
 
-    return response.data.data;
+    const resolvedSessionId =
+      resolveChatbotSessionId(response.data.data) ?? sessionId;
+
+    return {
+      ...response.data.data,
+      sessionId: resolvedSessionId,
+      messages:
+        response.data.data.messages ??
+        response.data.data.chatMessages ??
+        [],
+    };
   } catch (error) {
     throw new Error(
       parseApiErrorMessage(error, "채팅 메시지를 불러오지 못했습니다."),
@@ -203,12 +227,12 @@ export async function fetchChatbotSessionMessages(sessionId: number) {
 /** POST /api/v1/chatbot/stt */
 export async function postChatbotStt(fileUri: string) {
   try {
-    buildAuthenticatedApiHeaders();
+    buildTokenOnlyApiHeaders();
     const formData = buildVoiceFormData({ fileUri });
-    const response = await authenticatedUserApiClient.post<
+    const response = await chatbotApiClient.post<
       ChatbotApiEnvelope<ChatbotSttApiData>
     >(`${CHATBOT_API_BASE}/stt`, formData, {
-      headers: buildUserApiHeaders(),
+      headers: buildTokenOnlyApiHeaders(),
       transformRequest: Platform.OS === "web" ? undefined : (data) => data,
     });
 
@@ -228,13 +252,14 @@ export async function postChatbotVoiceMessage(
   params: PostChatbotVoiceMessageParams,
 ): Promise<ChatbotVoiceMessageResult> {
   try {
-    buildAuthenticatedApiHeaders();
+    buildTokenOnlyApiHeaders();
     const formData = buildVoiceFormData(params);
-    const response = await authenticatedUserApiClient.post<
+    const response = await chatbotApiClient.post<
       ChatbotApiEnvelope<ChatbotVoiceMessageApiData>
     >(`${CHATBOT_API_BASE}/messages/voice`, formData, {
-      headers: buildUserApiHeaders(),
+      headers: buildTokenOnlyApiHeaders(),
       transformRequest: Platform.OS === "web" ? undefined : (data) => data,
+      timeout: CHATBOT_MESSAGE_TIMEOUT_MS,
     });
 
     assertChatbotSuccess(response.data, "음성 메시지 전송에 실패했습니다.");
