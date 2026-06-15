@@ -1,0 +1,312 @@
+import { getUnitPrice } from "@/components/cart/cartItemUtils";
+import { formatPrice, hasProductDiscount, type Product } from "@/components/product";
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { pretendard } from "@/utils/pretendard";
+import { Image } from "expo-image";
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+} from "react-native";
+import { useEffect, useRef } from "react";
+import { MAP_CALLOUT_WIDTH, MAP_CALLOUT_CARD_SHADOW } from "./MapProductMarkerCallout";
+import type { MapPixelPoint } from "./types";
+
+const CALLOUT_INSET = SPACING.sm;
+const TAIL_HEIGHT = 7;
+const TAIL_WIDTH = 12;
+const GAP_ABOVE_PIN = 4;
+const ROW_GAP = 6;
+const THUMB_SIZE = 52;
+const SCROLL_ITEM_THRESHOLD = 4;
+const MAX_VISIBLE_ITEMS = 3;
+
+export type GroupedCalloutItem = {
+  key: string;
+  product: Product;
+  quantity: number;
+};
+
+export function shouldUseGroupedProductCallout(count: number) {
+  return count >= 2;
+}
+
+function getRowHeight(quantity: number) {
+  return quantity > 1 ? 86 : 76;
+}
+
+function getListContentHeight(items: ReadonlyArray<GroupedCalloutItem>) {
+  if (items.length === 0) {
+    return 0;
+  }
+
+  return items.reduce((sum, item, index) => {
+    const rowHeight = getRowHeight(item.quantity);
+    const gap = index > 0 ? ROW_GAP : 0;
+    return sum + gap + rowHeight;
+  }, 0);
+}
+
+function getVisibleListHeight(items: ReadonlyArray<GroupedCalloutItem>) {
+  if (items.length < SCROLL_ITEM_THRESHOLD) {
+    return getListContentHeight(items);
+  }
+
+  const visibleItems = items.slice(0, MAX_VISIBLE_ITEMS);
+  return getListContentHeight(visibleItems);
+}
+
+function ProductRow({
+  product,
+  quantity,
+  showDivider,
+}: {
+  product: Product;
+  quantity: number;
+  showDivider: boolean;
+}) {
+  const unitPrice = getUnitPrice(product);
+  const showDiscount = hasProductDiscount(product);
+  const rowHeight = getRowHeight(quantity);
+
+  return (
+    <View>
+      {showDivider ? <View style={styles.divider} /> : null}
+      <View style={[styles.row, { minHeight: rowHeight }]}>
+        <Image source={product.image} style={styles.thumb} contentFit="cover" />
+        <View style={styles.textCol}>
+          <Text numberOfLines={2} style={styles.name}>
+            {product.name}
+          </Text>
+          {quantity > 1 ? (
+            <Text style={styles.quantityLine}>{quantity}개</Text>
+          ) : null}
+          <View style={styles.priceRow}>
+            {showDiscount ? (
+              <Text style={styles.discount}>{product.discountPercent}%</Text>
+            ) : null}
+            <Text style={styles.price}>{formatPrice(unitPrice)}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+type MapGroupedProductMarkerCalloutProps = {
+  items: GroupedCalloutItem[];
+  anchor: MapPixelPoint;
+  pinHeight: number;
+  zIndex?: number;
+};
+
+export function MapGroupedProductMarkerCallout({
+  items,
+  anchor,
+  pinHeight,
+  zIndex = 20,
+}: MapGroupedProductMarkerCalloutProps) {
+  const scrollRef = useRef<ScrollView>(null);
+  const cardRef = useRef<View>(null);
+  const scrollOffsetRef = useRef(0);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const isScrollable = items.length >= SCROLL_ITEM_THRESHOLD;
+  const listHeight = getVisibleListHeight(items);
+  const listHeightRef = useRef(listHeight);
+  listHeightRef.current = listHeight;
+  const contentHeight = CALLOUT_INSET * 2 + listHeight;
+  const totalHeight = contentHeight + TAIL_HEIGHT + GAP_ABOVE_PIN;
+  const left = anchor.x - MAP_CALLOUT_WIDTH / 2;
+  const top = anchor.y - pinHeight - totalHeight;
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+  };
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || !isScrollable) {
+      return;
+    }
+
+    const element = cardRef.current as unknown as HTMLElement | null;
+    if (!element) {
+      return;
+    }
+
+    const onWheel = (event: WheelEvent) => {
+      event.stopPropagation();
+
+      const deltaY = event.deltaY;
+      if (deltaY === 0) {
+        return;
+      }
+
+      const maxOffset = Math.max(
+        0,
+        getListContentHeight(itemsRef.current) - listHeightRef.current,
+      );
+      const nextOffset = Math.min(
+        maxOffset,
+        Math.max(0, scrollOffsetRef.current + deltaY),
+      );
+
+      event.preventDefault();
+
+      if (nextOffset === scrollOffsetRef.current) {
+        return;
+      }
+
+      scrollOffsetRef.current = nextOffset;
+      scrollRef.current?.scrollTo({ y: nextOffset, animated: false });
+    };
+
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [isScrollable]);
+
+  const rows = items.map((item, index) => (
+    <ProductRow
+      key={item.key}
+      product={item.product}
+      quantity={item.quantity}
+      showDivider={index > 0}
+    />
+  ));
+
+  return (
+    <View
+      pointerEvents={isScrollable ? "box-none" : "none"}
+      style={[
+        styles.anchor,
+        {
+          left,
+          top,
+          width: MAP_CALLOUT_WIDTH,
+          height: totalHeight,
+          zIndex,
+        },
+      ]}
+    >
+      <View style={[styles.shadowShell, { height: contentHeight }]}>
+        <View
+          ref={cardRef}
+          style={[styles.card, { height: contentHeight }]}
+          pointerEvents={isScrollable ? "auto" : "none"}
+          {...(isScrollable && Platform.OS === "web"
+            ? { dataSet: { mapCalloutScroll: "true" } }
+            : {})}
+        >
+          {isScrollable ? (
+            <ScrollView
+              ref={scrollRef}
+              style={{ height: listHeight }}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              scrollEventThrottle={16}
+              onScroll={handleScroll}
+            >
+              {rows}
+            </ScrollView>
+          ) : (
+            <View style={styles.list}>{rows}</View>
+          )}
+        </View>
+      </View>
+      <View style={styles.tail} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  anchor: {
+    position: "absolute",
+    alignItems: "center",
+  },
+  shadowShell: {
+    width: "100%",
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.white,
+    ...MAP_CALLOUT_CARD_SHADOW,
+  },
+  card: {
+    width: "100%",
+    padding: CALLOUT_INSET,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    overflow: "hidden",
+  },
+  list: {
+    width: "100%",
+  },
+  scrollContent: {
+    paddingBottom: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.lightGray,
+    marginVertical: ROW_GAP / 2,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+  },
+  thumb: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: RADIUS.xs,
+  },
+  textCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  name: {
+    ...pretendard(500),
+    fontSize: TYPOGRAPHY.size.sm,
+    color: COLORS.text,
+    lineHeight: 18,
+    textAlign: "right",
+  },
+  quantityLine: {
+    ...pretendard(500),
+    fontSize: TYPOGRAPHY.size.sm,
+    color: COLORS.text,
+    lineHeight: 18,
+    textAlign: "right",
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: SPACING.xs,
+    marginTop: 2,
+  },
+  discount: {
+    ...pretendard(700),
+    fontSize: TYPOGRAPHY.size.md,
+    color: COLORS.redText,
+  },
+  price: {
+    ...pretendard(700),
+    fontSize: TYPOGRAPHY.size.md,
+    color: COLORS.text,
+  },
+  tail: {
+    width: 0,
+    height: 0,
+    marginTop: -1,
+    borderLeftWidth: TAIL_WIDTH / 2,
+    borderRightWidth: TAIL_WIDTH / 2,
+    borderTopWidth: TAIL_HEIGHT,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: COLORS.white,
+  },
+});

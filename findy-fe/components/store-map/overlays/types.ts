@@ -1,4 +1,4 @@
-import type { PathNavigationApi } from "@/lib/map/types";
+import type { GridCongestionLevelApi, PathNavigationApi } from "@/lib/map/types";
 
 /** 격자 좌표 (col = gridX, row = gridY, 0-index) */
 export type MapGridPoint = {
@@ -17,10 +17,15 @@ export type ShoppingMapItem = MapGridPoint & {
   gridId?: number;
 };
 
-/** 추천(광고) — 경로 제외, 격자 한 칸 중심 */
+/** 추천(광고)·행사 — 지도에 항상 표시, 쇼핑 경로 계산에는 미포함 */
+export type RecommendedMapItemSource = "promotion" | "scan";
+
 export type RecommendedMapItem = MapGridPoint & {
   id: string;
   name: string;
+  gridId?: number;
+  /** scan: 바코드 추천 알림(초록 핀), promotion: 행사 API(보라 핀) */
+  source?: RecommendedMapItemSource;
 };
 
 export type BeaconCongestionLevel = "HIGH" | "MEDIUM";
@@ -34,6 +39,8 @@ export type StoreMapNavigationMock = {
   shoppingItems: ShoppingMapItem[];
   recommendedItems: RecommendedMapItem[];
   beaconCongestion: BeaconCongestionPoint[];
+  /** map-service 매장 전체 혼잡도 */
+  storeCongestionLevel?: GridCongestionLevelApi | null;
 };
 
 /** 새로고침 시점의 현위치·방문 목록 — 경로 선은 이 스냅샷으로만 계산 */
@@ -43,6 +50,8 @@ export type NavigationRouteSnapshot = {
   /** map-service 경로 API 응답 — 있으면 로컬 pathfinding 대신 사용 */
   pathNavigation?: PathNavigationApi | null;
 };
+
+export type MapMarkerSelectionKind = "shopping" | "recommended";
 
 export type MapPixelPoint = {
   x: number;

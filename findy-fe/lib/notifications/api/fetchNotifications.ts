@@ -1,5 +1,6 @@
 import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import { DEFAULT_PRODUCT_PLACEHOLDER } from "@/lib/products/resolveProductImage";
+import { enrichNotificationsWithProductImages } from "@/lib/notifications/enrichNotificationProducts";
 import { mapNotificationProductToProduct } from "@/lib/notifications/mapNotificationProduct";
 import { resolveNotificationUserId } from "@/lib/notifications/resolveNotificationUserId";
 import type {
@@ -14,7 +15,15 @@ function mapListItemToNotification(
   dto: NotificationListItemApiDto,
 ): MapShoppingNotification {
   const product =
-    mapNotificationProductToProduct(undefined, dto.productId ?? undefined) ?? {
+    mapNotificationProductToProduct(
+      dto.productId != null
+        ? {
+            productId: dto.productId,
+            productName: dto.content?.trim() || undefined,
+          }
+        : undefined,
+      dto.productId ?? undefined,
+    ) ?? {
       id:
         dto.productId != null
           ? String(dto.productId)
@@ -68,7 +77,8 @@ export async function fetchNotifications(options?: {
       throw new Error(body?.message ?? "알림 목록을 불러오지 못했습니다.");
     }
 
-    return (body.data ?? []).map(mapListItemToNotification);
+    const mapped = (body.data ?? []).map(mapListItemToNotification);
+    return enrichNotificationsWithProductImages(mapped);
   } catch (error) {
     throw new Error(parseApiErrorMessage(error, "알림 목록을 불러오지 못했습니다."));
   }

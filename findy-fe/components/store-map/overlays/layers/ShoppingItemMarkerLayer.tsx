@@ -12,7 +12,7 @@ type ShoppingItemMarkerLayerProps = {
   cellPx: number;
   /** 바코드 수령 완료(전량 픽)된 상품 id */
   pickedMarkerIds?: ReadonlySet<string>;
-  selectedMarkerId?: string | null;
+  isMarkerSelected?: (marker: ResolvedGridMarker) => boolean;
   onMarkerPress?: (markerId: string) => void;
 };
 
@@ -20,7 +20,7 @@ export function ShoppingItemMarkerLayer({
   markers,
   cellPx,
   pickedMarkerIds,
-  selectedMarkerId,
+  isMarkerSelected,
   onMarkerPress,
 }: ShoppingItemMarkerLayerProps) {
   const width = scaledMarkerSize(MAP_OVERLAY_MARKER_WIDTH, cellPx);
@@ -31,7 +31,7 @@ export function ShoppingItemMarkerLayer({
       {markers.map((marker) => {
         const { x, y } = pinTopLeftFromCenter(marker.center, width, height);
         const isPicked = pickedMarkerIds?.has(marker.id) ?? false;
-        const isSelected = selectedMarkerId === marker.id;
+        const isSelected = isMarkerSelected?.(marker) ?? false;
         const PinIcon = isPicked ? MarkerGreyIcon : MarkerIcon;
 
         return (

@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { parseApiErrorMessage } from "@/lib/api/parseApiErrorMessage";
 import { addRecentView } from "@/lib/auth/api/addRecentView";
 import { fetchProductDetail } from "@/lib/products/api/fetchProductDetail";
+import { fetchApplicablePromotions } from "@/lib/promotions/api/fetchApplicablePromotions";
+import { applyBestApplicablePromotion } from "@/lib/promotions/applyPromotionPricing";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useProductDetail(productId: string | undefined) {
@@ -24,8 +26,11 @@ export function useProductDetail(productId: string | undefined) {
     setError(null);
 
     try {
-      const data = await fetchProductDetail(productId.trim());
-      setProduct(data);
+      const [data, applicablePromotions] = await Promise.all([
+        fetchProductDetail(productId.trim()),
+        fetchApplicablePromotions(productId.trim()).catch(() => []),
+      ]);
+      setProduct(applyBestApplicablePromotion(data, applicablePromotions));
     } catch (err) {
       setProduct(null);
       setError(
