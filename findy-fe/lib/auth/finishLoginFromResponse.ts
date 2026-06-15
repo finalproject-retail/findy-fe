@@ -3,7 +3,6 @@ import { setAccessToken } from "@/lib/api/client";
 import {
   extractAccessToken,
   extractLoginData,
-  resolveIsFirstLoginFromLogin,
   type LoginResponse,
 } from "@/lib/auth/api/login";
 import { isAdminRole } from "@/lib/auth/roles";
@@ -45,10 +44,9 @@ export async function finishLoginFromResponse({
     );
   }
 
-  const isFirstLogin = resolveIsFirstLoginFromLogin(loginData);
-
   setAccessToken(accessToken);
   const profile = await refreshProfile();
+  const needsOnboarding = profile.isFirstLogin;
   const isAdmin = isAdminRole(profile.role);
 
   if (tab === "admin" && !isAdmin) {
@@ -65,7 +63,7 @@ export async function finishLoginFromResponse({
 
   await signIn(accessToken, {
     asAdmin: tab === "admin",
-    isFirstLogin: tab === "admin" ? false : isFirstLogin,
+    isFirstLogin: tab === "admin" ? false : needsOnboarding,
   });
 
   if (tab === "admin") {
@@ -73,7 +71,7 @@ export async function finishLoginFromResponse({
     return;
   }
 
-  if (isFirstLogin) {
+  if (needsOnboarding) {
     router.replace({
       pathname: "/onboarding",
       params: {

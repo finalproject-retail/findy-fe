@@ -1,3 +1,4 @@
+import { parseIsFirstLoginFromRecord } from "@/lib/auth/parseIsFirstLoginFlag";
 import { userApiClient } from "./userApiClient";
 
 export type LoginResponseData = {
@@ -6,8 +7,8 @@ export type LoginResponseData = {
   userId?: number;
   email?: string;
   name?: string;
-  isFirstLogin?: boolean;
-  firstLogin?: boolean;
+  isFirstLogin?: boolean | string;
+  firstLogin?: boolean | string;
 };
 
 export type LoginResponse = {
@@ -44,17 +45,5 @@ export function extractAccessToken(body: LoginResponse): string | undefined {
 export function resolveIsFirstLoginFromLogin(
   data?: LoginResponseData,
 ): boolean {
-  if (!data) {
-    return false;
-  }
-
-  if (typeof data.isFirstLogin === "boolean") {
-    return data.isFirstLogin;
-  }
-
-  if (typeof data.firstLogin === "boolean") {
-    return data.firstLogin;
-  }
-
-  return false;
+  return parseIsFirstLoginFromRecord(data, false);
 }
