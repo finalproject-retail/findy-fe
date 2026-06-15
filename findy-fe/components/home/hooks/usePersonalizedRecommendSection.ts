@@ -2,6 +2,7 @@ import { HOME_SECTION_LIMITS } from "@/components/home/constants";
 import { getInStockProducts } from "@/components/home/mockProducts";
 import type { Product } from "@/components/product";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { getUserPreferences } from "@/lib/api/preferences";
 import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
 import { resolvePrimaryShoppingStyleLabel } from "@/lib/onboarding/mapShoppingStyleLabel";
@@ -30,16 +31,25 @@ export function usePersonalizedRecommendSection({
   storeId,
 }: UsePersonalizedRecommendSectionOptions) {
   const { needsOnboarding } = useAuth();
+  const isAuthReady = useAuthReady();
   const limit = HOME_SECTION_LIMITS.onboardingRecommend;
 
   const [products, setProducts] = useState<Product[]>([]);
   const [title, setTitle] = useState("🔎 맞춤 상품을 골라왔어요");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (!isAuthReady) {
+      setVisible(false);
+      setProducts([]);
+      setLoading(true);
+      return;
+    }
+
     if (needsOnboarding) {
       setVisible(false);
+      setProducts([]);
       setLoading(false);
       return;
     }
@@ -104,7 +114,7 @@ export function usePersonalizedRecommendSection({
     return () => {
       cancelled = true;
     };
-  }, [limit, needsOnboarding, storeId]);
+  }, [isAuthReady, limit, needsOnboarding, storeId]);
 
   return { products, title, loading, visible };
 }

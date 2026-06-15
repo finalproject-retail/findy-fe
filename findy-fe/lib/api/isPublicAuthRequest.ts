@@ -1,6 +1,8 @@
 /** 로그인·회원가입 등 인증 없이 호출하는 경로 */
 const PUBLIC_AUTH_PATHS = [
   "/api/v1/auth/login",
+  "/api/v1/auth/social/google",
+  "/api/v1/auth/social/kakao",
   "/api/v1/users/signup",
   "/api/v1/auth/email/verification-code",
   "/api/v1/auth/email/verification-code/verify",

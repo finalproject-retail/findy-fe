@@ -33,11 +33,12 @@ export function AuthGuard({ children }: PropsWithChildren) {
   const navigationState = useRootNavigationState();
   const isNavigationReady = Boolean(navigationState?.key);
   const root = segments[0];
-  const isBootstrapping =
-    !isNavigationReady || isLoading || (isLoggedIn && isProfileLoading);
+  const isInitialBootstrapping = !isNavigationReady || isLoading;
+  const shouldDeferRedirects =
+    isInitialBootstrapping || (isLoggedIn && isProfileLoading);
 
   useEffect(() => {
-    if (isBootstrapping) {
+    if (shouldDeferRedirects) {
       return;
     }
 
@@ -50,7 +51,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
     const inUserTabs = root === "(tabs)";
     const inOnboarding = root === "onboarding";
 
-    if (!isLoggedIn && !inAuthGroup) {
+    if (!isLoggedIn && !inAuthGroup && root !== "oauth") {
       router.replace(LOGIN_HREF);
       return;
     }
@@ -90,7 +91,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
   }, [
     isAdminSession,
     isAdminUser,
-    isBootstrapping,
+    shouldDeferRedirects,
     isLoggedIn,
     needsOnboarding,
     root,
@@ -98,7 +99,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
     segments,
   ]);
 
-  if (isBootstrapping) {
+  if (isInitialBootstrapping) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" />

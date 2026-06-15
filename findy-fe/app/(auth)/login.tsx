@@ -2,18 +2,14 @@ import { Button } from "@/components/common/Button";
 import { Form } from "@/components/common/Form";
 import { Input } from "@/components/common/Input";
 import { BORDER, COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-import { TOAST_MESSAGES, useToast } from "@/contexts/ToastContext";
+import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiErrorMessage, setAccessToken } from "@/lib/api/client";
-import {
-  extractAccessToken,
-  extractLoginData,
-  postLogin,
-  resolveIsFirstLoginFromLogin,
-} from "@/lib/auth/api/login";
-import { fetchMyProfile } from "@/lib/auth/api/fetchMyProfile";
-import { isAdminRole } from "@/lib/auth/roles";
-import { type Href, useLocalSearchParams, useRouter } from "expo-router";
+import { getApiErrorMessage } from "@/lib/api/client";
+import { postLogin } from "@/lib/auth/api/login";
+import { postSocialLogin, type SocialLoginProvider } from "@/lib/auth/api/socialLogin";
+import { finishLoginFromResponse } from "@/lib/auth/finishLoginFromResponse";
+import { requestSocialAuthCode } from "@/lib/auth/requestSocialAuthCode";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -193,6 +189,8 @@ export default function LoginScreen() {
   const [idError, setIdError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [socialLoadingProvider, setSocialLoadingProvider] =
+    useState<SocialLoginProvider | null>(null);
 
   const handleLogin = async () => {
     setIdError("");
@@ -212,63 +210,50 @@ export default function LoginScreen() {
     try {
       await signOut();
       const loginBody = await postLogin(id.trim(), password);
-      const loginData = extractLoginData(loginBody);
-      const accessToken = extractAccessToken(loginBody);
-
-      if (!accessToken) {
-        throw new Error(
-          loginBody?.message ?? "로그인 성공했지만 토큰을 받지 못했습니다.",
-        );
-      }
-
-      const isFirstLogin = resolveIsFirstLoginFromLogin(loginData);
-
-      setAccessToken(accessToken);
-      const profile = await fetchMyProfile();
-      const isAdmin = isAdminRole(profile.role);
-
-      if (tab === "admin" && !isAdmin) {
-        setAccessToken(null);
-        showToast(TOAST_MESSAGES.loginUseGeneralTab);
-        return;
-      }
-
-      if (tab === "general" && isAdmin) {
-        setAccessToken(null);
-        showToast(TOAST_MESSAGES.loginUseAdminTab);
-        return;
-      }
-
-      await signIn(accessToken, {
-        asAdmin: tab === "admin",
-        isFirstLogin: tab === "admin" ? false : isFirstLogin,
+      await finishLoginFromResponse({
+        loginBody,
+        tab,
+        signupName: typeof signupName === "string" ? signupName : undefined,
+        idFallback: id.trim(),
+        signIn,
+        refreshProfile,
+        showToast,
+        router,
       });
-      await refreshProfile();
-
-      if (tab === "admin") {
-        router.replace("/(admin)" as Href);
-        return;
-      }
-
-      if (isFirstLogin) {
-        router.replace({
-          pathname: "/onboarding",
-          params: {
-            email: loginData?.email ?? id.trim(),
-            name:
-              loginData?.name ??
-              (typeof signupName === "string" ? signupName : ""),
-          },
-        } as unknown as Href);
-      } else {
-        router.replace("/(tabs)");
-      }
     } catch (error: unknown) {
       Alert.alert("에러", getApiErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleSocialLogin = async (provider: SocialLoginProvider) => {
+    if (tab !== "general" || isLoading || socialLoadingProvider) {
+      return;
+    }
+
+    setSocialLoadingProvider(provider);
+    try {
+      await signOut();
+      const { code, redirectUri } = await requestSocialAuthCode(provider);
+      const loginBody = await postSocialLogin(provider, { code, redirectUri });
+      await finishLoginFromResponse({
+        loginBody,
+        tab: "general",
+        signupName: typeof signupName === "string" ? signupName : undefined,
+        signIn,
+        refreshProfile,
+        showToast,
+        router,
+      });
+    } catch (error: unknown) {
+      Alert.alert("에러", getApiErrorMessage(error));
+    } finally {
+      setSocialLoadingProvider(null);
+    }
+  };
+
+  const isSocialBusy = socialLoadingProvider != null;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -344,7 +329,7 @@ export default function LoginScreen() {
             />
 
             <View style={styles.loginActions}>
-              <Button onPress={handleLogin} isLoading={isLoading}>
+              <Button onPress={handleLogin} isLoading={isLoading} disabled={isSocialBusy}>
                 로그인
               </Button>
 
@@ -360,8 +345,10 @@ export default function LoginScreen() {
                     <Pressable
                       style={({ pressed }) => [
                         styles.socialButton,
-                        pressed && { opacity: 0.85 },
+                        (pressed || isSocialBusy) && { opacity: 0.85 },
                       ]}
+                      disabled={isLoading || isSocialBusy}
+                      onPress={() => void handleSocialLogin("google")}
                       accessibilityRole="button"
                       accessibilityLabel="Google로 계속하기"
                     >
@@ -374,8 +361,10 @@ export default function LoginScreen() {
                     <Pressable
                       style={({ pressed }) => [
                         styles.socialButton,
-                        pressed && { opacity: 0.85 },
+                        (pressed || isSocialBusy) && { opacity: 0.85 },
                       ]}
+                      disabled={isLoading || isSocialBusy}
+                      onPress={() => void handleSocialLogin("kakao")}
                       accessibilityRole="button"
                       accessibilityLabel="카카오로 계속하기"
                     >

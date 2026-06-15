@@ -8,6 +8,7 @@ import {
 } from "@/components/home/mockProducts";
 import type { Product } from "@/components/product";
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import {
   fetchFindyRecommendProducts,
   fetchNewProducts,
@@ -81,12 +82,20 @@ export function useHomeSectionProducts({
   storeId,
   limit,
 }: UseHomeSectionProductsOptions) {
+  const isAuthReady = useAuthReady();
   const resolvedLimit = limit ?? defaultLimit(kind);
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
+    if (!isAuthReady) {
+      setProducts([]);
+      setLoading(true);
+      setUsingFallback(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function load() {
@@ -133,7 +142,7 @@ export function useHomeSectionProducts({
     return () => {
       cancelled = true;
     };
-  }, [kind, resolvedLimit, storeId]);
+  }, [isAuthReady, kind, resolvedLimit, storeId]);
 
   return { products, loading, usingFallback };
 }

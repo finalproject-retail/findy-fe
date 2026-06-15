@@ -45,6 +45,7 @@ function RootLayoutNav() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="chatbot" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="oauth" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
       </Stack>
       <FloatingChatbotButton />
