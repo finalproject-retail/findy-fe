@@ -12,7 +12,8 @@
     "web": "expo start --web",
     "export:web": "node ./scripts/export-web.js",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate:icons": "node ./scripts/generate-app-icons.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -62,6 +63,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "react-native-svg-transformer": "^1.5.3",
+    "sharp": "^0.35.1",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.2"
   },
