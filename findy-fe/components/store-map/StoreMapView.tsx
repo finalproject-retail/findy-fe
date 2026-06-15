@@ -26,6 +26,7 @@ import { StoreMapFloorBackground } from "./StoreMapFloorBackground";
 import { StoreMapOverlays } from "./overlays/StoreMapOverlays";
 import type { StoreMapConfig } from "./types";
 import type {
+  MapMarkerSelectionKind,
   NavigationRouteSnapshot,
   StoreMapNavigationMock,
 } from "./overlays/types";
@@ -60,6 +61,7 @@ type StoreMapViewProps = {
   pickedMarkerIds?: ReadonlySet<string>;
   pickedQuantityByProductId?: Record<string, number>;
   selectedMarkerProductId?: string | null;
+  selectedMarkerKind?: MapMarkerSelectionKind | null;
   tripLineItems?: CartLineItem[];
   tripZoneItems?: TripZoneLineItem[];
   recommendedProductsById?: Record<string, Product>;
@@ -88,6 +90,7 @@ export function StoreMapView({
   pickedMarkerIds,
   pickedQuantityByProductId = {},
   selectedMarkerProductId = null,
+  selectedMarkerKind = null,
   tripLineItems = [],
   tripZoneItems = [],
   recommendedProductsById = {},
@@ -713,6 +716,7 @@ export function StoreMapView({
                   pickedMarkerIds={pickedMarkerIds}
                   pickedQuantityByProductId={pickedQuantityByProductId}
                   selectedMarkerProductId={selectedMarkerProductId}
+                  selectedMarkerKind={selectedMarkerKind}
                   tripLineItems={tripLineItems}
                   tripZoneItems={tripZoneItems}
                   recommendedProductsById={recommendedProductsById}

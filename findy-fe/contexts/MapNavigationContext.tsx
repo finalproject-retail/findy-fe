@@ -19,6 +19,9 @@ import { useStoreMapConfig } from "@/contexts/StoreMapConfigContext";
 import type { CartLineItem } from "@/contexts/CartContext";
 import { usePoints } from "@/contexts/PointsContext";
 import { registerAccountCacheClearListener } from "@/lib/auth/clearAccountCache";
+import { fetchProductDetail } from "@/lib/products/api/fetchProductDetail";
+import { fetchAllActivePromotionProducts } from "@/lib/promotions/api/fetchActivePromotionProducts";
+import { buildPromotionMapOverlay } from "@/lib/promotions/buildPromotionMapOverlay";
 import { createShoppingPath } from "@/lib/map/api/fetchShoppingPath";
 import { gridIdToGridPoint } from "@/lib/map/buildStoreMapConfig";
 import {
@@ -79,6 +82,7 @@ type MapNavigationContextValue = {
     gridCols?: number,
   ) => Promise<void>;
   refreshBeaconCongestion: (storeId: number) => Promise<void>;
+  refreshPromotionMarkers: (gridCols?: number) => Promise<void>;
   applyShoppingItems: (items: ShoppingMapItem[]) => void;
   startShoppingTrip: (
     lineItems: CartLineItem[],
@@ -103,6 +107,7 @@ type MapNavigationContextValue = {
   updateShoppingItems: (items: ShoppingMapItem[]) => void;
   patchNavigationData: (patch: Partial<StoreMapNavigationMock>) => void;
   addRecommendedMapItem: (product: Product) => void;
+  ensureRecommendedProduct: (productId: string) => Promise<Product | null>;
   removeTripItem: (productId: string) => void;
   removeTripZoneItem: (categoryId: number) => Promise<void>;
   setTripItemQuantity: (lineItem: CartLineItem, delta: number) => Promise<void>;
@@ -211,6 +216,8 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
   const [recommendedProductsById, setRecommendedProductsById] = useState<
     Record<string, Product>
   >({});
+  const recommendedProductsByIdRef = useRef(recommendedProductsById);
+  recommendedProductsByIdRef.current = recommendedProductsById;
   const [pickedQuantityByProductId, setPickedQuantityByProductId] = useState<
     Record<string, number>
   >({});
@@ -422,12 +429,48 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  const refreshPromotionMarkers = useCallback(async (gridCols = GRID_COLS) => {
+    if (!isLoggedIn) {
+      return;
+    }
+
+    try {
+      const promotions = await fetchAllActivePromotionProducts();
+      const overlay = await buildPromotionMapOverlay(promotions, gridCols);
+
+      setNavigationData((prev) => {
+        const promoIds = new Set(overlay.items.map((item) => item.id));
+        const notificationItems = prev.recommendedItems.filter(
+          (item) => !promoIds.has(item.id),
+        );
+
+        return {
+          ...prev,
+          recommendedItems: [...overlay.items, ...notificationItems],
+        };
+      });
+      setRecommendedProductsById((prev) => ({
+        ...overlay.productsById,
+        ...prev,
+      }));
+    } catch (error) {
+      if (__DEV__) {
+        const message =
+          error instanceof Error ? error.message : "프로모션 마커 API 호출 실패";
+        console.warn("Failed to refresh promotion markers", message);
+      }
+    }
+  }, [isLoggedIn]);
+
   const refreshNavigationOverlay = useCallback(
     async (storeId: number, gridCols = GRID_COLS) => {
-      await refreshBeaconCongestion(storeId);
+      await Promise.all([
+        refreshBeaconCongestion(storeId),
+        refreshPromotionMarkers(gridCols),
+      ]);
       await generateShoppingPath(storeId, gridCols);
     },
-    [generateShoppingPath, refreshBeaconCongestion],
+    [generateShoppingPath, refreshBeaconCongestion, refreshPromotionMarkers],
   );
 
   const applyShoppingItems = useCallback((items: ShoppingMapItem[]) => {
@@ -450,7 +493,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       setActiveShoppingListId(shoppingListId ?? null);
       applyTripListState(lineItems);
       setPickedQuantityByProductId({});
-      setRecommendedProductsById({});
       setPathNavigation(null);
       const resolvedDestinationGridIds =
         nextDestinationGridIds != null && nextDestinationGridIds.length > 0
@@ -465,7 +507,6 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
         return {
           ...prev,
           shoppingItems: normalizedMapItems,
-          recommendedItems: [],
         };
       });
       setNavigationRefreshKey((key) => key + 1);
@@ -531,14 +572,12 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     setTripLineItems([]);
     setTripZoneItems([]);
     setPickedQuantityByProductId({});
-    setRecommendedProductsById({});
     setRouteSnapshot(null);
     setPathNavigation(null);
     setDestinationGridIds([]);
     setNavigationData((prev) => ({
       ...prev,
       shoppingItems: [],
-      recommendedItems: [],
     }));
   }, []);
 
@@ -780,6 +819,36 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
+  const ensureRecommendedProduct = useCallback(async (productId: string) => {
+    const cached = recommendedProductsByIdRef.current[productId];
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const product = await fetchProductDetail(productId);
+      const item = productToRecommendedMapItem(product);
+      setRecommendedProductsById((prev) => ({ ...prev, [product.id]: product }));
+      setNavigationData((prev) => {
+        if (prev.recommendedItems.some((existing) => existing.id === item.id)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          recommendedItems: [...prev.recommendedItems, item],
+        };
+      });
+      return product;
+    } catch (error) {
+      if (__DEV__) {
+        const message =
+          error instanceof Error ? error.message : "추천 상품 정보 로드 실패";
+        console.warn("Failed to load recommended product for callout", message);
+      }
+      return null;
+    }
+  }, []);
+
   const addProductToShoppingTrip = useCallback(
     async (product: Product, quantity = 1) => {
       setShoppingTripActive(true);
@@ -811,6 +880,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       activeShoppingListId,
       refreshNavigationOverlay,
       refreshBeaconCongestion,
+      refreshPromotionMarkers,
       generateShoppingPath,
       applyShoppingItems,
       startShoppingTrip,
@@ -820,6 +890,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       updateShoppingItems,
       patchNavigationData,
       addRecommendedMapItem,
+      ensureRecommendedProduct,
       removeTripItem,
       removeTripZoneItem,
       setTripItemQuantity,
@@ -840,6 +911,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       activeShoppingListId,
       refreshNavigationOverlay,
       refreshBeaconCongestion,
+      refreshPromotionMarkers,
       generateShoppingPath,
       applyShoppingItems,
       startShoppingTrip,
@@ -849,6 +921,7 @@ export function MapNavigationProvider({ children }: PropsWithChildren) {
       updateShoppingItems,
       patchNavigationData,
       addRecommendedMapItem,
+      ensureRecommendedProduct,
       removeTripItem,
       removeTripZoneItem,
       setTripItemQuantity,

@@ -1,4 +1,5 @@
 import { StoreMapView } from "@/components/store-map";
+import type { MapMarkerSelectionKind } from "@/components/store-map/overlays/types";
 import { MAP_FLOOR_COLOR } from "@/components/store-map/constants";
 import { CONGESTION_REFRESH_INTERVAL_MS } from "@/constants/beacon";
 import { SEARCH_ADD_MODE_SHOPPING_LIST } from "@/constants/searchAddMode";
@@ -31,10 +32,12 @@ export function MapScreen() {
     navigationRefreshKey,
     refreshNavigationOverlay,
     refreshBeaconCongestion,
+    refreshPromotionMarkers,
     tripLineItems,
     tripZoneItems,
     recommendedProductsById,
     pickedQuantityByProductId,
+    ensureRecommendedProduct,
   } = useMapNavigation();
   const { activeToast, dismissActiveToast, handleNotificationPress } =
     useMapShoppingNotifications();
@@ -89,9 +92,10 @@ export function MapScreen() {
   const mapBottomInset = getSheetMapBottomInset(insets.bottom);
   const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
   const [sheetVisibleHeight, setSheetVisibleHeight] = useState(0);
-  const [selectedMarkerProductId, setSelectedMarkerProductId] = useState<
-    string | null
-  >(null);
+  const [selectedMarker, setSelectedMarker] = useState<{
+    productId: string;
+    kind: MapMarkerSelectionKind;
+  } | null>(null);
   const [showCongestion, setShowCongestion] = useState(true);
   const [showRoute, setShowRoute] = useState(true);
   const mapContentBottomInset = Math.max(mapBottomInset, sheetVisibleHeight);
@@ -99,25 +103,49 @@ export function MapScreen() {
   const suppressMapTapDismissRef = useRef(false);
 
   const handleDismissMarkerCallout = useCallback(() => {
-    setSelectedMarkerProductId(null);
+    setSelectedMarker(null);
   }, []);
 
   const markerPressBusyRef = useRef(false);
 
-  const handleMarkerPress = useCallback((productId: string) => {
+  const handleShoppingMarkerPress = useCallback((productId: string) => {
     if (markerPressBusyRef.current) {
       return;
     }
     markerPressBusyRef.current = true;
     suppressMapTapDismissRef.current = true;
-    setSelectedMarkerProductId((prev) =>
-      prev === productId ? null : productId,
+    setSelectedMarker((prev) =>
+      prev?.productId === productId && prev.kind === "shopping"
+        ? null
+        : { productId, kind: "shopping" },
     );
     requestAnimationFrame(() => {
       suppressMapTapDismissRef.current = false;
       markerPressBusyRef.current = false;
     });
   }, []);
+
+  const handleRecommendedMarkerPress = useCallback(
+    (productId: string) => {
+      if (markerPressBusyRef.current) {
+        return;
+      }
+      markerPressBusyRef.current = true;
+      suppressMapTapDismissRef.current = true;
+      setSelectedMarker((prev) => {
+        if (prev?.productId === productId && prev.kind === "recommended") {
+          return null;
+        }
+        void ensureRecommendedProduct(productId);
+        return { productId, kind: "recommended" };
+      });
+      requestAnimationFrame(() => {
+        suppressMapTapDismissRef.current = false;
+        markerPressBusyRef.current = false;
+      });
+    },
+    [ensureRecommendedProduct],
+  );
 
   const handleMapTapDismiss = useCallback(() => {
     if (suppressMapTapDismissRef.current) return;
@@ -135,6 +163,10 @@ export function MapScreen() {
       router.push(`/product/${productId}` as Href);
     }
   }, [activeToast, dismissActiveToast, handleNotificationPress, router]);
+
+  useEffect(() => {
+    void refreshPromotionMarkers(storeMapConfig.cols);
+  }, [refreshPromotionMarkers, storeMapConfig.cols]);
 
   useEffect(() => {
     if (!showCongestion) {
@@ -190,12 +222,13 @@ export function MapScreen() {
             navigationRefreshKey={navigationRefreshKey}
             pickedMarkerIds={pickedMarkerIds}
             pickedQuantityByProductId={pickedQuantityByProductId}
-            selectedMarkerProductId={selectedMarkerProductId}
+            selectedMarkerProductId={selectedMarker?.productId ?? null}
+            selectedMarkerKind={selectedMarker?.kind ?? null}
             tripLineItems={tripLineItems}
             tripZoneItems={tripZoneItems}
             recommendedProductsById={recommendedProductsById}
-            onShoppingMarkerPress={handleMarkerPress}
-            onRecommendedMarkerPress={handleMarkerPress}
+            onShoppingMarkerPress={handleShoppingMarkerPress}
+            onRecommendedMarkerPress={handleRecommendedMarkerPress}
             onMapTapDismiss={handleMapTapDismiss}
             onDismissMarkerCallout={handleDismissMarkerCallout}
             showCongestion={showCongestion}

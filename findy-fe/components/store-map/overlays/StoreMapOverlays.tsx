@@ -14,6 +14,7 @@ import {
 import { MapProductMarkerCallout } from "./MapProductMarkerCallout";
 import { MapZoneMarkerCallout } from "./MapZoneMarkerCallout";
 import type {
+  MapMarkerSelectionKind,
   NavigationRouteSnapshot,
   StoreMapNavigationMock,
 } from "./types";
@@ -33,7 +34,7 @@ import { orderShoppingItemsByDestinationGridIds } from "@/lib/map/pathUtils";
 import {
   assertAisleCell,
   isRoutingLegComplete,
-  itemsShareShelfGrid,
+  itemsShareGridCell,
   resolveRecommendedMarkers,
   resolveShoppingMarkers,
 } from "./utils/resolveGridMarkers";
@@ -56,6 +57,7 @@ type StoreMapOverlaysProps = {
   pickedMarkerIds?: ReadonlySet<string>;
   pickedQuantityByProductId?: Record<string, number>;
   selectedMarkerProductId?: string | null;
+  selectedMarkerKind?: MapMarkerSelectionKind | null;
   tripLineItems?: CartLineItem[];
   tripZoneItems?: TripZoneLineItem[];
   recommendedProductsById?: Record<string, Product>;
@@ -76,6 +78,7 @@ export function StoreMapOverlays({
   pickedMarkerIds,
   pickedQuantityByProductId = {},
   selectedMarkerProductId = null,
+  selectedMarkerKind = null,
   tripLineItems = [],
   tripZoneItems = [],
   recommendedProductsById = {},
@@ -218,7 +221,11 @@ export function StoreMapOverlays({
   );
 
   const colocatedTripLines = useMemo(() => {
-    if (!selectedMarkerProductId || !selectedTripLine) {
+    if (
+      selectedMarkerKind !== "shopping" ||
+      !selectedMarkerProductId ||
+      !selectedTripLine
+    ) {
       return [];
     }
     return findColocatedTripLines(
@@ -229,6 +236,7 @@ export function StoreMapOverlays({
     );
   }, [
     config,
+    selectedMarkerKind,
     selectedMarkerProductId,
     selectedTripLine,
     shoppingMarkerItems,
@@ -259,25 +267,21 @@ export function StoreMapOverlays({
     [cellPx, config, data.recommendedItems]
   );
 
-  const selectedRecommendedProduct = useMemo(() => {
-    if (!selectedMarkerProductId || selectedTripLine) {
-      return undefined;
-    }
-    return recommendedProductsById[selectedMarkerProductId];
-  }, [recommendedProductsById, selectedMarkerProductId, selectedTripLine]);
+  const isRecommendedSelection =
+    selectedMarkerKind === "recommended" && selectedMarkerProductId != null;
 
   const selectedRecommendedMarker = useMemo(
     () =>
-      selectedRecommendedProduct
+      isRecommendedSelection
         ? recommendedMarkers.find(
-            (marker) => marker.id === selectedRecommendedProduct.id,
+            (marker) => marker.id === selectedMarkerProductId,
           )
         : undefined,
-    [recommendedMarkers, selectedRecommendedProduct],
+    [isRecommendedSelection, recommendedMarkers, selectedMarkerProductId],
   );
 
   const colocatedRecommendedProducts = useMemo(() => {
-    if (!selectedMarkerProductId || !selectedRecommendedProduct) {
+    if (!isRecommendedSelection || !selectedMarkerProductId) {
       return [];
     }
     return findColocatedRecommendedProducts(
@@ -289,9 +293,9 @@ export function StoreMapOverlays({
   }, [
     config,
     data.recommendedItems,
+    isRecommendedSelection,
     recommendedProductsById,
     selectedMarkerProductId,
-    selectedRecommendedProduct,
   ]);
 
   const isShoppingMarkerSelected = useCallback(
@@ -309,14 +313,14 @@ export function StoreMapOverlays({
       if (!mapItem || !selectedMapItem) {
         return false;
       }
-      return itemsShareShelfGrid(config, selectedMapItem, mapItem);
+      return itemsShareGridCell(selectedMapItem, mapItem, config.cols);
     },
     [config, selectedMarkerProductId, shoppingMarkerItems],
   );
 
   const isRecommendedMarkerSelected = useCallback(
     (marker: (typeof recommendedMarkers)[number]) => {
-      if (!selectedMarkerProductId || !selectedRecommendedProduct) {
+      if (!isRecommendedSelection || !selectedMarkerProductId) {
         return false;
       }
       if (selectedMarkerProductId === marker.id) {
@@ -329,13 +333,13 @@ export function StoreMapOverlays({
       if (!mapItem || !selectedMapItem) {
         return false;
       }
-      return itemsShareShelfGrid(config, selectedMapItem, mapItem);
+      return itemsShareGridCell(selectedMapItem, mapItem, config.cols);
     },
     [
       config,
       data.recommendedItems,
+      isRecommendedSelection,
       selectedMarkerProductId,
-      selectedRecommendedProduct,
     ],
   );
 
@@ -380,7 +384,9 @@ export function StoreMapOverlays({
         isMarkerSelected={isShoppingMarkerSelected}
         onMarkerPress={onShoppingMarkerPress}
       />
-      {selectedMarker && colocatedTripLines.length > 0
+      {selectedMarkerKind === "shopping" &&
+      selectedMarker &&
+      colocatedTripLines.length > 0
         ? shouldUseGroupedProductCallout(colocatedTripLines.length)
           ? (
               <MapGroupedProductMarkerCallout
@@ -402,7 +408,10 @@ export function StoreMapOverlays({
               />
             )
         : null}
-      {selectedTripZone && selectedMarker && !selectedTripLine ? (
+      {selectedMarkerKind === "shopping" &&
+      selectedTripZone &&
+      selectedMarker &&
+      !selectedTripLine ? (
         <MapZoneMarkerCallout
           zone={selectedTripZone}
           anchor={selectedMarker.center}
