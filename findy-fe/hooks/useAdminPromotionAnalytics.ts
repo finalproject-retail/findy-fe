@@ -1,12 +1,10 @@
 import {
-  fetchAlternativeSelectRates,
+  fetchAlternativeSelectRateSummary,
   fetchPromotionSelectRates,
+  fetchRecommendationPurchaseConversionAnalytics,
 } from "@/lib/admin/api/fetchPromotionSelectRates";
 import { toAdminAnalyticsQueryRange } from "@/lib/admin/formatAdminApiDate";
-import {
-  mapPromotionSelectRatesToProducts,
-  mapSubstituteSelectRatesToFunnel,
-} from "@/lib/admin/mapSelectRateAnalytics";
+import { mapPromotionSelectRatesToProducts } from "@/lib/admin/mapSelectRateAnalytics";
 import type {
   AdminDateRange,
   AdminFunnelStep,
@@ -20,6 +18,24 @@ const EMPTY_FUNNEL: AdminFunnelStep[] = [
   { label: "2. 대체 상품 선택", percent: 0 },
   { label: "3. 대체 상품 구매", percent: 0 },
 ];
+
+function toPercent(value: unknown) {
+  const n = Number(value ?? 0);
+
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+
+  if (n > 0 && n <= 1) {
+    return Math.round(n * 1000) / 10;
+  }
+
+  return Math.round(n * 10) / 10;
+}
+
+function formatPercent(value: number) {
+  return `${toPercent(value)}%`;
+}
 
 export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
   const isAuthReady = useAuthReady();
@@ -42,23 +58,53 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
       setError(null);
 
       try {
-        const [alternativeSelectRates, promotionSelectRates] = await Promise.all([
-          fetchAlternativeSelectRates(query),
-          fetchPromotionSelectRates(query),
+        const [
+          alternativeSelectRateSummary,
+          substitutePurchaseConversion,
+          promotionSelectRates,
+        ] = await Promise.all([
+          fetchAlternativeSelectRateSummary({
+            ...query,
+            limit: 20,
+          }),
+          fetchRecommendationPurchaseConversionAnalytics({
+            ...query,
+            recommendationType: "SUBSTITUTE",
+            limit: 20,
+          }),
+          fetchPromotionSelectRates({
+            ...query,
+            limit: 20,
+          }),
         ]);
 
         if (cancelled) {
           return;
         }
 
-        const funnelData = mapSubstituteSelectRatesToFunnel(alternativeSelectRates);
-        setFunnel(funnelData.steps);
-        setFinalConversionRate(funnelData.finalConversionRate);
+        const selectionPercent = toPercent(
+          alternativeSelectRateSummary.selectionRate ??
+            alternativeSelectRateSummary.selectRate,
+        );
+
+        const purchasePercent = toPercent(
+          substitutePurchaseConversion.purchaseConversionRate ??
+            alternativeSelectRateSummary.conversionRate,
+        );
+
+        setFunnel([
+          { label: "1. 대체 상품 노출", percent: 100 },
+          { label: "2. 대체 상품 선택", percent: selectionPercent },
+          { label: "3. 대체 상품 구매", percent: purchasePercent },
+        ]);
+
+        setFinalConversionRate(formatPercent(purchasePercent));
         setPromoProducts(mapPromotionSelectRatesToProducts(promotionSelectRates));
       } catch (err) {
         if (cancelled) {
           return;
         }
+
         setFunnel(EMPTY_FUNNEL);
         setFinalConversionRate("0%");
         setPromoProducts([]);
