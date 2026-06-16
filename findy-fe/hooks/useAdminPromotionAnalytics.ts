@@ -19,22 +19,35 @@ const EMPTY_FUNNEL: AdminFunnelStep[] = [
   { label: "3. 대체 상품 구매", percent: 0 },
 ];
 
-function toPercent(value: unknown) {
-  const n = Number(value ?? 0);
-
-  if (!Number.isFinite(n)) {
+function roundPercent(value: number) {
+  if (!Number.isFinite(value)) {
     return 0;
   }
 
-  if (n > 0 && n <= 1) {
-    return Math.round(n * 1000) / 10;
+  return Math.round(value * 10) / 10;
+}
+
+function toPercentFromCounts(numerator: unknown, denominator: unknown) {
+  const n = Number(numerator ?? 0);
+  const d = Number(denominator ?? 0);
+
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0) {
+    return 0;
   }
 
-  return Math.round(n * 10) / 10;
+  return roundPercent((n / d) * 100);
 }
 
 function formatPercent(value: number) {
-  return `${toPercent(value)}%`;
+  return `${roundPercent(value)}%`;
+}
+
+function clampFunnelPercent(value: number, previous: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(value, previous));
 }
 
 export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
@@ -82,18 +95,32 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
           return;
         }
 
-        const selectionPercent = toPercent(
-          alternativeSelectRateSummary.selectionRate ??
-            alternativeSelectRateSummary.selectRate,
+        const impressionPercent = 100;
+
+        // 대시보드 퍼널의 "선택"은 strict SELECTION이 아니라
+        // 대체 상품에 반응한 CLICK + SELECTION 기준으로 표시
+        const rawSelectionPercent = toPercentFromCounts(
+          substitutePurchaseConversion.clickCount,
+          substitutePurchaseConversion.impressionCount,
         );
 
-        const purchasePercent = toPercent(
-          substitutePurchaseConversion.purchaseConversionRate ??
-            alternativeSelectRateSummary.conversionRate,
+        const selectionPercent = clampFunnelPercent(
+          rawSelectionPercent,
+          impressionPercent,
+        );
+
+        const rawPurchasePercent = toPercentFromCounts(
+          substitutePurchaseConversion.purchaseCount,
+          substitutePurchaseConversion.impressionCount,
+        );
+
+        const purchasePercent = clampFunnelPercent(
+          rawPurchasePercent,
+          selectionPercent,
         );
 
         setFunnel([
-          { label: "1. 대체 상품 노출", percent: 100 },
+          { label: "1. 대체 상품 노출", percent: impressionPercent },
           { label: "2. 대체 상품 선택", percent: selectionPercent },
           { label: "3. 대체 상품 구매", percent: purchasePercent },
         ]);
