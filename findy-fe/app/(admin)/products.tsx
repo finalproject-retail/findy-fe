@@ -1,7 +1,6 @@
 import { AdminContentFrame } from "@/components/admin/AdminContentFrame";
 import { AdminProductPerformanceList } from "@/components/admin/AdminProductPerformanceList";
 import { AdminScrollView } from "@/components/admin/AdminScrollView";
-import { CATEGORY_TREE } from "@/components/category";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminProductPerformanceList } from "@/hooks/useAdminProductPerformanceList";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
@@ -19,33 +18,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CATEGORY_TOP_LABELS: Record<
-  Exclude<AdminProductCategoryFilter, "all">,
-  string
-> = {
-  fresh: "신선 식품",
-  processed: "가공/냉동 식품",
-  bakery: "베이커리/델리",
-  beverage: "음료/주류",
-  lifestyle: "라이프 스타일",
-};
-
-function resolveCategoryIds(category: AdminProductCategoryFilter) {
-  if (category === "all") {
-    return undefined;
-  }
-
-  const topLabel = CATEGORY_TOP_LABELS[category];
-  const topCategory = CATEGORY_TREE.find((top) => top.label === topLabel);
-
-  const categoryIds =
-    topCategory?.middles.flatMap((middle) =>
-      middle.subs.map((sub) => sub.categoryId),
-    ) ?? [];
-
-  return categoryIds.length > 0 ? categoryIds : undefined;
-}
-
 export default function AdminProductsScreen() {
   const insets = useSafeAreaInsets();
   const isWide = useAdminWideLayout();
@@ -53,11 +25,6 @@ export default function AdminProductsScreen() {
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<AdminProductCategoryFilter>("all");
-
-  const categoryIds = useMemo(
-    () => resolveCategoryIds(category),
-    [category],
-  );
 
   const {
     products,
@@ -68,10 +35,7 @@ export default function AdminProductsScreen() {
     hasMore,
     loadMore,
     reload,
-  } = useAdminProductPerformanceList(dateRange, {
-    keyword: query,
-    categoryIds,
-  });
+  } = useAdminProductPerformanceList(dateRange);
 
   const isLoadingMoreRef = useRef(isLoadingMore);
   isLoadingMoreRef.current = isLoadingMore;
@@ -129,6 +93,7 @@ export default function AdminProductsScreen() {
               >
                 {error}
               </Text>
+
               <Pressable onPress={() => void reload()}>
                 <Text
                   style={{
