@@ -5,6 +5,7 @@ import type {
   FetchPromotionSelectRateParams,
   PromotionSelectRateApiData,
   PromotionSelectRateApiDto,
+  RecommendationPurchaseConversionData,
 } from "@/lib/admin/api/types";
 
 type SelectRateParams = FetchPromotionSelectRateParams & {
@@ -14,22 +15,6 @@ type SelectRateParams = FetchPromotionSelectRateParams & {
 type PurchaseConversionParams = FetchPromotionSelectRateParams & {
   recommendationType: string;
   limit?: number;
-};
-
-export type RecommendationPurchaseConversionData = {
-  period?: {
-    fromDate?: string;
-    toDate?: string;
-  };
-  recommendationType?: string | null;
-  productId?: number | null;
-  impressionCount?: number;
-  clickCount?: number;
-  purchaseCount?: number;
-  purchaseConversionRate?: number;
-  clickToPurchaseRate?: number;
-  dailyTrends?: unknown[];
-  products?: unknown[];
 };
 
 function unwrapSelectRates(
@@ -84,18 +69,12 @@ async function fetchSelectRates(
 
 /** GET /api/v1/analytics/promotions/select-rate */
 export function fetchPromotionSelectRates(params: SelectRateParams) {
-  return fetchSelectRates(
-    "/api/v1/analytics/promotions/select-rate",
-    params,
-  );
+  return fetchSelectRates("/api/v1/analytics/promotions/select-rate", params);
 }
 
 /** GET /api/v1/analytics/alternatives/select-rate — 품절 대응 퍼널 상품 목록 */
 export function fetchAlternativeSelectRates(params: SelectRateParams) {
-  return fetchSelectRates(
-    "/api/v1/analytics/alternatives/select-rate",
-    params,
-  );
+  return fetchSelectRates("/api/v1/analytics/alternatives/select-rate", params);
 }
 
 /** GET /api/v1/analytics/alternatives/select-rate — 품절 대응 퍼널 요약 */
@@ -106,13 +85,33 @@ export function fetchAlternativeSelectRateSummary(params: SelectRateParams) {
   );
 }
 
-/** GET /api/v1/analytics/purchase-conversion */
+/**
+ * @deprecated
+ * 추천 구매 전환 분석은 "@/lib/admin/api/fetchAdminRecommendationAnalytics"의
+ * fetchRecommendationPurchaseConversionAnalytics 사용 권장.
+ *
+ * 기존 import 깨짐 방지용으로 유지.
+ */
 export function fetchRecommendationPurchaseConversionAnalytics(
   params: PurchaseConversionParams,
 ) {
   return fetchAnalyticsData<RecommendationPurchaseConversionData>(
     "/api/v1/analytics/purchase-conversion",
-    params,
+    {
+      // 백엔드 구현 차이를 흡수하기 위해 둘 다 전달
+      startDate: params.startDate,
+      endDate: params.endDate,
+      fromDate: params.startDate,
+      toDate: params.endDate,
+
+      recommendationType: params.recommendationType,
+      limit: params.limit,
+      ...(params.productId != null ? { productId: params.productId } : {}),
+      ...(params.sourceProductId != null
+        ? { sourceProductId: params.sourceProductId }
+        : {}),
+      ...(params.promotionId != null ? { promotionId: params.promotionId } : {}),
+    },
   );
 }
 
