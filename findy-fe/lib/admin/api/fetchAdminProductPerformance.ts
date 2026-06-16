@@ -8,7 +8,6 @@ import {
 import {
   mapAdminProductListItem,
   mapPerformanceDetail,
-  mapPerformanceItemToSummary,
 } from "@/lib/admin/api/mapProductPerformance";
 import type {
   AdminAnalyticsApiEnvelope,
@@ -35,25 +34,36 @@ export type { AdminProductListPageResult } from "@/lib/admin/mockProductPerforma
 export const ADMIN_PRODUCT_LIST_PAGE_SIZE = 20;
 const PERFORMANCE_SUMMARY_LIMIT = 100;
 
-const PERFORMANCE_SUMMARY_PATH = "/api/v1/analytics/products/performance-summary";
+const PERFORMANCE_SUMMARY_PATH =
+  "/api/v1/analytics/products/performance-summary";
 const PURCHASE_CONVERSION_PATH = "/api/v1/analytics/purchase-conversion";
 const CLICK_RATE_PATH = "/api/v1/analytics/recommendations/click-rate";
 const ADMIN_PRODUCT_PATH = "/api/v1/admin/products";
 
-export type AdminProductPerformanceMap = Map<number, ProductPerformanceItemDto>;
+export type AdminProductPerformanceMap = Map<
+  number,
+  ProductPerformanceItemDto
+>;
 
 function shouldUseAdminPerformanceMock() {
   return process.env.EXPO_PUBLIC_ADMIN_USE_MOCK === "true";
 }
 
-function unwrapShopping<T>(envelope: ApiEnvelope<T> | undefined, fallbackMessage: string): T {
+function unwrapShopping<T>(
+  envelope: ApiEnvelope<T> | undefined,
+  fallbackMessage: string,
+): T {
   if (!envelope?.success || envelope.data == null) {
     throw new Error(envelope?.message ?? fallbackMessage);
   }
+
   return envelope.data;
 }
 
-async function fetchProductPerformanceSummary(range: AdminDateRange, limit = PERFORMANCE_SUMMARY_LIMIT) {
+async function fetchProductPerformanceSummary(
+  range: AdminDateRange,
+  limit = PERFORMANCE_SUMMARY_LIMIT,
+) {
   const params = {
     ...adminDateRangeToApiParams(range),
     limit,
@@ -63,7 +73,10 @@ async function fetchProductPerformanceSummary(range: AdminDateRange, limit = PER
     AdminAnalyticsApiEnvelope<ProductPerformanceSummaryDto>
   >(PERFORMANCE_SUMMARY_PATH, { params });
 
-  return unwrapAdminAnalytics(response.data, "상품 성과 목록을 불러오지 못했습니다.");
+  return unwrapAdminAnalytics(
+    response.data,
+    "상품 성과 목록을 불러오지 못했습니다.",
+  );
 }
 
 export async function fetchAdminProductPerformanceMap(
@@ -90,6 +103,7 @@ async function fetchAdminProductsPage({
   size = ADMIN_PRODUCT_LIST_PAGE_SIZE,
   keyword,
   categoryId,
+  categoryIds,
   saleStatus,
   sortBy = "createdAt",
   direction = "desc",
@@ -102,6 +116,10 @@ async function fetchAdminProductsPage({
         size,
         keyword: keyword?.trim() || undefined,
         categoryId,
+        categoryIds:
+          categoryIds && categoryIds.length > 0
+            ? categoryIds.join(",")
+            : undefined,
         saleStatus,
         sortBy,
         direction,
@@ -113,9 +131,9 @@ async function fetchAdminProductsPage({
 }
 
 async function fetchAdminShoppingProduct(productId: string) {
-  const response = await shoppingApiClient.get<ApiEnvelope<AdminShoppingProductDto>>(
-    `${ADMIN_PRODUCT_PATH}/${productId}`,
-  );
+  const response = await shoppingApiClient.get<
+    ApiEnvelope<AdminShoppingProductDto>
+  >(`${ADMIN_PRODUCT_PATH}/${productId}`);
 
   return unwrapShopping(response.data, "상품 정보를 불러오지 못했습니다.");
 }
@@ -134,7 +152,10 @@ async function fetchRecommendationPurchaseConversion(
     AdminAnalyticsApiEnvelope<RecommendationPurchaseConversionDto>
   >(PURCHASE_CONVERSION_PATH, { params });
 
-  return unwrapAdminAnalytics(response.data, "추천 구매 전환 데이터를 불러오지 못했습니다.");
+  return unwrapAdminAnalytics(
+    response.data,
+    "추천 구매 전환 데이터를 불러오지 못했습니다.",
+  );
 }
 
 async function fetchRecommendationClickRate(range: AdminDateRange) {
@@ -147,7 +168,10 @@ async function fetchRecommendationClickRate(range: AdminDateRange) {
     AdminAnalyticsApiEnvelope<RecommendationClickRateDto>
   >(CLICK_RATE_PATH, { params });
 
-  return unwrapAdminAnalytics(response.data, "추천 클릭률 데이터를 불러오지 못했습니다.");
+  return unwrapAdminAnalytics(
+    response.data,
+    "추천 클릭률 데이터를 불러오지 못했습니다.",
+  );
 }
 
 /** B merge — 상품 목록(페이지) + 성과 summary */
@@ -158,6 +182,7 @@ export async function fetchAdminProductPerformanceListPage(
   options?: {
     keyword?: string;
     categoryId?: number;
+    categoryIds?: number[];
     saleStatus?: FetchAdminProductsParams["saleStatus"];
     performanceMap?: AdminProductPerformanceMap;
   },
@@ -178,6 +203,7 @@ export async function fetchAdminProductPerformanceListPage(
         size,
         keyword: options?.keyword,
         categoryId: options?.categoryId,
+        categoryIds: options?.categoryIds,
         saleStatus: options?.saleStatus,
       }),
       options?.performanceMap
@@ -199,7 +225,9 @@ export async function fetchAdminProductPerformanceListPage(
       performanceUnavailable: performanceResult.unavailable,
     };
   } catch (error) {
-    throw new Error(parseApiErrorMessage(error, "상품 목록을 불러오지 못했습니다."));
+    throw new Error(
+      parseApiErrorMessage(error, "상품 목록을 불러오지 못했습니다."),
+    );
   }
 }
 
@@ -221,29 +249,40 @@ export async function fetchAdminProductPerformanceDetail(
   range: AdminDateRange,
 ): Promise<AdminProductPerformance | null> {
   if (shouldUseAdminPerformanceMock()) {
-    return getMockProductPerformanceList(range).find((item) => item.productId === productId) ?? null;
+    return (
+      getMockProductPerformanceList(range).find(
+        (item) => item.productId === productId,
+      ) ?? null
+    );
   }
 
   try {
     const numericId = Number(productId);
+
     if (!Number.isFinite(numericId)) {
       return null;
     }
 
     const shoppingProduct = await fetchAdminShoppingProduct(productId);
 
-    const [performanceResult, purchaseConversion, clickRate] = await Promise.all([
-      fetchAdminProductPerformanceMapSafe(range),
-      fetchRecommendationPurchaseConversion(range, productId).catch(() => null),
-      fetchRecommendationClickRate(range).catch(() => null),
-    ]);
+    const [performanceResult, purchaseConversion, clickRate] =
+      await Promise.all([
+        fetchAdminProductPerformanceMapSafe(range),
+        fetchRecommendationPurchaseConversion(range, productId).catch(
+          () => null,
+        ),
+        fetchRecommendationClickRate(range).catch(() => null),
+      ]);
 
     const summaryItem = performanceResult.map.get(numericId) ?? null;
 
     const brand = shoppingProduct.brandName?.trim();
-    const productName = shoppingProduct.productName?.trim() ?? summaryItem?.productName ?? "";
+    const productName =
+      shoppingProduct.productName?.trim() ?? summaryItem?.productName ?? "";
     const displayName =
-      brand && !productName.startsWith("[") ? `[${brand}] ${productName}` : productName;
+      brand && !productName.startsWith("[")
+        ? `[${brand}] ${productName}`
+        : productName;
 
     return mapPerformanceDetail(summaryItem, {
       productId,
@@ -254,6 +293,8 @@ export async function fetchAdminProductPerformanceDetail(
       purchaseConversion,
     });
   } catch (error) {
-    throw new Error(parseApiErrorMessage(error, "상품 상세 성과를 불러오지 못했습니다."));
+    throw new Error(
+      parseApiErrorMessage(error, "상품 상세 성과를 불러오지 못했습니다."),
+    );
   }
 }

@@ -1,10 +1,13 @@
 import {
   fetchAlternativeSelectRateSummary,
   fetchPromotionSelectRates,
-  fetchRecommendationPurchaseConversionAnalytics,
 } from "@/lib/admin/api/fetchPromotionSelectRates";
+import {
+  fetchRecommendationClickRateAnalytics,
+  fetchRecommendationPurchaseConversionAnalytics,
+} from "@/lib/admin/api/fetchAdminRecommendationAnalytics";
 import { toAdminAnalyticsQueryRange } from "@/lib/admin/formatAdminApiDate";
-import { mapPromotionSelectRatesToProducts } from "@/lib/admin/mapSelectRateAnalytics";
+import { mapPromotionAnalyticsToProducts } from "@/lib/admin/mapSelectRateAnalytics";
 import type {
   AdminDateRange,
   AdminFunnelStep,
@@ -50,6 +53,114 @@ function clampFunnelPercent(value: number, previous: number) {
   return Math.max(0, Math.min(value, previous));
 }
 
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function toFiniteNumber(value: unknown): number {
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function getNumberFromRoot(source: unknown, keys: string[]): number {
+  const record = toRecord(source);
+
+  if (!record) {
+    return 0;
+  }
+
+  for (const key of keys) {
+    const value = toFiniteNumber(record[key]);
+
+    if (value > 0) {
+      return value;
+    }
+  }
+
+  return 0;
+}
+
+function getNumberFromProducts(source: unknown, keys: string[]): number {
+  const record = toRecord(source);
+  const products = record?.products;
+
+  if (!Array.isArray(products)) {
+    return 0;
+  }
+
+  return products.reduce((sum, product) => {
+    const productRecord = toRecord(product);
+
+    if (!productRecord) {
+      return sum;
+    }
+
+    for (const key of keys) {
+      const value = toFiniteNumber(productRecord[key]);
+
+      if (value > 0) {
+        return sum + value;
+      }
+    }
+
+    return sum;
+  }, 0);
+}
+
+function getMetricTotal(source: unknown, keys: string[]): number {
+  const rootValue = getNumberFromRoot(source, keys);
+
+  if (rootValue > 0) {
+    return rootValue;
+  }
+
+  return getNumberFromProducts(source, keys);
+}
+
+function buildSubstituteFunnelCounts(
+  purchaseConversionData: unknown,
+  alternativeSelectRateSummary: unknown,
+) {
+  const purchaseConversionImpressions = getMetricTotal(
+    purchaseConversionData,
+    ["impressionCount"],
+  );
+
+  const alternativeImpressions = getMetricTotal(
+    alternativeSelectRateSummary,
+    ["impressionCount"],
+  );
+
+  const source =
+    purchaseConversionImpressions > 0
+      ? purchaseConversionData
+      : alternativeSelectRateSummary;
+
+  return {
+    impressionCount:
+      purchaseConversionImpressions > 0
+        ? purchaseConversionImpressions
+        : alternativeImpressions,
+    selectionCount:
+      purchaseConversionImpressions > 0
+        ? getMetricTotal(purchaseConversionData, [
+            "clickCount",
+            "selectedCount",
+            "selectionCount",
+          ])
+        : getMetricTotal(alternativeSelectRateSummary, [
+            "selectedCount",
+            "selectionCount",
+            "clickCount",
+          ]),
+    purchaseCount: getMetricTotal(source, ["purchaseCount"]),
+  };
+}
+
 export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
   const isAuthReady = useAuthReady();
   const [funnel, setFunnel] = useState<AdminFunnelStep[]>(EMPTY_FUNNEL);
@@ -66,6 +177,11 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
     let cancelled = false;
     const query = toAdminAnalyticsQueryRange(dateRange);
 
+    const recommendationQuery = {
+      fromDate: query.startDate,
+      toDate: query.endDate,
+    };
+
     async function load() {
       setLoading(true);
       setError(null);
@@ -73,20 +189,32 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
       try {
         const [
           alternativeSelectRateSummary,
-          substitutePurchaseConversion,
           promotionSelectRates,
+          substitutePurchaseConversion,
+          promotionClickRate,
+          promotionPurchaseConversion,
         ] = await Promise.all([
           fetchAlternativeSelectRateSummary({
             ...query,
             limit: 20,
           }),
-          fetchRecommendationPurchaseConversionAnalytics({
+          fetchPromotionSelectRates({
             ...query,
+            limit: 20,
+          }),
+          fetchRecommendationPurchaseConversionAnalytics({
+            ...recommendationQuery,
             recommendationType: "SUBSTITUTE",
             limit: 20,
           }),
-          fetchPromotionSelectRates({
-            ...query,
+          fetchRecommendationClickRateAnalytics({
+            ...recommendationQuery,
+            recommendationType: "PROMOTION",
+            limit: 20,
+          }),
+          fetchRecommendationPurchaseConversionAnalytics({
+            ...recommendationQuery,
+            recommendationType: "PROMOTION",
             limit: 20,
           }),
         ]);
@@ -95,27 +223,21 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
           return;
         }
 
+        const { impressionCount, selectionCount, purchaseCount } =
+          buildSubstituteFunnelCounts(
+            substitutePurchaseConversion,
+            alternativeSelectRateSummary,
+          );
+
         const impressionPercent = 100;
 
-        // 대시보드 퍼널의 "선택"은 strict SELECTION이 아니라
-        // 대체 상품에 반응한 CLICK + SELECTION 기준으로 표시
-        const rawSelectionPercent = toPercentFromCounts(
-          substitutePurchaseConversion.clickCount,
-          substitutePurchaseConversion.impressionCount,
-        );
-
         const selectionPercent = clampFunnelPercent(
-          rawSelectionPercent,
+          toPercentFromCounts(selectionCount, impressionCount),
           impressionPercent,
         );
 
-        const rawPurchasePercent = toPercentFromCounts(
-          substitutePurchaseConversion.purchaseCount,
-          substitutePurchaseConversion.impressionCount,
-        );
-
         const purchasePercent = clampFunnelPercent(
-          rawPurchasePercent,
+          toPercentFromCounts(purchaseCount, impressionCount),
           selectionPercent,
         );
 
@@ -126,7 +248,14 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
         ]);
 
         setFinalConversionRate(formatPercent(purchasePercent));
-        setPromoProducts(mapPromotionSelectRatesToProducts(promotionSelectRates));
+
+        setPromoProducts(
+          mapPromotionAnalyticsToProducts({
+            promotionSelectRates,
+            clickRateData: promotionClickRate,
+            purchaseConversionData: promotionPurchaseConversion,
+          }),
+        );
       } catch (err) {
         if (cancelled) {
           return;
