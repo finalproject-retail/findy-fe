@@ -440,18 +440,36 @@ export function AdminProductPerformanceList({
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return products.filter((product) => {
-      const matchesCategory =
-        category === "all" || product.category === category;
+    return products
+      .filter((product) => {
+        const matchesCategory =
+          category === "all" || product.category === category;
 
-      if (!matchesCategory) return false;
-      if (!normalizedQuery) return true;
+        if (!matchesCategory) return false;
+        if (!normalizedQuery) return true;
 
-      return (
-        product.name.toLowerCase().includes(normalizedQuery) ||
-        product.productId.toLowerCase().includes(normalizedQuery)
-      );
-    });
+        return (
+          product.name.toLowerCase().includes(normalizedQuery) ||
+          product.productId.toLowerCase().includes(normalizedQuery)
+        );
+      })
+      .sort((a, b) => {
+        const aViews = Number(a.views) || 0;
+        const bViews = Number(b.views) || 0;
+
+        if (bViews !== aViews) {
+          return bViews - aViews;
+        }
+
+        const aConversionRate = Number(a.conversionRate) || 0;
+        const bConversionRate = Number(b.conversionRate) || 0;
+
+        if (bConversionRate !== aConversionRate) {
+          return bConversionRate - aConversionRate;
+        }
+
+        return Number(b.productId) - Number(a.productId);
+      });
   }, [products, query, category]);
 
   return (
