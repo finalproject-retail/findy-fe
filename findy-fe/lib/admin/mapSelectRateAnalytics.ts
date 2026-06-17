@@ -12,6 +12,25 @@ import type {
   RecommendationPurchaseConversionProductDto,
 } from "@/lib/admin/api/types";
 
+type AdminPromoProductWithPromotion = AdminPromoProduct & {
+  promotionName?: string | null;
+  promotionType?: string | null;
+  promotionLabel?: string | null;
+};
+
+type PromotionProductRow = {
+  productId: number;
+  name: string;
+  promoType: AdminPromoType;
+  promotionName?: string | null;
+  promotionType?: string | null;
+  promotionLabel?: string | null;
+  selectionRate: number;
+  purchaseRate: number;
+  impressionCount: number;
+  image: AdminPromoProduct["image"];
+};
+
 function toRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -56,6 +75,68 @@ function normalizeRate(value: unknown): number | null {
   return clampPercent(numberValue);
 }
 
+function readNumber(item: unknown, keys: string[]): number | null {
+  const record = toRecord(item);
+
+  if (!record) {
+    return null;
+  }
+
+  for (const key of keys) {
+    if (!(key in record)) {
+      continue;
+    }
+
+    const value = toFiniteNumber(record[key]);
+
+    if (value != null) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function readRate(item: unknown, keys: string[]): number | null {
+  const record = toRecord(item);
+
+  if (!record) {
+    return null;
+  }
+
+  for (const key of keys) {
+    if (!(key in record)) {
+      continue;
+    }
+
+    const value = normalizeRate(record[key]);
+
+    if (value != null) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function readString(item: unknown, keys: string[]): string | undefined {
+  const record = toRecord(item);
+
+  if (!record) {
+    return undefined;
+  }
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return undefined;
+}
+
 function rateFromCounts(
   numerator: unknown,
   denominator: unknown,
@@ -70,33 +151,85 @@ function rateFromCounts(
   return clampPercent((n / d) * 100);
 }
 
-function getProductId(item: unknown): number {
-  const record = toRecord(item);
-  const value = toFiniteNumber(record?.productId);
+function rateFromCountKeys(
+  item: unknown,
+  numeratorKeys: string[],
+  denominatorKeys: string[],
+): number | null {
+  const numerator = readNumber(item, numeratorKeys);
+  const denominator = readNumber(item, denominatorKeys);
 
-  return value ?? 0;
+  return rateFromCounts(numerator, denominator);
 }
 
-function getProductName(item: unknown): string {
-  const record = toRecord(item);
-  const value = record?.productName;
+function getProductId(item: unknown): number {
+  return readNumber(item, ["productId"]) ?? 0;
+}
 
-  return typeof value === "string" && value.trim().length > 0
-    ? value
-    : "상품명 미등록";
+function getProductName(...items: unknown[]): string {
+  for (const item of items) {
+    const value = readString(item, ["productName", "name"]);
+
+    if (value && isValidProductName(value)) {
+      return value;
+    }
+  }
+
+  return "상품명 미등록";
+}
+
+function isValidProductName(name: string): boolean {
+  const normalized = name.trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (normalized === "상품명 미등록" || normalized === "상품명 확인 필요") {
+    return false;
+  }
+
+  if (normalized.startsWith("시드_")) {
+    return false;
+  }
+
+  return true;
 }
 
 function getPromotionName(item: unknown): string | undefined {
-  const record = toRecord(item);
-  const value = record?.promotionName;
+  return readString(item, ["promotionName", "promoName", "eventName"]);
+}
 
-  return typeof value === "string" && value.trim().length > 0
-    ? value
-    : undefined;
+function getPromotionType(item: unknown): string | undefined {
+  return readString(item, ["promotionType", "promoType", "eventType"]);
+}
+
+function getPromotionLabel(item: unknown): string | undefined {
+  return readString(item, ["promotionLabel", "promoLabel", "eventLabel"]);
+}
+
+function getImageSource(
+  fallbackIndex: number,
+  ...items: unknown[]
+): AdminPromoProduct["image"] {
+  for (const item of items) {
+    const imageUrl = readString(item, [
+      "imageUrl",
+      "productImageUrl",
+      "thumbnailUrl",
+      "thumbnail",
+    ]);
+
+    if (imageUrl) {
+      return { uri: imageUrl } as AdminPromoProduct["image"];
+    }
+  }
+
+  return getAdminProductImage(fallbackIndex);
 }
 
 function inferPromoTypeFromPromotionName(
-  promotionName?: string,
+  promotionName?: string | null,
 ): AdminPromoType {
   const name = promotionName?.trim().toLowerCase() ?? "";
 
@@ -110,16 +243,122 @@ function inferPromoTypeFromPromotionName(
   }
 
   if (
+    name.includes("2+1") ||
+    name.includes("투플러스") ||
     name.includes("증정") ||
     name.includes("사은") ||
     name.includes("gift") ||
     name.includes("bundle") ||
+    name.includes("묶음") ||
     name.includes("덤")
   ) {
     return "bundle";
   }
 
   return "discount";
+}
+
+function toPromoType(
+  promotionType?: string | null,
+  promotionName?: string | null,
+): AdminPromoType {
+  const normalized = promotionType?.trim().toUpperCase();
+
+  switch (normalized) {
+    case "ONE_PLUS_ONE":
+    case "ONE_PLUS":
+    case "ONE_PLUS_ONE_EVENT":
+    case "1_PLUS_1":
+    case "1+1":
+    case "BOGO":
+      return "onePlusOne";
+
+    case "TWO_PLUS_ONE":
+    case "TWO_PLUS":
+    case "2_PLUS_1":
+    case "2+1":
+    case "GIFT":
+    case "GIVEAWAY":
+    case "BUNDLE":
+    case "PACKAGE":
+      return "bundle";
+
+    case "DISCOUNT":
+    case "COUPON":
+    case "CLEARANCE":
+      return "discount";
+
+    default:
+      return inferPromoTypeFromPromotionName(promotionName);
+  }
+}
+
+function resolvePromotionLabel(
+  promotionType?: string | null,
+  promotionLabel?: string | null,
+  promotionName?: string | null,
+): string | null {
+  if (promotionLabel && promotionLabel.trim().length > 0) {
+    return promotionLabel.trim();
+  }
+
+  const normalized = promotionType?.trim().toUpperCase();
+
+  switch (normalized) {
+    case "ONE_PLUS_ONE":
+    case "ONE_PLUS":
+    case "ONE_PLUS_ONE_EVENT":
+    case "1_PLUS_1":
+    case "1+1":
+    case "BOGO":
+      return "1+1";
+
+    case "TWO_PLUS_ONE":
+    case "TWO_PLUS":
+    case "2_PLUS_1":
+    case "2+1":
+      return "2+1";
+
+    case "GIFT":
+    case "GIVEAWAY":
+      return "증정 행사";
+
+    case "BUNDLE":
+    case "PACKAGE":
+      return "묶음 행사";
+
+    case "COUPON":
+      return "쿠폰 행사";
+
+    case "CLEARANCE":
+      return "마감 할인";
+
+    case "DISCOUNT":
+      return "할인 행사";
+
+    default:
+      break;
+  }
+
+  const name = promotionName?.trim();
+
+  if (name?.includes("1+1")) {
+    return "1+1";
+  }
+
+  if (name?.includes("2+1")) {
+    return "2+1";
+  }
+
+  if (name?.includes("증정") || name?.includes("사은")) {
+    return "증정 행사";
+  }
+
+  if (name?.includes("묶음")) {
+    return "묶음 행사";
+  }
+
+  return null;
 }
 
 function buildMapByProductId<T extends { productId: number }>(
@@ -136,48 +375,122 @@ function buildMapByProductId<T extends { productId: number }>(
   return map;
 }
 
-function getClickRate(
+function getSelectionRate(
+  selectRateItem?: PromotionSelectRateApiDto,
   clickItem?: RecommendationClickRateProductDto,
   conversionItem?: RecommendationPurchaseConversionProductDto,
-  selectRateItem?: PromotionSelectRateApiDto,
 ): number {
   return (
-    rateFromCounts(clickItem?.clickCount, clickItem?.impressionCount) ??
-    normalizeRate(clickItem?.clickRate) ??
-    rateFromCounts(conversionItem?.clickCount, conversionItem?.impressionCount) ??
-    rateFromCounts(
-      selectRateItem?.selectedCount ?? selectRateItem?.selectionCount,
-      selectRateItem?.impressionCount,
+    rateFromCountKeys(
+      selectRateItem,
+      ["selectedCount", "selectionCount", "clickCount"],
+      ["impressionCount"],
     ) ??
-    normalizeRate(selectRateItem?.selectRate ?? selectRateItem?.selectionRate) ??
+    readRate(selectRateItem, ["selectRate", "selectionRate", "clickRate"]) ??
+    rateFromCountKeys(clickItem, ["clickCount"], ["impressionCount"]) ??
+    readRate(clickItem, ["clickRate"]) ??
+    rateFromCountKeys(conversionItem, ["clickCount"], ["impressionCount"]) ??
     0
   );
 }
 
 function getPurchaseRate(
-  conversionItem?: RecommendationPurchaseConversionProductDto,
   selectRateItem?: PromotionSelectRateApiDto,
+  conversionItem?: RecommendationPurchaseConversionProductDto,
 ): number {
   return (
-    rateFromCounts(conversionItem?.purchaseCount, conversionItem?.impressionCount) ??
-    normalizeRate(conversionItem?.purchaseConversionRate) ??
-    rateFromCounts(selectRateItem?.purchaseCount, selectRateItem?.impressionCount) ??
-    normalizeRate(selectRateItem?.conversionRate) ??
+    rateFromCountKeys(selectRateItem, ["purchaseCount"], ["impressionCount"]) ??
+    readRate(selectRateItem, [
+      "purchaseRate",
+      "conversionRate",
+      "purchaseConversionRate",
+    ]) ??
+    rateFromCountKeys(conversionItem, ["purchaseCount"], ["impressionCount"]) ??
+    readRate(conversionItem, ["purchaseConversionRate", "clickToPurchaseRate"]) ??
     0
   );
 }
 
 function getImpressionCount(
+  selectRateItem?: PromotionSelectRateApiDto,
   clickItem?: RecommendationClickRateProductDto,
   conversionItem?: RecommendationPurchaseConversionProductDto,
-  selectRateItem?: PromotionSelectRateApiDto,
 ): number {
   return (
-    toFiniteNumber(clickItem?.impressionCount) ??
-    toFiniteNumber(conversionItem?.impressionCount) ??
-    toFiniteNumber(selectRateItem?.impressionCount) ??
+    readNumber(selectRateItem, ["impressionCount"]) ??
+    readNumber(clickItem, ["impressionCount"]) ??
+    readNumber(conversionItem, ["impressionCount"]) ??
     0
   );
+}
+
+function shouldShowPromotionRow(row: PromotionProductRow): boolean {
+  if (row.productId <= 0) {
+    return false;
+  }
+
+  if (!isValidProductName(row.name)) {
+    return false;
+  }
+
+  if (row.impressionCount < 10) {
+    return false;
+  }
+
+  if (row.selectionRate <= 0 || row.purchaseRate <= 0) {
+    return false;
+  }
+
+  if (row.purchaseRate > row.selectionRate) {
+    return false;
+  }
+
+  return true;
+}
+
+function sortPromotionRows(
+  rows: PromotionProductRow[],
+): PromotionProductRow[] {
+  return [...rows].sort((a, b) => {
+    const purchaseDiff = b.purchaseRate - a.purchaseRate;
+
+    if (purchaseDiff !== 0) {
+      return purchaseDiff;
+    }
+
+    const selectionDiff = b.selectionRate - a.selectionRate;
+
+    if (selectionDiff !== 0) {
+      return selectionDiff;
+    }
+
+    const impressionDiff = b.impressionCount - a.impressionCount;
+
+    if (impressionDiff !== 0) {
+      return impressionDiff;
+    }
+
+    return a.productId - b.productId;
+  });
+}
+
+function toAdminPromoProducts(
+  rows: PromotionProductRow[],
+): AdminPromoProduct[] {
+  const mapped: AdminPromoProductWithPromotion[] = rows.map((item, index) => ({
+    rank: index + 1,
+    name: item.name,
+    productId: String(item.productId),
+    promoType: item.promoType,
+    promotionName: item.promotionName,
+    promotionType: item.promotionType,
+    promotionLabel: item.promotionLabel,
+    selectionRate: item.selectionRate,
+    purchaseRate: item.purchaseRate,
+    image: item.image,
+  }));
+
+  return mapped;
 }
 
 export function mapPromotionAnalyticsToProducts(params: {
@@ -193,28 +506,39 @@ export function mapPromotionAnalyticsToProducts(params: {
     params.purchaseConversionData.products,
   );
 
-  const productIds = Array.from(
-    new Set([
-      ...params.promotionSelectRates.map((item) => item.productId),
-      ...(params.clickRateData.products ?? []).map((item) => item.productId),
-      ...(params.purchaseConversionData.products ?? []).map(
-        (item) => item.productId,
-      ),
-    ]),
-  ).filter((productId) => productId > 0);
+  const sourceProductIds = params.promotionSelectRates.length > 0
+    ? params.promotionSelectRates.map((item) => item.productId)
+    : [
+        ...(params.clickRateData.products ?? []).map((item) => item.productId),
+        ...(params.purchaseConversionData.products ?? []).map(
+          (item) => item.productId,
+        ),
+      ];
 
-  const rows = productIds.map((productId) => {
+  const productIds = Array.from(new Set(sourceProductIds)).filter(
+    (productId) => productId > 0,
+  );
+
+  const rows = productIds.map((productId, index) => {
     const selectRateItem = promotionMetaByProductId.get(productId);
     const clickItem = clickByProductId.get(productId);
     const conversionItem = conversionByProductId.get(productId);
 
-    const selectionRate = getClickRate(
-      clickItem,
-      conversionItem,
-      selectRateItem,
+    const promotionName = getPromotionName(selectRateItem);
+    const promotionType = getPromotionType(selectRateItem);
+    const promotionLabel = resolvePromotionLabel(
+      promotionType,
+      getPromotionLabel(selectRateItem),
+      promotionName,
     );
 
-    const rawPurchaseRate = getPurchaseRate(conversionItem, selectRateItem);
+    const selectionRate = getSelectionRate(
+      selectRateItem,
+      clickItem,
+      conversionItem,
+    );
+
+    const rawPurchaseRate = getPurchaseRate(selectRateItem, conversionItem);
 
     const purchaseRate =
       selectionRate > 0
@@ -223,98 +547,63 @@ export function mapPromotionAnalyticsToProducts(params: {
 
     return {
       productId,
-      name:
-        getProductName(selectRateItem) ||
-        getProductName(clickItem) ||
-        getProductName(conversionItem),
-      promoType: inferPromoTypeFromPromotionName(
-        getPromotionName(selectRateItem),
-      ),
+      name: getProductName(selectRateItem, clickItem, conversionItem),
+      promoType: toPromoType(promotionType, promotionName),
+      promotionName,
+      promotionType,
+      promotionLabel,
       selectionRate,
       purchaseRate,
       impressionCount: getImpressionCount(
+        selectRateItem,
         clickItem,
         conversionItem,
-        selectRateItem,
       ),
+      image: getImageSource(index, selectRateItem, clickItem, conversionItem),
     };
   });
 
-  const sorted = rows.sort((a, b) => {
-    const impressionDiff = b.impressionCount - a.impressionCount;
+  const strictRows = rows.filter(shouldShowPromotionRow);
 
-    if (impressionDiff !== 0) {
-      return impressionDiff;
-    }
-
-    const selectionDiff = b.selectionRate - a.selectionRate;
-
-    if (selectionDiff !== 0) {
-      return selectionDiff;
-    }
-
-    return b.purchaseRate - a.purchaseRate;
-  });
-
-  return sorted.map((item, index) => ({
-    rank: index + 1,
-    name: item.name,
-    productId: String(item.productId),
-    promoType: item.promoType,
-    selectionRate: item.selectionRate,
-    purchaseRate: item.purchaseRate,
-    image: getAdminProductImage(index),
-  }));
+  return toAdminPromoProducts(sortPromotionRows(strictRows));
 }
 
 export function mapPromotionSelectRatesToProducts(
   items: PromotionSelectRateApiDto[],
 ): AdminPromoProduct[] {
-  const sorted = [...items].sort((a, b) => {
-    const aSelection =
-      rateFromCounts(
-        a.selectedCount ?? a.selectionCount,
-        a.impressionCount,
-      ) ??
-      normalizeRate(a.selectRate ?? a.selectionRate) ??
-      0;
+  const rows = items.map((item, index) => {
+    const promotionName = getPromotionName(item);
+    const promotionType = getPromotionType(item);
+    const promotionLabel = resolvePromotionLabel(
+      promotionType,
+      getPromotionLabel(item),
+      promotionName,
+    );
 
-    const bSelection =
-      rateFromCounts(
-        b.selectedCount ?? b.selectionCount,
-        b.impressionCount,
-      ) ??
-      normalizeRate(b.selectRate ?? b.selectionRate) ??
-      0;
-
-    return bSelection - aSelection;
-  });
-
-  return sorted.map((item, index) => {
-    const selectionRate =
-      rateFromCounts(
-        item.selectedCount ?? item.selectionCount,
-        item.impressionCount,
-      ) ??
-      normalizeRate(item.selectRate ?? item.selectionRate) ??
-      0;
-
+    const selectionRate = getSelectionRate(item);
+    const rawPurchaseRate = getPurchaseRate(item);
     const purchaseRate =
-      rateFromCounts(item.purchaseCount, item.impressionCount) ??
-      normalizeRate(item.conversionRate) ??
-      0;
+      selectionRate > 0
+        ? Math.min(rawPurchaseRate, selectionRate)
+        : rawPurchaseRate;
 
     return {
-      rank: index + 1,
-      name: item.productName,
-      productId: String(item.productId),
-      promoType: inferPromoTypeFromPromotionName(item.promotionName ?? undefined),
+      productId: getProductId(item),
+      name: getProductName(item),
+      promoType: toPromoType(promotionType, promotionName),
+      promotionName,
+      promotionType,
+      promotionLabel,
       selectionRate,
-      purchaseRate:
-        selectionRate > 0 ? Math.min(purchaseRate, selectionRate) : purchaseRate,
-      image: getAdminProductImage(index),
+      purchaseRate,
+      impressionCount: readNumber(item, ["impressionCount"]) ?? 0,
+      image: getImageSource(index, item),
     };
   });
+
+  const strictRows = rows.filter(shouldShowPromotionRow);
+
+  return toAdminPromoProducts(sortPromotionRows(strictRows));
 }
 
 function sumMetric(items: PromotionSelectRateApiDto[], keys: string[]): number {

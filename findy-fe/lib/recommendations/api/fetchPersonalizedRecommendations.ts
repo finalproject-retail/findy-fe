@@ -3,10 +3,7 @@ import { DEFAULT_API_STORE_ID } from "@/components/home/storeOptions";
 import { getUserIdFromAccessToken } from "@/lib/auth/getUserIdFromToken";
 import { getAccessToken } from "@/lib/api/client";
 import type { ApiEnvelope } from "@/lib/map/types";
-import {
-  alignProductDtoWithShoppingPrice,
-  mapProductsFromApi,
-} from "@/lib/products/mapProductFromApi";
+import { mapProductsFromApi } from "@/lib/products/mapProductFromApi";
 import { filterInStockProducts } from "@/components/product/isOutOfStock";
 import { enrichProductsWithShoppingStock } from "@/lib/products/enrichProductsWithShoppingStock";
 import { SHOPPING_API_MAX_SECTION_SIZE } from "@/lib/products/constants";
@@ -56,9 +53,7 @@ export async function fetchPersonalizedRecommendations(
   }
 
   const data = body.data;
-  const items = (data?.recommendations ?? []).map(
-    alignProductDtoWithShoppingPrice,
-  );
+  const items = data?.recommendations ?? [];
 
   return {
     products: mapProductsFromApi(items),
