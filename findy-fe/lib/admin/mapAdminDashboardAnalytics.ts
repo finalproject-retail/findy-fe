@@ -16,6 +16,14 @@ import {
   ADMIN_ZONE_ORDER,
 } from "@/lib/admin/mockDashboardData";
 
+const ZONE_ID_TO_ZONE_KEY: Record<number, AdminZoneKey> = {
+  1: "fresh",
+  2: "processedFrozen",
+  3: "bakeryDeli",
+  4: "beverageAlcohol",
+  5: "lifestyle",
+};
+
 const GRID_TYPE_TO_ZONE_KEY: Record<string, AdminZoneKey> = {
   "신선 식품": "fresh",
   "가공/냉동 식품": "processedFrozen",
@@ -59,23 +67,14 @@ function toDisplayPercent(rate: number): number {
     : Math.round(parsed * 10) / 10;
 }
 
-function mapZoneVisitRateToTraffic(item: ZoneVisitRateDto): AdminZoneTraffic {
-  return {
-    total: Math.max(0, item.uniqueVisitorCount ?? item.visitCount ?? 0),
-    percent: toDisplayPercent(item.visitRate),
-    averageStayDuration: Math.max(0, item.averageStayDurationSeconds ?? 0),
-  };
-}
+function resolveZoneKey(
+  zoneId: number | undefined | null,
+  zoneName: string | undefined | null,
+): AdminZoneKey | null {
+  if (zoneId != null && ZONE_ID_TO_ZONE_KEY[zoneId]) {
+    return ZONE_ID_TO_ZONE_KEY[zoneId];
+  }
 
-function mapZoneMovementToTraffic(item: ZoneMovementDto): AdminZoneTraffic {
-  return {
-    total: Math.max(0, item.movementCount ?? 0),
-    percent: toDisplayPercent(item.movementRate),
-    averageStayDuration: Math.max(0, item.averageTravelTimeSeconds ?? 0),
-  };
-}
-
-function resolveZoneKeyByName(zoneName: string | undefined | null): AdminZoneKey | null {
   const normalized = zoneName?.trim();
   if (!normalized) {
     return null;
@@ -89,7 +88,24 @@ function resolveZoneKeyByName(zoneName: string | undefined | null): AdminZoneKey
   const matched = (Object.entries(ADMIN_ZONE_LABELS) as [AdminZoneKey, string][]).find(
     ([, label]) => label === normalized,
   );
+
   return matched?.[0] ?? null;
+}
+
+function mapZoneVisitRateToTraffic(item: ZoneVisitRateDto): AdminZoneTraffic {
+  return {
+    total: Math.max(0, item.visitCount ?? item.uniqueVisitorCount ?? 0),
+    percent: toDisplayPercent(item.visitRate),
+    averageStayDuration: Math.max(0, item.averageStayDurationSeconds ?? 0),
+  };
+}
+
+function mapZoneMovementToTraffic(item: ZoneMovementDto): AdminZoneTraffic {
+  return {
+    total: Math.max(0, item.movementCount ?? 0),
+    percent: toDisplayPercent(item.movementRate),
+    averageStayDuration: Math.max(0, item.averageTravelTimeSeconds ?? 0),
+  };
 }
 
 export const ADMIN_SUMMARY_STAT_LABELS = [
@@ -107,7 +123,7 @@ export function getPlaceholderAdminStats(): AdminStatCard[] {
   }));
 }
 
-/** GET /api/v1/analytics/performance-summary → 운영 요약 카드 */
+/** GET /api/v1/admin/analytics/performance-summary → 운영 요약 카드 */
 export function mapAnalyticsSummaryToStats(data: AnalyticsSummaryData): AdminStatCard[] {
   const summary = data.summary;
 
@@ -135,12 +151,12 @@ export function mapAnalyticsSummaryToStats(data: AnalyticsSummaryData): AdminSta
   ];
 }
 
-/** GET /api/v1/analytics/zones/visit-rates → 구역별 방문 히트맵 */
+/** GET /api/v1/admin/analytics/zones/visit-rates → 구역별 방문 히트맵 */
 export function mapZoneVisitRatesToMatrix(data: ZoneVisitRateData): AdminZoneMatrix {
   const matrix = buildEmptyZoneMatrix();
 
   for (const item of data.zoneVisitRates ?? []) {
-    const zoneKey = resolveZoneKeyByName(item.zoneName);
+    const zoneKey = resolveZoneKey(item.zoneId, item.zoneName);
     if (!zoneKey) {
       continue;
     }
@@ -152,8 +168,9 @@ export function mapZoneVisitRatesToMatrix(data: ZoneVisitRateData): AdminZoneMat
   }
 
   for (const movement of data.zoneMovements ?? []) {
-    const fromKey = resolveZoneKeyByName(movement.fromZoneName);
-    const toKey = resolveZoneKeyByName(movement.toZoneName);
+    const fromKey = resolveZoneKey(movement.fromZoneId, movement.fromZoneName);
+    const toKey = resolveZoneKey(movement.toZoneId, movement.toZoneName);
+
     if (!fromKey || !toKey || fromKey === toKey) {
       continue;
     }
