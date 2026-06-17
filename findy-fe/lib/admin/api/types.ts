@@ -97,17 +97,33 @@ export type RecommendationDailyTrendDto = {
   clickToPurchaseRate?: number;
 };
 
+export type AdminPromotionType =
+  | "DISCOUNT"
+  | "ONE_PLUS_ONE"
+  | "TWO_PLUS_ONE"
+  | "GIFT"
+  | "COUPON"
+  | "BUNDLE"
+  | "CLEARANCE"
+  | "UNKNOWN";
+
 export type PromotionSelectRateApiDto = {
   promotionId?: number | null;
   promotionName?: string | null;
+  promotionType?: AdminPromotionType | string | null;
+  promotionLabel?: string | null;
 
   recommendationType?: string | null;
   sourceProductId?: number | null;
 
   productId: number;
   productName: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
+  categoryId?: number | null;
 
   impressionCount: number;
+  clickCount?: number;
   selectionCount?: number;
   selectedCount?: number;
   selectionRate?: number;
@@ -115,6 +131,8 @@ export type PromotionSelectRateApiDto = {
 
   purchaseCount: number;
   conversionRate: number;
+  purchaseConversionRate?: number;
+  clickToPurchaseRate?: number;
 };
 
 export type PromotionSelectRateApiData = {
@@ -124,12 +142,15 @@ export type PromotionSelectRateApiData = {
   sourceProductId?: number | null;
 
   impressionCount?: number;
+  clickCount?: number;
   selectionCount?: number;
   selectedCount?: number;
   selectionRate?: number;
   selectRate?: number;
   purchaseCount?: number;
   conversionRate?: number;
+  purchaseConversionRate?: number;
+  clickToPurchaseRate?: number;
 
   dailyTrends?: RecommendationDailyTrendDto[];
   products?: PromotionSelectRateApiDto[];
@@ -142,6 +163,8 @@ export type PromotionSelectRateApiData = {
 export type FetchPromotionSelectRateParams = {
   startDate: string;
   endDate: string;
+  fromDate?: string;
+  toDate?: string;
   promotionId?: number;
   productId?: number;
   sourceProductId?: number;
@@ -152,6 +175,8 @@ export type RecommendationClickRateProductDto = {
   recommendationType?: string;
   productId: number;
   productName: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
   impressionCount: number;
   clickCount: number;
   clickRate: number;
@@ -170,6 +195,8 @@ export type RecommendationPurchaseConversionProductDto = {
   recommendationType?: string;
   productId: number;
   productName: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
   impressionCount: number;
   clickCount: number;
   purchaseCount: number;
@@ -198,8 +225,10 @@ export type RecommendationPurchaseConversionDto =
   RecommendationPurchaseConversionData;
 
 export type FetchAdminRecommendationAnalyticsParams = {
-  fromDate: string;
-  toDate: string;
+  fromDate?: string;
+  toDate?: string;
+  startDate?: string;
+  endDate?: string;
   recommendationType: string;
   limit?: number;
   productId?: number;
