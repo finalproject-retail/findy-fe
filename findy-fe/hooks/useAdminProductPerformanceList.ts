@@ -21,7 +21,7 @@ function parseCategoryIds(categoryIdsKey: string) {
   const categoryIds = categoryIdsKey
     .split(",")
     .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value));
+    .filter((value) => Number.isFinite(value) && value > 0);
 
   return categoryIds.length > 0 ? categoryIds : undefined;
 }
@@ -58,7 +58,6 @@ export function useAdminProductPerformanceList(
     setIsLoadingMore(false);
     setError(null);
     setPerformanceWarning(null);
-    setProducts([]);
     setPage(0);
     setHasMore(true);
     performanceMapRef.current = null;
@@ -200,4 +199,4 @@ export function useAdminProductPerformanceList(
     loadMore,
     reload: loadFirstPage,
   };
-}
+} 

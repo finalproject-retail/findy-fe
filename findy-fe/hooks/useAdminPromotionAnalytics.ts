@@ -125,39 +125,53 @@ function buildSubstituteFunnelCounts(
   purchaseConversionData: unknown,
   alternativeSelectRateSummary: unknown,
 ) {
-  const purchaseConversionImpressions = getMetricTotal(
-    purchaseConversionData,
-    ["impressionCount"],
-  );
-
-  const alternativeImpressions = getMetricTotal(
+  const alternativeImpressionCount = getMetricTotal(
     alternativeSelectRateSummary,
     ["impressionCount"],
   );
 
-  const source =
-    purchaseConversionImpressions > 0
-      ? purchaseConversionData
-      : alternativeSelectRateSummary;
+  const alternativeSelectionCount = getMetricTotal(
+    alternativeSelectRateSummary,
+    ["selectedCount", "selectionCount", "clickCount"],
+  );
+
+  const alternativePurchaseCount = getMetricTotal(
+    alternativeSelectRateSummary,
+    ["purchaseCount"],
+  );
+
+  const purchaseConversionImpressionCount = getMetricTotal(
+    purchaseConversionData,
+    ["impressionCount"],
+  );
+
+  const purchaseConversionSelectionCount = getMetricTotal(
+    purchaseConversionData,
+    ["clickCount", "selectedCount", "selectionCount"],
+  );
+
+  const purchaseConversionPurchaseCount = getMetricTotal(
+    purchaseConversionData,
+    ["purchaseCount"],
+  );
 
   return {
+    // 품절 대응 퍼널의 기준은 alternatives/select-rate 요약을 우선 사용
     impressionCount:
-      purchaseConversionImpressions > 0
-        ? purchaseConversionImpressions
-        : alternativeImpressions,
+      alternativeImpressionCount > 0
+        ? alternativeImpressionCount
+        : purchaseConversionImpressionCount,
+
     selectionCount:
-      purchaseConversionImpressions > 0
-        ? getMetricTotal(purchaseConversionData, [
-            "clickCount",
-            "selectedCount",
-            "selectionCount",
-          ])
-        : getMetricTotal(alternativeSelectRateSummary, [
-            "selectedCount",
-            "selectionCount",
-            "clickCount",
-          ]),
-    purchaseCount: getMetricTotal(source, ["purchaseCount"]),
+      alternativeSelectionCount > 0
+        ? alternativeSelectionCount
+        : purchaseConversionSelectionCount,
+
+    // 구매 수는 purchase-conversion API를 우선 사용
+    purchaseCount:
+      purchaseConversionPurchaseCount > 0
+        ? purchaseConversionPurchaseCount
+        : alternativePurchaseCount,
   };
 }
 
@@ -177,7 +191,11 @@ export function useAdminPromotionAnalytics(dateRange: AdminDateRange) {
     let cancelled = false;
     const query = toAdminAnalyticsQueryRange(dateRange);
 
+    // 백엔드 컨트롤러는 startDate/endDate를 받음.
+    // 일부 fetch 유틸 호환을 위해 fromDate/toDate도 같이 전달.
     const recommendationQuery = {
+      startDate: query.startDate,
+      endDate: query.endDate,
       fromDate: query.startDate,
       toDate: query.endDate,
     };

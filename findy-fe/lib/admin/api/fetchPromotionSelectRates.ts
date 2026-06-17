@@ -29,13 +29,36 @@ function unwrapSelectRates(
   );
 }
 
+function withCompatibleDateParams(
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  const startDate = params.startDate ?? params.fromDate;
+  const endDate = params.endDate ?? params.toDate;
+
+  return {
+    ...params,
+    ...(startDate != null
+      ? {
+          startDate,
+          fromDate: startDate,
+        }
+      : {}),
+    ...(endDate != null
+      ? {
+          endDate,
+          toDate: endDate,
+        }
+      : {}),
+  };
+}
+
 async function fetchAnalyticsData<T>(
   path: string,
   params: Record<string, unknown>,
 ): Promise<T> {
   try {
     const response = await analyticsApiClient.get<ApiEnvelope<T>>(path, {
-      params,
+      params: withCompatibleDateParams(params),
     });
 
     const body = response.data;
@@ -56,7 +79,10 @@ async function fetchSelectRateData(
   path: string,
   params: SelectRateParams,
 ): Promise<PromotionSelectRateApiData> {
-  return fetchAnalyticsData<PromotionSelectRateApiData>(path, params);
+  return fetchAnalyticsData<PromotionSelectRateApiData>(
+    path,
+    params as unknown as Record<string, unknown>,
+  );
 }
 
 async function fetchSelectRates(
@@ -98,12 +124,10 @@ export function fetchRecommendationPurchaseConversionAnalytics(
   return fetchAnalyticsData<RecommendationPurchaseConversionData>(
     "/api/v1/analytics/purchase-conversion",
     {
-      // 백엔드 구현 차이를 흡수하기 위해 둘 다 전달
       startDate: params.startDate,
       endDate: params.endDate,
       fromDate: params.startDate,
       toDate: params.endDate,
-
       recommendationType: params.recommendationType,
       limit: params.limit,
       ...(params.productId != null ? { productId: params.productId } : {}),
