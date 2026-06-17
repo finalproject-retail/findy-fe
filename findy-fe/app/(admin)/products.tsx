@@ -4,9 +4,10 @@ import { AdminScrollView } from "@/components/admin/AdminScrollView";
 import { ADMIN_COLORS } from "@/constants/adminTheme";
 import { useAdminProductPerformanceList } from "@/hooks/useAdminProductPerformanceList";
 import { useAdminWideLayout } from "@/hooks/useAdminWideLayout";
+import type { AdminProductCategoryFilter } from "@/lib/admin/adminProductPerformanceTypes";
 import { getDefaultAdminDateRange } from "@/lib/admin/mockDashboardData";
 import { pretendard } from "@/utils/pretendard";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -21,18 +22,32 @@ export default function AdminProductsScreen() {
   const insets = useSafeAreaInsets();
   const isWide = useAdminWideLayout();
   const dateRange = useMemo(() => getDefaultAdminDateRange(), []);
-  const { products, isLoading, isLoadingMore, error, performanceWarning, hasMore, loadMore, reload } =
-    useAdminProductPerformanceList(dateRange);
-  const isLoadingMoreRef = useRef(isLoadingMore);
 
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<AdminProductCategoryFilter>("all");
+
+  const {
+    products,
+    isLoading,
+    isLoadingMore,
+    error,
+    performanceWarning,
+    hasMore,
+    loadMore,
+    reload,
+  } = useAdminProductPerformanceList(dateRange);
+
+  const isLoadingMoreRef = useRef(isLoadingMore);
   isLoadingMoreRef.current = isLoadingMore;
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (!hasMore || isLoadingMoreRef.current) return;
 
-      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-      const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+      const { layoutMeasurement, contentOffset, contentSize } =
+        event.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - (layoutMeasurement.height + contentOffset.y);
 
       if (distanceFromBottom < 160) {
         void loadMore();
@@ -69,11 +84,24 @@ export default function AdminProductsScreen() {
                 gap: 12,
               }}
             >
-              <Text style={{ ...pretendard(500), fontSize: 14, color: ADMIN_COLORS.navyMuted }}>
+              <Text
+                style={{
+                  ...pretendard(500),
+                  fontSize: 14,
+                  color: ADMIN_COLORS.navyMuted,
+                }}
+              >
                 {error}
               </Text>
+
               <Pressable onPress={() => void reload()}>
-                <Text style={{ ...pretendard(600), fontSize: 14, color: ADMIN_COLORS.navActive }}>
+                <Text
+                  style={{
+                    ...pretendard(600),
+                    fontSize: 14,
+                    color: ADMIN_COLORS.navActive,
+                  }}
+                >
                   다시 시도
                 </Text>
               </Pressable>
@@ -103,11 +131,16 @@ export default function AdminProductsScreen() {
                   {performanceWarning}
                 </Text>
               ) : null}
+
               <AdminProductPerformanceList
                 products={products}
                 stretch={isWide}
                 hasMore={hasMore}
                 isLoadingMore={isLoadingMore}
+                query={query}
+                onQueryChange={setQuery}
+                category={category}
+                onCategoryChange={setCategory}
               />
             </View>
           )}

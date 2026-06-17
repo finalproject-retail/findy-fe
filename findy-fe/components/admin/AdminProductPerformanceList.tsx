@@ -6,11 +6,11 @@ import {
   formatAdminMetricNumber,
   type AdminProductCategoryFilter,
   type AdminProductPerformance,
-} from "@/lib/admin/mockProductPerformanceData";
+} from "@/lib/admin/adminProductPerformanceTypes";
 import { pretendard } from "@/utils/pretendard";
 import { Image } from "expo-image";
 import { useRouter, type Href } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -26,7 +26,10 @@ type AdminProductPerformanceListProps = {
   stretch?: boolean;
   hasMore?: boolean;
   isLoadingMore?: boolean;
-  onLoadMore?: () => void;
+  query: string;
+  onQueryChange: (text: string) => void;
+  category: AdminProductCategoryFilter;
+  onCategoryChange: (next: AdminProductCategoryFilter) => void;
 };
 
 const MOBILE_THUMB_SIZE = 64;
@@ -190,18 +193,34 @@ function ProductIdentity({
   imageSize: number;
 }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        flex: 1,
+        minWidth: 0,
+      }}
+    >
       <ProductThumbnail image={product.image} size={imageSize} />
       <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
         <Text
           numberOfLines={1}
-          style={{ ...pretendard(600), fontSize: 14, color: ADMIN_COLORS.navy }}
+          style={{
+            ...pretendard(600),
+            fontSize: 14,
+            color: ADMIN_COLORS.navy,
+          }}
         >
           {product.name}
         </Text>
         <Text
           numberOfLines={1}
-          style={{ ...pretendard(400), fontSize: 12, color: ADMIN_COLORS.navyMuted }}
+          style={{
+            ...pretendard(400),
+            fontSize: 12,
+            color: ADMIN_COLORS.navyMuted,
+          }}
         >
           (상품 ID: {product.productId})
         </Text>
@@ -237,21 +256,37 @@ function ProductPerformanceMobileRow({
       <View style={{ flex: 1, minWidth: 0, gap: 6, paddingRight: 4 }}>
         <Text
           numberOfLines={1}
-          style={{ ...pretendard(600), fontSize: 14, lineHeight: 20, color: ADMIN_COLORS.navy }}
+          style={{
+            ...pretendard(600),
+            fontSize: 14,
+            lineHeight: 20,
+            color: ADMIN_COLORS.navy,
+          }}
         >
           {product.name}
         </Text>
         <Text
           numberOfLines={1}
-          style={{ ...pretendard(400), fontSize: 11, lineHeight: 16, color: ADMIN_COLORS.navyMuted }}
+          style={{
+            ...pretendard(400),
+            fontSize: 11,
+            lineHeight: 16,
+            color: ADMIN_COLORS.navyMuted,
+          }}
         >
           (상품 ID: {product.productId})
         </Text>
         <Text
           numberOfLines={1}
-          style={{ ...pretendard(500), fontSize: 12, lineHeight: 17, color: ADMIN_COLORS.navyLight }}
+          style={{
+            ...pretendard(500),
+            fontSize: 12,
+            lineHeight: 17,
+            color: ADMIN_COLORS.navyLight,
+          }}
         >
-          조회수: {formatAdminMetricNumber(product.views)} | 구매 전환율: {product.conversionRate}%
+          조회수: {formatAdminMetricNumber(product.views)} | 구매 전환율:{" "}
+          {product.conversionRate}%
         </Text>
       </View>
 
@@ -264,7 +299,10 @@ function ProductPerformanceMobileRow({
 
 const TABLE_HEADERS = ["상품명", "조회수", "구매 전환율"] as const;
 
-function tableColumnStyle(header: (typeof TABLE_HEADERS)[number], stretch: boolean) {
+function tableColumnStyle(
+  header: (typeof TABLE_HEADERS)[number],
+  stretch: boolean,
+) {
   if (stretch) {
     switch (header) {
       case "상품명":
@@ -367,7 +405,13 @@ function ProductPerformanceTableRow({
 function EmptyState() {
   return (
     <View style={{ paddingVertical: 48, alignItems: "center" }}>
-      <Text style={{ ...pretendard(500), fontSize: 14, color: ADMIN_COLORS.navyMuted }}>
+      <Text
+        style={{
+          ...pretendard(500),
+          fontSize: 14,
+          color: ADMIN_COLORS.navyMuted,
+        }}
+      >
         검색 결과가 없습니다.
       </Text>
     </View>
@@ -379,10 +423,12 @@ export function AdminProductPerformanceList({
   stretch = false,
   hasMore = false,
   isLoadingMore = false,
+  query,
+  onQueryChange,
+  category,
+  onCategoryChange,
 }: AdminProductPerformanceListProps) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<AdminProductCategoryFilter>("all");
 
   const openProductDetail = (productId: string) => {
     router.push({
@@ -394,16 +440,36 @@ export function AdminProductPerformanceList({
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return products.filter((product) => {
-      const matchesCategory = category === "all" || product.category === category;
-      if (!matchesCategory) return false;
-      if (!normalizedQuery) return true;
+    return products
+      .filter((product) => {
+        const matchesCategory =
+          category === "all" || product.category === category;
 
-      return (
-        product.name.toLowerCase().includes(normalizedQuery) ||
-        product.productId.toLowerCase().includes(normalizedQuery)
-      );
-    });
+        if (!matchesCategory) return false;
+        if (!normalizedQuery) return true;
+
+        return (
+          product.name.toLowerCase().includes(normalizedQuery) ||
+          product.productId.toLowerCase().includes(normalizedQuery)
+        );
+      })
+      .sort((a, b) => {
+        const aViews = Number(a.views) || 0;
+        const bViews = Number(b.views) || 0;
+
+        if (bViews !== aViews) {
+          return bViews - aViews;
+        }
+
+        const aConversionRate = Number(a.conversionRate) || 0;
+        const bConversionRate = Number(b.conversionRate) || 0;
+
+        if (bConversionRate !== aConversionRate) {
+          return bConversionRate - aConversionRate;
+        }
+
+        return Number(b.productId) - Number(a.productId);
+      });
   }, [products, query, category]);
 
   return (
@@ -419,8 +485,17 @@ export function AdminProductPerformanceList({
         상품 목록
       </Text>
 
-      <ProductSearchBar value={query} onChangeText={setQuery} stretch={stretch} />
-      <CategoryFilterTabs value={category} onChange={setCategory} stretch={stretch} />
+      <ProductSearchBar
+        value={query}
+        onChangeText={onQueryChange}
+        stretch={stretch}
+      />
+
+      <CategoryFilterTabs
+        value={category}
+        onChange={onCategoryChange}
+        stretch={stretch}
+      />
 
       {stretch ? (
         <View
@@ -435,7 +510,8 @@ export function AdminProductPerformanceList({
           <ProductPerformanceTableHeader stretch />
           {filteredProducts.length > 0 ? (
             filteredProducts.map((product, index) => {
-              const isLastRow = index === filteredProducts.length - 1 && !hasMore;
+              const isLastRow =
+                index === filteredProducts.length - 1 && !hasMore;
 
               return (
                 <View

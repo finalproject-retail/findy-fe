@@ -17,6 +17,7 @@ export type AdminProductSaleStatus = "ON_SALE" | "OUT_OF_STOCK";
 export type FetchAdminProductsParams = {
   keyword?: string;
   categoryId?: number;
+  categoryIds?: number[];
   saleStatus?: AdminProductSaleStatus;
   page?: number;
   size?: number;
@@ -74,24 +75,86 @@ export type ProductPerformanceSummaryDto = {
   products: ProductPerformanceItemDto[];
 };
 
+export type AdminAnalyticsPeriod = {
+  fromDate: string;
+  toDate: string;
+};
+
 export type RecommendationDailyTrendDto = {
   analysisDate: string;
   impressionCount: number;
+
+  clickCount?: number;
+  selectionCount?: number;
+  selectedCount?: number;
+  purchaseCount?: number;
+
+  clickRate?: number;
+  selectionRate?: number;
+  selectRate?: number;
+  conversionRate?: number;
+  purchaseConversionRate?: number;
+  clickToPurchaseRate?: number;
 };
 
+export type AdminPromotionType =
+  | "DISCOUNT"
+  | "ONE_PLUS_ONE"
+  | "TWO_PLUS_ONE"
+  | "GIFT"
+  | "COUPON"
+  | "BUNDLE"
+  | "CLEARANCE"
+  | "UNKNOWN";
+
 export type PromotionSelectRateApiDto = {
-  promotionId?: number;
-  promotionName?: string;
+  promotionId?: number | null;
+  promotionName?: string | null;
+  promotionType?: AdminPromotionType | string | null;
+  promotionLabel?: string | null;
+
+  recommendationType?: string | null;
+  sourceProductId?: number | null;
+
   productId: number;
   productName: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
+  categoryId?: number | null;
+
   impressionCount: number;
-  selectedCount: number;
-  selectRate: number;
+  clickCount?: number;
+  selectionCount?: number;
+  selectedCount?: number;
+  selectionRate?: number;
+  selectRate?: number;
+
   purchaseCount: number;
   conversionRate: number;
+  purchaseConversionRate?: number;
+  clickToPurchaseRate?: number;
 };
 
 export type PromotionSelectRateApiData = {
+  period?: AdminAnalyticsPeriod;
+  recommendationType?: string | null;
+  productId?: number | null;
+  sourceProductId?: number | null;
+
+  impressionCount?: number;
+  clickCount?: number;
+  selectionCount?: number;
+  selectedCount?: number;
+  selectionRate?: number;
+  selectRate?: number;
+  purchaseCount?: number;
+  conversionRate?: number;
+  purchaseConversionRate?: number;
+  clickToPurchaseRate?: number;
+
+  dailyTrends?: RecommendationDailyTrendDto[];
+  products?: PromotionSelectRateApiDto[];
+
   promotionSelectRates?: PromotionSelectRateApiDto[];
   substituteSelectRates?: PromotionSelectRateApiDto[];
   alternativeSelectRates?: PromotionSelectRateApiDto[];
@@ -100,19 +163,20 @@ export type PromotionSelectRateApiData = {
 export type FetchPromotionSelectRateParams = {
   startDate: string;
   endDate: string;
+  fromDate?: string;
+  toDate?: string;
   promotionId?: number;
   productId?: number;
-};
-
-export type AdminAnalyticsPeriod = {
-  fromDate: string;
-  toDate: string;
+  sourceProductId?: number;
+  limit?: number;
 };
 
 export type RecommendationClickRateProductDto = {
   recommendationType?: string;
   productId: number;
   productName: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
   impressionCount: number;
   clickCount: number;
   clickRate: number;
@@ -131,6 +195,8 @@ export type RecommendationPurchaseConversionProductDto = {
   recommendationType?: string;
   productId: number;
   productName: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
   impressionCount: number;
   clickCount: number;
   purchaseCount: number;
@@ -155,11 +221,14 @@ export type RecommendationPurchaseConversionData = {
 export type RecommendationClickRateDto = RecommendationClickRateData;
 
 /** 상품 성과 상세 API 응답 (purchase-conversion) */
-export type RecommendationPurchaseConversionDto = RecommendationPurchaseConversionData;
+export type RecommendationPurchaseConversionDto =
+  RecommendationPurchaseConversionData;
 
 export type FetchAdminRecommendationAnalyticsParams = {
-  fromDate: string;
-  toDate: string;
+  fromDate?: string;
+  toDate?: string;
+  startDate?: string;
+  endDate?: string;
   recommendationType: string;
   limit?: number;
   productId?: number;
@@ -172,10 +241,11 @@ export type FetchAdminDashboardAnalyticsParams = {
   zoneId?: number;
 };
 
-export type FetchAdminZoneVisitRatesParams = FetchAdminDashboardAnalyticsParams & {
-  minStaySeconds?: number;
-  includeMovement?: boolean;
-};
+export type FetchAdminZoneVisitRatesParams =
+  FetchAdminDashboardAnalyticsParams & {
+    minStaySeconds?: number;
+    includeMovement?: boolean;
+  };
 
 export type AnalyticsSummaryDto = {
   totalVisitorCount: number;

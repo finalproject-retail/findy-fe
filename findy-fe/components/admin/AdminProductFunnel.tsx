@@ -19,22 +19,48 @@ const LABEL_WIDTH = 118;
 const BAR_HEIGHT = 40;
 const BAR_RADIUS = 5;
 
+const INLINE_PERCENT_MIN_WIDTH = 32;
+const MIN_VISIBLE_BAR_WIDTH = 8;
+
 type StepTransition = {
   entryRate: number;
-  dropPp: number;
+  dropRate: number;
 };
+
+function roundOneDecimal(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.round(value * 10) / 10;
+}
+
+function normalizePercent(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.min(Math.max(roundOneDecimal(value), 0), 100);
+}
 
 function getStepTransition(
   previousPercent: number,
   nextPercent: number,
 ): StepTransition {
-  const entryRate =
-    previousPercent > 0
-      ? Math.round((nextPercent / previousPercent) * 1000) / 10
-      : 0;
-  const dropPp = Math.round((previousPercent - nextPercent) * 10) / 10;
+  if (previousPercent <= 0) {
+    return {
+      entryRate: 0,
+      dropRate: 100,
+    };
+  }
 
-  return { entryRate, dropPp };
+  const entryRate = roundOneDecimal(
+    Math.min(Math.max((nextPercent / previousPercent) * 100, 0), 100),
+  );
+
+  const dropRate = roundOneDecimal(Math.max(100 - entryRate, 0));
+
+  return { entryRate, dropRate };
 }
 
 function TransitionBadges({ transition }: { transition: StepTransition }) {
@@ -67,6 +93,7 @@ function TransitionBadges({ transition }: { transition: StepTransition }) {
           ↓ {transition.entryRate}% 진입
         </Text>
       </View>
+
       <View
         style={{
           backgroundColor: ADMIN_COLORS.negativeBg,
@@ -82,7 +109,7 @@ function TransitionBadges({ transition }: { transition: StepTransition }) {
             color: ADMIN_COLORS.negativeText,
           }}
         >
-          -{transition.dropPp}% 이탈
+          -{transition.dropRate}% 이탈
         </Text>
       </View>
     </View>
@@ -98,7 +125,8 @@ function FunnelBarRow({
   index: number;
   displayPercent: number;
 }) {
-  const widthPercent = Math.min(Math.max(displayPercent, 0), 100);
+  const widthPercent = normalizePercent(displayPercent);
+  const showPercentInside = widthPercent >= INLINE_PERCENT_MIN_WIDTH;
 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -127,27 +155,33 @@ function FunnelBarRow({
           <View
             style={{
               width: `${widthPercent}%`,
-              minWidth: widthPercent > 0 ? 48 : 0,
+              minWidth: widthPercent > 0 ? MIN_VISIBLE_BAR_WIDTH : 0,
               height: "100%",
               borderRadius: BAR_RADIUS,
               backgroundColor: FUNNEL_COLORS[index],
               justifyContent: "center",
-              paddingHorizontal: 12,
+              paddingHorizontal: showPercentInside ? 12 : 0,
             }}
           >
-            {widthPercent >= 18 ? (
+            {showPercentInside ? (
               <Text
-                style={{ ...pretendard(700), fontSize: 13, color: "#FFFFFF" }}
+                numberOfLines={1}
+                style={{
+                  ...pretendard(700),
+                  fontSize: 13,
+                  color: "#FFFFFF",
+                }}
               >
-                {displayPercent}%
+                {widthPercent}%
               </Text>
             ) : null}
           </View>
         </View>
       </View>
 
-      {widthPercent < 18 ? (
+      {!showPercentInside ? (
         <Text
+          numberOfLines={1}
           style={{
             width: 44,
             textAlign: "right",
@@ -156,7 +190,7 @@ function FunnelBarRow({
             color: ADMIN_COLORS.navy,
           }}
         >
-          {displayPercent}%
+          {widthPercent}%
         </Text>
       ) : (
         <View style={{ width: 44 }} />
@@ -165,11 +199,36 @@ function FunnelBarRow({
   );
 }
 
+function buildDisplaySteps(steps: AdminFunnelStep[]) {
+  let previousPercent = 100;
+
+  return steps.map((step, index) => {
+    const rawPercent = index === 0 ? 100 : normalizePercent(step.percent);
+
+    const displayPercent =
+      index === 0 ? 100 : Math.min(rawPercent, previousPercent);
+
+    const transition =
+      index > 0 ? getStepTransition(previousPercent, displayPercent) : null;
+
+    previousPercent = displayPercent;
+
+    return {
+      step,
+      index,
+      displayPercent,
+      transition,
+    };
+  });
+}
+
 export function AdminProductFunnel({
   steps,
   finalConversionRate,
   stretch = false,
 }: AdminProductFunnelProps) {
+  const displaySteps = buildDisplaySteps(steps);
+
   return (
     <View style={stretch ? { flex: 1, gap: 16 } : { gap: 16 }}>
       <Text
@@ -207,6 +266,7 @@ export function AdminProductFunnel({
           >
             품절 대응 성과
           </Text>
+
           <View
             style={{
               backgroundColor: ADMIN_COLORS.statCardBg,
@@ -235,27 +295,19 @@ export function AdminProductFunnel({
             stretch ? { flex: 1, justifyContent: "center", gap: 4 } : { gap: 4 }
           }
         >
-          {steps.map((step, index) => {
-            const displayPercent = index === 0 ? 100 : step.percent;
-            const previousPercent = index > 0 ? steps[index - 1]!.percent : 100;
-            const transition =
-              index > 0
-                ? getStepTransition(previousPercent, displayPercent)
-                : null;
+          {displaySteps.map(({ step, index, displayPercent, transition }) => (
+            <View key={step.label} style={{ gap: 4 }}>
+              {transition ? (
+                <TransitionBadges transition={transition} />
+              ) : null}
 
-            return (
-              <View key={step.label} style={{ gap: 4 }}>
-                {transition ? (
-                  <TransitionBadges transition={transition} />
-                ) : null}
-                <FunnelBarRow
-                  step={step}
-                  index={index}
-                  displayPercent={displayPercent}
-                />
-              </View>
-            );
-          })}
+              <FunnelBarRow
+                step={step}
+                index={index}
+                displayPercent={displayPercent}
+              />
+            </View>
+          ))}
         </View>
       </View>
     </View>
